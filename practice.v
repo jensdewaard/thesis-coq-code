@@ -1,16 +1,14 @@
-Inductive parity : Type :=
-  | par_even : parity
-  | par_odd : parity
-  | par_top : parity
-  | par_bottom : parity.
+Require Import Coq.Arith.Arith.
+Require Import Coq.Arith.PeanoNat.
+Require Import Coq.Arith.Even.
+
+Require Import Parity.
 
 Inductive cexp : Type :=
   | CNum : nat -> cexp
   | CVar : cexp
   | CPlus : cexp -> cexp -> cexp
-  | CMult : cexp -> cexp -> cexp
-.
-
+  | CMult : cexp -> cexp -> cexp.
 
 (* Find some way to define eval and abstract_eval on the same 
    set of commands; but how then to incorporate that they will
@@ -27,47 +25,13 @@ Fixpoint eval (e : cexp) (x : nat) : nat :=
   | CMult e1 e2 => eval e1 x * eval e2 x
   end.
 
-Fixpoint extract (n : nat) : parity :=
-  match n with 
-  | 0 => par_even
-  | S 0 => par_odd
-  | S (S n) => extract n
-  end.
-
 Fixpoint abstract_eval (e : cexp) (p : parity) : parity :=
   match e with 
   | CNum n => extract n
   | CVar => p
-  | CPlus p1 p2 => match (abstract_eval p1 p) with
-                   | par_even => abstract_eval p2 p
-                   | par_odd => match (abstract_eval p2 p) with
-                                | par_even => par_odd
-                                | par_odd => par_even
-                                | par_top => par_top
-                                | par_bottom => par_bottom
-                                end
-                   | par_top => par_top
-                   | par_bottom => par_bottom
-                   end
-  | CMult p1 p2 => match (abstract_eval p1 p) with
-                   | par_even => abstract_eval p2 p
-                   | par_odd => match (abstract_eval p2 p) with
-                                | par_even =>  par_even
-                                | par_odd => par_odd
-                                | par_top => par_top
-                                | par_bottom => par_bottom
-                                end
-                   | par_top => par_top
-                   | par_bottom => par_bottom
-                   end
+  | CPlus p1 p2 => parity_plus (abstract_eval p1 p) (abstract_eval p2 p)
+  | CMult p1 p2 => parity_mult (abstract_eval p1 p) (abstract_eval p2 p)
   end.
-
-(* Taken from the standard library *)
-Inductive even : nat -> Prop :=
-  | even_O : even 0
-  | even_S : forall n, odd n -> even (S n)
-with odd : nat -> Prop :=
-    odd_S : forall n, even n -> odd (S n).
 
 Inductive isNumber : nat -> Prop :=
   | nIsNumber : forall n, isNumber n.
@@ -82,33 +46,130 @@ Definition gamma (p : parity) : (nat -> Prop) :=
   | par_bottom => noNumber
   end.
 
-Inductive gammaR : parity -> (nat -> Prop) -> Prop :=
-  | peven : gammaR par_even even
-  | podd  : gammaR par_odd odd
-  | ptop  : gammaR par_top isNumber
-  | pbot  : gammaR par_bottom noNumber.
-
-Inductive abstract_leq : parity -> parity -> Prop :=
-  | bottom_leq : forall p, abstract_leq par_bottom p
-  | top_leq : forall p, abstract_leq p par_top
-  | even_odd : abstract_leq par_even par_odd
-  | odd_even : abstract_leq par_odd par_even.
-
-Theorem abstract_eval_sound : forall e x p,
-  (gamma p) x ->
-  (gamma (abstract_eval e p)) (eval e x).
+Lemma gamma_S_S_n : forall n p,
+  gamma p n -> gamma p (S (S n)).
 Proof.
-  intros.
-  unfold eval in Heval; subst.
-  destruct p; simpl.
-  - (* n is even *)
-    simpl in Hin. constructor. assumption.
-  - (* n is odd *)
-    simpl in Hin. 
-    apply even_S. assumption.
-  - (* top *)
+  destruct p; simpl; intros.
+  - repeat constructor. assumption.
+  - repeat constructor; assumption.
+  - constructor.
+  - inversion H.
+Qed.
+
+Lemma gamma_extract_n_p : forall n p,
+  gamma p n -> extract n = p \/ p = par_top.
+Proof. 
+  intros. induction n.
+  - destruct p; try reflexivity; try inversion H.
+    + left. reflexivity.
+    + right. reflexivity.
+  - destruct p; try reflexivity; try inversion H.
+    + subst. left. apply odd_extract_parodd in H1. 
+      apply extract_par_odd_even_alternate in H1. assumption.
+    + subst. left. apply even_extract_pareven in H1.
+      apply extract_par_even_odd_alternate in H1. assumption.
+    + right. reflexivity.
+Qed.
+
+Lemma gamma_extract_n_n : forall n,
+  gamma (extract n) n.
+Proof.
+  intros. destruct (extract n) eqn:H.
+  - induction n.
+    + simpl. constructor.
+    + simpl. apply extract_pareven_even in H. assumption.
+  - induction n.
+    + simpl. inversion H.
+    + simpl. apply extract_parodd_odd in H. assumption.
+  - simpl. constructor.
+  - pose proof never_extract_parbottom as H1.
+    unfold not in H1. exfalso. apply H1. exists n. assumption.
+Qed.
+
+Lemma gamma_add_even : forall p n1 n2,
+  gamma p n1 ->
+  even n2 ->
+  gamma p (n1 + n2).
+Proof.
+  intros. destruct p.
+  - simpl in *. apply even_even_plus; assumption.
+  - simpl in *. apply odd_plus_l; assumption.
+  - simpl in *. constructor.
+  - inversion H.
+Qed.
+
+Lemma gamma_distr_plus: forall p1 p2 n1 n2,
+  gamma p1 n1 ->
+  gamma p2 n2 ->
+  gamma (parity_plus p1 p2) (n1 + n2).
+Proof.
+  intros. destruct p2.
+  - (* p2 = par_even *)
+    rewrite <- parity_plus_par_even. apply gamma_add_even.
+    simpl in H0. assumption. assumption.
+  - (* p2 = par_odd *)
+    simpl in *. Search gamma. destruct p1.
+    + simpl. apply odd_plus_r. simpl in H. assumption. assumption.
+    + Search even. simpl in *. apply odd_even_plus; assumption. 
+    + simpl. constructor.
+    + inversion H.
+  - (* p2 = par_top *)
+    simpl. rewrite <- parity_plus_comm. destruct p1; simpl; try constructor.
+    inversion H.
+  - inversion H0.
+Qed.
+
+Lemma gamma_distr_mult: forall p1 p2 n1 n2,
+  gamma p1 n1 ->
+  gamma p2 n2 ->
+  gamma (parity_mult p1 p2) (n1 * n2).
+Proof.
+  intros. destruct p1; simpl in *.
+  - (* p1 = par_even *)
+    apply even_mult_l. assumption.
+  - (* p1 = par_odd *)
+    destruct p2; simpl in *.
+    + (* p2 = par_even *)
+      apply even_mult_r. assumption.
+    + (* p2 = par_odd *)
+      apply odd_mult; assumption.
+    + (* p2 = par_top *)
+      constructor.
+    + (* p2 = par_bottom *)
+      inversion H0.
+  - (* p1 = par_top *)
     constructor.
-  - inversion Hin.
+  - inversion H.
+Qed.
+
+Lemma abstract_plus_sound : forall e1 e2 p n,
+  gamma (abstract_eval e1 p) (eval e1 n) ->
+  gamma (abstract_eval e2 p) (eval e2 n) ->
+  gamma (abstract_eval (CPlus e1 e2) p) (eval (CPlus e1 e2) n).
+Proof.
+  intros. simpl. apply gamma_distr_plus; assumption.
+Qed.
+
+Lemma abstract_mult_sound : forall e1 e2 p n,
+  gamma (abstract_eval e1 p) (eval e1 n) ->
+  gamma (abstract_eval e2 p) (eval e2 n) ->
+  gamma (abstract_eval (CMult e1 e2) p) (eval (CMult e1 e2) n).
+Proof. intros. simpl. apply gamma_distr_mult; assumption.
+Qed.
+
+Theorem abstract_eval_sound : forall e p n,
+  (gamma p) n ->
+  (gamma (abstract_eval e p)) (eval e n).
+Proof.
+  induction e; intros.
+  - (* CNum *)
+    simpl. apply gamma_extract_n_n.
+  - (* CVar *)
+    simpl. assumption.
+  - (* CPlus *)
+    apply abstract_plus_sound; auto.
+    - (* CMult *)
+    apply abstract_mult_sound; auto.
 Qed.
 (* proof the equivalance of the galois connection diagram *)
 (* Peval o gamma \subset gamma o abstract_eval *)
