@@ -4,14 +4,10 @@ Require Import Coq.Arith.Even.
 
 Require Import Parity.
 Require Import Maps.
+Require Import Language.
 
 Definition state := total_map nat.
 
-Inductive aexp : Type :=
-  | CNum : nat -> aexp
-  | CVar : string -> aexp
-  | CPlus : aexp -> aexp -> aexp
-  | CMult : aexp -> aexp -> aexp.
 
 (* Find some way to define eval and abstract_eval on the same 
    set of commands; but how then to incorporate that they will
@@ -20,20 +16,50 @@ Inductive aexp : Type :=
    Or have separate expressions like currently implemented, but
    how to estabilish "equivelance" between APlus and CPlus? *)
 
-Fixpoint eval (st : state) (e : aexp) : nat := 
+Fixpoint eval_aexp (st : state) (e : aexp) : nat := 
   match e with
-  | CNum n => n
-  | CVar x => st x
-  | CPlus e1 e2 => eval st e1 + eval st e2
-  | CMult e1 e2 => eval st e1 * eval st e2
+  | ANum n => n
+  | AVar x => st x
+  | APlus e1 e2 => eval_aexp st e1 + eval_aexp st e2
+  | AMult e1 e2 => eval_aexp st e1 * eval_aexp st e2
   end.
 
-Fixpoint abstract_eval (st : state) (e : aexp) : parity :=
+Fixpoint eval_bexp (st : state) (e : bexp) : bool :=
+  match e with
+  | BTrue => true
+  | BFalse => false
+  | BEq a1 a2 => (eval_aexp st a1) =? (eval_aexp st a2)
+  | BLe a1 a2 => (eval_aexp st a1) <=? (eval_aexp st a2)
+  | BNot b => negb (eval_bexp st b)
+  | BAnd b1 b2 => andb (eval_bexp st b1) (eval_bexp st b2)
+  end.
+
+Fixpoint abstract_eval_aexp (st : state) (e : aexp) : parity :=
   match e with 
-  | CNum n => extract n
-  | CVar x => extract (st x)
-  | CPlus p1 p2 => parity_plus (abstract_eval st p1) (abstract_eval st p2)
-  | CMult p1 p2 => parity_mult (abstract_eval st p1) (abstract_eval st p2)
+  | ANum n => extract n
+  | AVar x => extract (st x)
+  | APlus p1 p2 => 
+      parity_plus (abstract_eval_aexp st p1) (abstract_eval_aexp st p2)
+  | AMult p1 p2 =>
+      parity_mult (abstract_eval_aexp st p1) (abstract_eval_aexp st p2)
+  end.
+
+Open Scope com_scope.
+
+Fixpoint ceval (st : state) (c : com) : state :=
+  match c with
+  | CSkip => st
+  | c1 ;; c2 => 
+      let st' := ceval st c1 in
+      ceval st' c2
+  end.
+
+Fixpoint ceval_abstract (st : state) (c : com) : state :=
+  match c with
+  | CSkip => st
+  | c1 ;; c2 =>
+      let st' := ceval_abstract st c1 in
+      ceval_abstract st' c2
   end.
 
 Inductive isNumber : nat -> Prop :=
@@ -145,42 +171,48 @@ Proof.
   - inversion H.
 Qed.
 
-Lemma abstract_plus_sound : forall st e1 e2,
-  gamma (abstract_eval st e1) (eval st e1) ->
-  gamma (abstract_eval st e2) (eval st e2) ->
-  gamma (abstract_eval st (CPlus e1 e2)) (eval st (CPlus e1 e2)).
+Lemma abstract_aexp_plus_sound : forall st e1 e2,
+  gamma (abstract_eval_aexp st e1) (eval_aexp st e1) ->
+  gamma (abstract_eval_aexp st e2) (eval_aexp st e2) ->
+  gamma (abstract_eval_aexp st (APlus e1 e2)) (eval_aexp st (APlus e1 e2)).
 Proof.
   intros. simpl. apply gamma_distr_plus; assumption.
 Qed.
 
-Lemma abstract_mult_sound : forall st e1 e2,
-  gamma (abstract_eval st e1) (eval st e1) ->
-  gamma (abstract_eval st e2) (eval st e2) ->
-  gamma (abstract_eval st (CMult e1 e2)) (eval st (CMult e1 e2)).
+Lemma abstract_aexp_mult_sound : forall st e1 e2,
+  gamma (abstract_eval_aexp st e1) (eval_aexp st e1) ->
+  gamma (abstract_eval_aexp st e2) (eval_aexp st e2) ->
+  gamma (abstract_eval_aexp st (AMult e1 e2)) (eval_aexp st (AMult e1 e2)).
 Proof. intros. simpl. apply gamma_distr_mult; assumption.
 Qed.
 
-Theorem abstract_eval_sound : forall st x n p e,
+Theorem abstract_aexp_eval_sound : forall st x n p e,
   st x = n ->
   extract n = p ->
   (gamma p) n ->
-  (gamma (abstract_eval st e)) (eval st e).
+  (gamma (abstract_eval_aexp st e)) (eval_aexp st e).
 Proof.
   induction e; intros.
-  - (* CNum *)
+  - (* ANum *)
     simpl. apply gamma_extract_n_n.
-  - (* CVar *)
+  - (* AVar *)
     simpl. apply gamma_extract_n_n.
-  - (* CPlus *)
-    apply abstract_plus_sound; auto.
-  - (* CMult *)
-    apply abstract_mult_sound; auto.
+  - (* APlus *)
+    apply abstract_aexp_plus_sound; auto.
+  - (* AMult *)
+    apply abstract_aexp_mult_sound; auto.
 Qed.
+
+Theorem abstract_ceval_sound : forall st x n p c,
+  st x = n ->
+  extract n = p ->
+  (gamma p) n ->
+  (gamma ((ceval_abstract st c) x)) ((ceval st c) x).
+Proof.
+
 (* proof the equivalance of the galois connection diagram *)
 (* Peval o gamma \subset gamma o abstract_eval *)
 (* etc... *)
 
-(* refactor the above code (and finish the proofs) *)
-(* implement multiple variables, with store (nat -> nat) *)
 (* Add a statements SKIP, sequencing, if statements, assignment *)
 
