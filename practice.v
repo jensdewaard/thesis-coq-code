@@ -204,15 +204,29 @@ Proof.
     apply abstract_aexp_mult_sound; auto.
 Qed.
 
-Theorem abstract_ceval_seq_sound : forall ast c1 c2 x st,
+Lemma ceval_seq_assoc : forall st c1 c2 c3,
+  ceval st ((c1 ;; c2) ;; c3) = ceval st (c1 ;; (c2 ;; c3)).
+Proof.
+  intros. reflexivity.
+Qed.
+
+Lemma abstract_ceval_seq_assoc : forall st c1 c2 c3,
+  ceval_abstract st ((c1 ;; c2) ;; c3) = ceval_abstract st (c1 ;; (c2 ;; c3)).
+Proof.
+  intros. simpl.  reflexivity.
+Qed.
+
+Lemma abstract_ceval_seq_sound : forall ast c1 c2 x st,
   gamma ((ceval_abstract ast c1) x) ((ceval st c1) x) ->
   gamma (ceval_abstract ast (c1;; c2) x) (ceval st (c1;; c2) x).
 Proof.
-  intros. simpl. induction c2.
-  - auto.
-  - simpl in *.
-
-Admitted.
+   intros. generalize dependent c1. induction c2; intros.
+   - auto.
+   - replace (ceval_abstract ast (c1;; c2_1;; c2_2))
+     with (ceval_abstract ast ((c1;; c2_1);; c2_2)).
+     apply IHc2_2. apply IHc2_1. assumption.
+     reflexivity.
+Qed.
 
 Theorem abstract_ceval_sound : forall ast st c x,
   (forall x, gamma (ast x) (st x)) ->
@@ -222,7 +236,7 @@ Proof.
   - (* SKIP *)
     intros. simpl. apply H.
   - (* CSeq *)
-    apply abstract_ceval_seq_sound.
+    apply abstract_ceval_seq_sound. assumption.
 Qed.
     
 

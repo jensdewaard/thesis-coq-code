@@ -9,16 +9,16 @@ OBJECTS=$(patsubst %.v,%.vo,$(SOURCES))
 practice.vo: Aux.vo Language.vo Maps.vo Parity.vo
 	coqc practice.v
 
-Aux.vo:
+Aux.vo: Aux.v
 	coqc Aux.v
 
-Language.vo:
+Language.vo: Language.v
 	coqc Language.v
 
-Maps.vo:
+Maps.vo: Maps.v
 	coqc Maps.v
 
-Parity.vo:
+Parity.vo: Parity.v
 	coqc Parity.v
 
 
