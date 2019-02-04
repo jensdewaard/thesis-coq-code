@@ -1,6 +1,7 @@
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Arith.Even.
+Require Import Coq.Sets.Partial_Order.
 
 Require Import Aux.
 
@@ -9,6 +10,16 @@ Inductive parity : Type :=
   | par_odd : parity
   | par_top : parity
   | par_bottom : parity.
+
+Inductive parity_ensemble : parity -> Prop :=
+  | par_ens_all : forall p, parity_ensemble p.
+
+Inductive parity_lt : parity -> parity -> Prop :=
+  | lt_top : forall p, parity_lt p par_top
+  | lt_bottom : forall p, parity_lt par_bottom p.
+
+Definition parity_PO := Definition_of_PO parity parity_ensemble parity_lt.
+
 
 Definition parity_plus (p q : parity) : parity :=
   match p with 
@@ -155,4 +166,109 @@ Proof.
   - apply odd_extract_parodd in H0. rewrite H0 in H. inversion H.
 Qed.
 
-(* TODO Define  parity order *)
+(* Concretization function gamma for parity *)
+
+Definition gamma (p : parity) : (nat -> Prop) :=
+  match p with
+  | par_even => even
+  | par_odd => odd
+  | par_top => isNumber
+  | par_bottom => noNumber
+  end.
+
+Lemma gamma_S_S_n : forall n p,
+  gamma p n -> gamma p (S (S n)).
+Proof.
+  destruct p; simpl; intros.
+  - repeat constructor. assumption.
+  - repeat constructor; assumption.
+  - constructor.
+  - inversion H.
+Qed.
+
+Lemma gamma_extract_n_p : forall n p,
+  gamma p n -> extract n = p \/ p = par_top.
+Proof. 
+  intros. induction n.
+  - destruct p; try reflexivity; try inversion H.
+    + left. reflexivity.
+    + right. reflexivity.
+  - destruct p; try reflexivity; try inversion H.
+    + subst. left. apply odd_extract_parodd in H1. 
+      apply extract_par_odd_even_alternate in H1. assumption.
+    + subst. left. apply even_extract_pareven in H1.
+      apply extract_par_even_odd_alternate in H1. assumption.
+    + right. reflexivity.
+Qed.
+
+Lemma gamma_extract_n_n : forall n,
+  gamma (extract n) n.
+Proof.
+  intros. destruct (extract n) eqn:H.
+  - induction n.
+    + simpl. constructor.
+    + simpl. apply extract_pareven_even in H. assumption.
+  - induction n.
+    + simpl. inversion H.
+    + simpl. apply extract_parodd_odd in H. assumption.
+  - simpl. constructor.
+  - pose proof never_extract_parbottom as H1.
+    unfold not in H1. exfalso. apply H1. exists n. assumption.
+Qed.
+
+Lemma gamma_add_even : forall p n1 n2,
+  gamma p n1 ->
+  even n2 ->
+  gamma p (n1 + n2).
+Proof.
+  intros. destruct p.
+  - simpl in *. apply even_even_plus; assumption.
+  - simpl in *. apply odd_plus_l; assumption.
+  - simpl in *. constructor.
+  - inversion H.
+Qed.
+
+Lemma gamma_distr_plus: forall p1 p2 n1 n2,
+  gamma p1 n1 ->
+  gamma p2 n2 ->
+  gamma (parity_plus p1 p2) (n1 + n2).
+Proof.
+  intros. destruct p2.
+  - (* p2 = par_even *)
+    rewrite <- parity_plus_par_even. apply gamma_add_even.
+    simpl in H0. assumption. assumption.
+  - (* p2 = par_odd *)
+    simpl in *. Search gamma. destruct p1.
+    + simpl. apply odd_plus_r. simpl in H. assumption. assumption.
+    + Search even. simpl in *. apply odd_even_plus; assumption. 
+    + simpl. constructor.
+    + inversion H.
+  - (* p2 = par_top *)
+    simpl. rewrite <- parity_plus_comm. destruct p1; simpl; try constructor.
+    inversion H.
+  - inversion H0.
+Qed.
+
+Lemma gamma_distr_mult: forall p1 p2 n1 n2,
+  gamma p1 n1 ->
+  gamma p2 n2 ->
+  gamma (parity_mult p1 p2) (n1 * n2).
+Proof.
+  intros. destruct p1; simpl in *.
+  - (* p1 = par_even *)
+    apply even_mult_l. assumption.
+  - (* p1 = par_odd *)
+    destruct p2; simpl in *.
+    + (* p2 = par_even *)
+      apply even_mult_r. assumption.
+    + (* p2 = par_odd *)
+      apply odd_mult; assumption.
+    + (* p2 = par_top *)
+      constructor.
+    + (* p2 = par_bottom *)
+      inversion H0.
+  - (* p1 = par_top *)
+    constructor.
+  - inversion H.
+Qed.
+

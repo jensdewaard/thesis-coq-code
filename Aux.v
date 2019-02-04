@@ -13,3 +13,10 @@ Inductive maybe (T : Type) :=
   | Certain : T -> maybe T
   | None : maybe T
 .
+
+Inductive isNumber : nat -> Prop :=
+  | nIsNumber : forall n, isNumber n.
+
+Inductive noNumber : nat -> Prop :=.
+
+
