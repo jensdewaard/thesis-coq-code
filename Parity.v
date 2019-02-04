@@ -155,3 +155,4 @@ Proof.
   - apply odd_extract_parodd in H0. rewrite H0 in H. inversion H.
 Qed.
 
+(* TODO Define  parity order *)

@@ -1,33 +1,5 @@
 (** * Maps: Total and Partial Maps *)
 
-(** _Maps_ (or _dictionaries_) are ubiquitous data structures both
-    generally and in the theory of programming languages in
-    particular; we're going to need them in many places in the coming
-    chapters.  They also make a nice case study using ideas we've seen
-    in previous chapters, including building data structures out of
-    higher-order functions (from [Basics] and [Poly]) and the use of
-    reflection to streamline proofs (from [IndProp]).
-
-    We'll define two flavors of maps: _total_ maps, which include a
-    "default" element to be returned when a key being looked up
-    doesn't exist, and _partial_ maps, which return an [option] to
-    indicate success or failure.  The latter is defined in terms of
-    the former, using [None] as the default element. *)
-
-(* ################################################################# *)
-(** * The Coq Standard Library *)
-
-(** One small digression before we begin...
-
-    Unlike the chapters we have seen so far, this one does not
-    [Require Import] the chapter before it (and, transitively, all the
-    earlier chapters).  Instead, in this chapter and from now, on
-    we're going to import the definitions and theorems we need
-    directly from Coq's standard library stuff.  You should not notice
-    much difference, though, because we've been careful to name our
-    own definitions and theorems the same as their counterparts in the
-    standard library, wherever they overlap. *)
-
 Require Import Coq.Arith.Arith.
 Require Import Coq.Bool.Bool.
 Require Export Coq.Strings.String.
@@ -35,43 +7,14 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-(** Documentation for the standard library can be found at
-    http://coq.inria.fr/library/.
-
-    The [Search] command is a good way to look for theorems involving
-    objects of specific types.  Take a minute now to experiment with it. *)
-
-(* ################################################################# *)
-(** * Identifiers *)
-
-(** First, we need a type for the keys that we use to index into our
-    maps.  For this purpose, we will simply use plain [string]s. *)
-
-(** To compare strings, we define the function [beq_string], which
-    internally uses the function [string_dec] from Coq's string library.
-    We then establish its fundamental properties. *)
-
 Definition beq_string x y :=
   if string_dec x y then true else false.
-
-(** (The function [string_dec] comes from Coq's string library.
-    If you check the result type of [string_dec], you'll see that it
-    does not actually return a [bool], but rather a type that looks
-    like [{x = y} + {x <> y}], called a [sumbool], which can be
-    thought of as an "evidence-carrying boolean."  Formally, an
-    element of [sumbool] is either a proof that two things are equal
-    or a proof that they are unequal, together with a tag indicating
-    which.  But for present purposes you can think of it as just a
-    fancy [bool].) *)
 
 Theorem beq_string_refl : forall s, true = beq_string s s.
 Proof. intros s. unfold beq_string. destruct (string_dec s s) as [|Hs].
   - reflexivity.
   - destruct Hs. reflexivity.
 Qed.
-
-(** The following useful property of [beq_string] follows from an
-    analogous lemma about strings: *)
 
 Theorem beq_string_true_iff : forall x y : string,
   beq_string x y = true <-> x = y.
@@ -85,8 +28,6 @@ Proof.
      + intros H. inversion H. subst. destruct Hs. reflexivity.
 Qed.
 
-(** Similarly: *)
-
 Theorem beq_string_false_iff : forall x y : string,
   beq_string x y = false
   <-> x <> y.
@@ -94,32 +35,11 @@ Proof.
   intros x y. rewrite <- beq_string_true_iff.
   rewrite not_true_iff_false. reflexivity. Qed.
 
-(** This useful variant follows just by rewriting: *)
-
 Theorem false_beq_string : forall x y : string,
    x <> y -> beq_string x y = false.
 Proof.
   intros x y. rewrite beq_string_false_iff.
   intros H. apply H. Qed.
-
-(* ################################################################# *)
-(** * Total Maps *)
-
-(** Our main job in this chapter will be to build a definition of
-    partial maps that is similar in behavior to the one we saw in the
-    [Lists] chapter, plus accompanying lemmas about its behavior.
-
-    This time around, though, we're going to use _functions_, rather
-    than lists of key-value pairs, to build maps.  The advantage of
-    this representation is that it offers a more _extensional_ view of
-    maps, where two maps that respond to queries in the same way will
-    be represented as literally the same thing (the very same function),
-    rather than just "equivalent" data structures.  This, in turn,
-    simplifies proofs that use maps. *)
-
-(** We build partial maps in two steps.  First, we define a type of
-    _total maps_ that return a default value when we look up a key
-    that is not present in the map. *)
 
 Definition total_map (A:Type) := string -> A.
 

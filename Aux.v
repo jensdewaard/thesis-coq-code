@@ -9,4 +9,7 @@ Proof.
   - intros. simpl. rewrite IHn. reflexivity.
 Qed.
 
-
+Inductive maybe (T : Type) :=
+  | Certain : T -> maybe T
+  | None : maybe T
+.
