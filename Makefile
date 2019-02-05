@@ -13,7 +13,7 @@ doc_dir:
 	mkdir -p doc
 
 clean: 
-	rm -f *.html *.vo *.glob
+	rm -fr *.html *.vo *.glob doc/
 
 practice.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo 
 	coqc practice.v
