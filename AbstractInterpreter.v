@@ -22,6 +22,7 @@ Fixpoint ceval_abstract (st : abstract_state) (c : com) : abstract_state :=
   | c1 ;; c2 =>
       let st' := ceval_abstract st c1 in
       ceval_abstract st' c2
+  | x ::= a => t_update st x (abstract_eval_aexp st a)
   end.
 
 

@@ -31,6 +31,7 @@ Fixpoint ceval (st : state) (c : com) : state :=
   | c1 ;; c2 => 
       let st' := ceval st c1 in
       ceval st' c2
+  | x ::= a => t_update st x (eval_aexp st a)
   end.
 
 
