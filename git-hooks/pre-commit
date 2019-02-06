@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+
+# Redirect output to stderr.
+exec 1>&2
+
+
+# Stash all unstaged changes
+STASH_NAME="pre-commit-$(date +%s)"
+git stash save -q --keep-index $STASH_NAME
+
+# Build the project. Coq only compiles when the proofs are correct, or are
+# marked as incomplete via admit and Admitted.
+
+make all
+RESULT=$?
+
+
+# Return the stashes changes
+git stash pop -q
+
+if [ $RESULT -ne 0 ]; then
+	echo 'Coq sources contain incorrect proofs. Aborting commit.'
+	exit 1
+fi
+
