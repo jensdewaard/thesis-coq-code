@@ -2,13 +2,13 @@ Require Import Language.
 Require Import Maps.
 Require Import Parity.
 
-Definition abstract_state := total_map (parity).
+Definition abstract_state := total_map parity.
 
 Open Scope com_scope.
 
 Fixpoint abstract_eval_aexp (st : abstract_state) (e : aexp) : parity :=
   match e with 
-  | ANum n => extract n
+  | ANum n => extract_par n
   | AVar x => (st x)
   | APlus p1 p2 => 
       parity_plus (abstract_eval_aexp st p1) (abstract_eval_aexp st p2)

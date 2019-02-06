@@ -31,5 +31,8 @@ AbstractInterpreter.vo: AbstractInterpreter.v Language.vo Maps.vo Parity.vo
 AbstractBool.vo: AbstractBool.v
 	coqc AbstractBool.v
 
+AbstractState.vo: AbstractState.v Parity.vo Maps.vo
+	coqc AbstractState.v
+
 %.vo : %.v
 	coqc $<

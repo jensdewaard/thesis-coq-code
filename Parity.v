@@ -5,6 +5,8 @@ Require Import Coq.Sets.Partial_Order.
 
 Require Import Aux.
 
+(** * Parity *)
+
 Inductive parity : Type :=
   | par_even : parity
   | par_odd : parity
@@ -14,12 +16,12 @@ Inductive parity : Type :=
 Inductive parity_ensemble : parity -> Prop :=
   | par_ens_all : forall p, parity_ensemble p.
 
-Inductive parity_lt : parity -> parity -> Prop :=
-  | lt_top : forall p, parity_lt p par_top
-  | lt_bottom : forall p, parity_lt par_bottom p.
+Inductive parity_le : parity -> parity -> Prop :=
+  | lt_top : forall p, parity_le p par_top
+  | lt_bottom : forall p, parity_le par_bottom p
+  | lt_refl : forall p, parity_le p p.
 
-Definition parity_PO := Definition_of_PO parity parity_ensemble parity_lt.
-
+(** ** Operations *)
 
 Definition parity_plus (p q : parity) : parity :=
   match p with 
@@ -69,15 +71,25 @@ Definition parity_mult (p q : parity) : parity :=
   | par_bottom => par_bottom
   end.
 
-Fixpoint extract (n : nat) : parity :=
+(** ** Abstraction and concretizations functions *)
+
+Definition gamma_par (p : parity) : (nat -> Prop) :=
+  match p with
+  | par_even => even
+  | par_odd => odd
+  | par_top => isNumber
+  | par_bottom => noNumber
+  end.
+
+Fixpoint extract_par (n : nat) : parity :=
   match n with 
   | 0 => par_even
   | S 0 => par_odd
-  | S (S n) => extract n
+  | S (S n) => extract_par n
   end.
 
 Lemma extract_S_n : forall n,
-  extract (S n) = parity_plus (extract n) par_odd.
+  extract_par (S n) = parity_plus (extract_par n) par_odd.
 Proof.
   intros. induction n.
   - reflexivity.
@@ -86,13 +98,13 @@ Proof.
 Qed.
 
 Lemma extract_distr : forall n m,
-  extract (n + m) = parity_plus (extract n) (extract m).
+  extract_par (n + m) = parity_plus (extract_par n) (extract_par m).
 Proof.
   intros n m. generalize dependent n. induction m.
   - intros. simpl. rewrite <- parity_plus_par_even.
     rewrite <- plus_n_O. reflexivity.
   - intros. rewrite -> extract_S_n. 
-    replace (extract (n + S m)) with (extract (S(n+m))).
+    replace (extract_par (n + S m)) with (extract_par (S(n+m))).
     rewrite -> extract_S_n, IHm, parity_plus_assoc. 
     reflexivity.
     rewrite -> plus_comm. rewrite <- Nat.add_succ_l. rewrite -> plus_comm. 
@@ -100,20 +112,20 @@ Proof.
 Qed.
 
 Corollary extract_par_even_odd_alternate : forall n,
-  extract n = par_even -> extract (S n) = par_odd.
+  extract_par n = par_even -> extract_par (S n) = par_odd.
 Proof.
   intros. rewrite extract_S_n. rewrite H.
   reflexivity.
 Qed.
 
 Corollary extract_par_odd_even_alternate : forall n,
-  extract n = par_odd -> extract (S n) =  par_even.
+  extract_par n = par_odd -> extract_par (S n) =  par_even.
 Proof.
   intros. rewrite extract_S_n. rewrite H. reflexivity.
 Qed.
 
 Lemma even_extract_pareven : forall n,
-  even n -> extract n = par_even.
+  even n -> extract_par n = par_even.
 Proof. 
   intros. apply even_equiv in H. destruct H. subst.
   induction x.
@@ -128,7 +140,7 @@ Proof.
 Qed.
 
 Corollary odd_extract_parodd : forall n,
-  odd n -> extract n = par_odd.
+  odd n -> extract_par n = par_odd.
 Proof. 
   intros. induction n.
   - inversion H.
@@ -137,7 +149,7 @@ Proof.
 Qed.
 
 Lemma extract_pareven_even : forall n,
-  extract n = par_even -> even n.
+  extract_par n = par_even -> even n.
 Proof. 
   intros. assert (even n \/ odd n).
   { apply even_or_odd. }
@@ -147,7 +159,7 @@ Proof.
 Qed.
 
 Corollary extract_parodd_odd : forall n,
-  extract n = par_odd -> odd n.
+  extract_par n = par_odd -> odd n.
 Proof. 
   intros. 
   pose proof even_or_odd as Hor.
@@ -157,7 +169,7 @@ Proof.
 Qed.
 
 Lemma never_extract_parbottom : ~ exists n,
-  extract n = par_bottom.
+  extract_par n = par_bottom.
 Proof. 
   unfold not; intros; destruct H.
   pose proof even_or_odd as Hpar.
@@ -166,18 +178,8 @@ Proof.
   - apply odd_extract_parodd in H0. rewrite H0 in H. inversion H.
 Qed.
 
-(* Concretization function gamma for parity *)
-
-Definition gamma (p : parity) : (nat -> Prop) :=
-  match p with
-  | par_even => even
-  | par_odd => odd
-  | par_top => isNumber
-  | par_bottom => noNumber
-  end.
-
-Lemma gamma_S_S_n : forall n p,
-  gamma p n -> gamma p (S (S n)).
+Lemma gamma_par_S_S_n : forall n p,
+  gamma_par p n -> gamma_par p (S (S n)).
 Proof.
   destruct p; simpl; intros.
   - repeat constructor. assumption.
@@ -186,8 +188,8 @@ Proof.
   - inversion H.
 Qed.
 
-Lemma gamma_extract_n_p : forall n p,
-  gamma p n -> extract n = p \/ p = par_top.
+Lemma gamma_par_extract_par_n_p : forall n p,
+  gamma_par p n -> extract_par n = p \/ p = par_top.
 Proof. 
   intros. induction n.
   - destruct p; try reflexivity; try inversion H.
@@ -202,9 +204,9 @@ Proof.
 Qed.
 
 Lemma gamma_extract_n_n : forall n,
-  gamma (extract n) n.
+  gamma_par (extract_par n) n.
 Proof.
-  intros. destruct (extract n) eqn:H.
+  intros. destruct (extract_par n) eqn:H.
   - induction n.
     + simpl. constructor.
     + simpl. apply extract_pareven_even in H. assumption.
@@ -216,10 +218,10 @@ Proof.
     unfold not in H1. exfalso. apply H1. exists n. assumption.
 Qed.
 
-Lemma gamma_add_even : forall p n1 n2,
-  gamma p n1 ->
+Lemma gamma_par_add_even : forall p n1 n2,
+  gamma_par p n1 ->
   even n2 ->
-  gamma p (n1 + n2).
+  gamma_par p (n1 + n2).
 Proof.
   intros. destruct p.
   - simpl in *. apply even_even_plus; assumption.
@@ -229,18 +231,18 @@ Proof.
 Qed.
 
 Lemma gamma_distr_plus: forall p1 p2 n1 n2,
-  gamma p1 n1 ->
-  gamma p2 n2 ->
-  gamma (parity_plus p1 p2) (n1 + n2).
+  gamma_par p1 n1 ->
+  gamma_par p2 n2 ->
+  gamma_par (parity_plus p1 p2) (n1 + n2).
 Proof.
   intros. destruct p2.
   - (* p2 = par_even *)
-    rewrite <- parity_plus_par_even. apply gamma_add_even.
+    rewrite <- parity_plus_par_even. apply gamma_par_add_even.
     simpl in H0. assumption. assumption.
   - (* p2 = par_odd *)
-    simpl in *. Search gamma. destruct p1.
+    simpl in *. destruct p1.
     + simpl. apply odd_plus_r. simpl in H. assumption. assumption.
-    + Search even. simpl in *. apply odd_even_plus; assumption. 
+    + simpl in *. apply odd_even_plus; assumption. 
     + simpl. constructor.
     + inversion H.
   - (* p2 = par_top *)
@@ -250,9 +252,9 @@ Proof.
 Qed.
 
 Lemma gamma_distr_mult: forall p1 p2 n1 n2,
-  gamma p1 n1 ->
-  gamma p2 n2 ->
-  gamma (parity_mult p1 p2) (n1 * n2).
+  gamma_par p1 n1 ->
+  gamma_par p2 n2 ->
+  gamma_par (parity_mult p1 p2) (n1 * n2).
 Proof.
   intros. destruct p1; simpl in *.
   - (* p1 = par_even *)
