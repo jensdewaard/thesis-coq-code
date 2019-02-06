@@ -13,6 +13,11 @@ Inductive parity : Type :=
   | par_top : parity
   | par_bottom : parity.
 
+Inductive isNumber : nat -> Prop :=
+  | nIsNumber : forall n, isNumber n.
+
+Inductive noNumber : nat -> Prop :=.
+
 Inductive parity_ensemble : parity -> Prop :=
   | par_ens_all : forall p, parity_ensemble p.
 
