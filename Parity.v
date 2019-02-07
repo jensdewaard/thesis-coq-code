@@ -34,8 +34,28 @@ Lemma parity_le_trans : forall p1 p2 p3,
 destruct p1, p2, p3; intros; try constructor; 
   try inversion H; try inversion H0. Qed.
 
+(** ** Abstraction and concretizations functions *)
+
+Definition gamma_par (p : parity) : (nat -> Prop) :=
+  match p with
+  | par_even => even
+  | par_odd => odd
+  | par_top => isNumber
+  | par_bottom => noNumber
+  end.
+
+Fixpoint extract_par (n : nat) : parity :=
+  match n with 
+  | 0 => par_even
+  | S 0 => par_odd
+  | S (S n) => extract_par n
+  end.
+
+Definition sound_par (p : parity) (n : nat) := gamma_par p n.
+
 (** ** Operations *)
 
+(** *** Plus *)
 Definition parity_plus (p q : parity) : parity :=
   match p with 
   | par_top => match q with
@@ -84,22 +104,6 @@ Definition parity_mult (p q : parity) : parity :=
   | par_bottom => par_bottom
   end.
 
-(** ** Abstraction and concretizations functions *)
-
-Definition gamma_par (p : parity) : (nat -> Prop) :=
-  match p with
-  | par_even => even
-  | par_odd => odd
-  | par_top => isNumber
-  | par_bottom => noNumber
-  end.
-
-Fixpoint extract_par (n : nat) : parity :=
-  match n with 
-  | 0 => par_even
-  | S 0 => par_odd
-  | S (S n) => extract_par n
-  end.
 
 Lemma extract_S_n : forall n,
   extract_par (S n) = parity_plus (extract_par n) par_odd.
@@ -243,14 +247,13 @@ Proof.
   - inversion H.
 Qed.
 
-Lemma gamma_distr_plus: forall p1 p2 n1 n2,
-  gamma_par p1 n1 ->
-  gamma_par p2 n2 ->
-  gamma_par (parity_plus p1 p2) (n1 + n2).
-Proof.
+Lemma parity_plus_sound : forall p1 p2 n1 n2,
+  sound_par p1 n1 ->
+  sound_par p2 n2 ->
+  sound_par (parity_plus p1 p2) (n1 + n2).
+Proof. unfold sound_par.
   intros. destruct p2.
-  - (* p2 = par_even *)
-    rewrite <- parity_plus_par_even. apply gamma_par_add_even.
+  - (* par_even *) rewrite <- parity_plus_par_even. apply gamma_par_add_even.
     simpl in H0. assumption. assumption.
   - (* p2 = par_odd *)
     simpl in *. destruct p1.
@@ -264,11 +267,11 @@ Proof.
   - inversion H0.
 Qed.
 
-Lemma gamma_distr_mult: forall p1 p2 n1 n2,
-  gamma_par p1 n1 ->
-  gamma_par p2 n2 ->
-  gamma_par (parity_mult p1 p2) (n1 * n2).
-Proof.
+Lemma parity_mult_sound: forall p1 p2 n1 n2,
+  sound_par p1 n1 ->
+  sound_par p2 n2 ->
+  sound_par (parity_mult p1 p2) (n1 * n2).
+Proof. unfold sound_par.
   intros. destruct p1; simpl in *.
   - (* p1 = par_even *)
     apply even_mult_l. assumption.
