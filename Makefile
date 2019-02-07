@@ -25,7 +25,7 @@ Parity.vo: Parity.v Aux.vo
 ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo 
 	coqc ConcreteInterpreter.v
 
-AbstractInterpreter.vo: AbstractInterpreter.v Language.vo Maps.vo Parity.vo
+AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo
 	coqc AbstractInterpreter.v
 
 AbstractBool.vo: AbstractBool.v

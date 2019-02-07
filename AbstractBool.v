@@ -115,3 +115,24 @@ Proof. intros. destruct ab1; destruct b1; inversion H.
     + inversion H0.
 Qed.
 
+(** ** Negation *)
+Definition neg_ab (b : abstr_bool) : abstr_bool :=
+  match b with
+  | ab_false => ab_true
+  | ab_true  => ab_false
+  | _ => b
+  end.
+
+Lemma neg_ab_involutive : forall ab, neg_ab (neg_ab ab) = ab.
+Proof. destruct ab; reflexivity. Qed.
+
+Lemma neg_ab_injective : forall ab1 ab2, neg_ab ab1 = neg_ab ab2 -> ab1 = ab2.
+Proof. intros. destruct ab1, ab2; try reflexivity; try inversion H. Qed.
+
+Lemma neg_ab_sound : forall ab b,
+  sound_ab ab b ->
+  sound_ab (neg_ab ab) (negb b).
+Proof. intros. unfold sound_ab. 
+  destruct ab, b; try inversion H; try reflexivity.
+Qed.
+
