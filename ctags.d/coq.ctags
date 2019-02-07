@@ -1,0 +1,15 @@
+--_echo=MSG
+--langdef=Coq
+--map-Coq=+.v
+--kinddef-Coq=t,theorem,theorems
+--_roledef-Coq=t.applied,applied theorem
+--regex-Coq=/Lemma[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]/\1/t,theorem/
+--regex-Coq=/Inductive[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]/\1/i,inductive/
+--regex-Coq=/Definition[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]/\1/d,definition/
+--regex-Coq=/Fixpoint[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]\1\d,definition/
+--regex-Coq=/Theorem[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]/\1/t,theorem/
+--regex-Coq=/Corollary[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]/\1/t,theorem/
+--regex-Coq=/apply[[:blank:]]+([A-Za-z0-9_]+)[[:blank:]]*/\1/t/{_role=applied}
+--regex-Coq=/rewrite[ \t-<>]+([A-Za-z0-9_]+)/\1/t/{_role=applied}
+--extras=+r
+--fields=+r
