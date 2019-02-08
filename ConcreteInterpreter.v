@@ -19,8 +19,8 @@ Fixpoint eval_bexp (st : state) (e : bexp) : bool :=
   match e with
   | BTrue => true
   | BFalse => false
-  | BEq a1 a2 => (eval_aexp st a1) =? (eval_aexp st a2)
-  | BLe a1 a2 => (eval_aexp st a1) <=? (eval_aexp st a2)
+  | BEq a1 a2 => Nat.eqb (eval_aexp st a1) (eval_aexp st a2)
+  | BLe a1 a2 => Nat.leb (eval_aexp st a1) (eval_aexp st a2)
   | BNot b => negb (eval_bexp st b)
   | BAnd b1 b2 => andb (eval_bexp st b1) (eval_bexp st b2)
   end.

@@ -1,4 +1,5 @@
 Require Import AbstractState.
+Require Import AbstractBool.
 Require Import ConcreteInterpreter.
 Require Import Language.
 Require Import Maps.
@@ -19,6 +20,24 @@ Fixpoint abstract_eval_aexp (st : abstract_state) (e : aexp) : parity :=
 Definition sound_aexp (e : aexp) := forall ast st,
   sound_state ast st -> 
   sound_par (abstract_eval_aexp ast e) (eval_aexp st e).
+
+Fixpoint beval_abstract (st : abstract_state) (b : bexp) : abstr_bool :=
+  match b with
+  | BFalse => ab_false
+  | BTrue => ab_true
+  | BEq e1 e2 => match (abstract_eval_aexp st e1), (abstract_eval_aexp st e2) with
+                 | par_even, par_odd => ab_false
+                 | par_odd, par_even => ab_false
+                 | _, _ => ab_top
+                 end
+  | BLe e1 e2=> ab_top
+  | BNot b => neg_ab (beval_abstract st b)
+  | BAnd b1 b2 => and_ab (beval_abstract st b1) (beval_abstract st b2)
+  end.
+
+Definition sound_bexp (b : bexp) := forall ast st,
+  sound_state ast st ->
+  sound_ab (beval_abstract ast b) (eval_bexp st b).
 
 Fixpoint ceval_abstract (st : abstract_state) (c : com) : abstract_state :=
   match c with
