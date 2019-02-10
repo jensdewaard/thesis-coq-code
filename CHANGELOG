@@ -1,0 +1,9 @@
+Added definitions of soundness for various datatypes
+- booleans / abstract booleans
+- numbers / parity
+- state / abstract state
+
+Proven that soundness is preserved by operations on abstract datatypes
+- and / or / neg for abstract booleans
+- plus and mult for parity
+- update for states
