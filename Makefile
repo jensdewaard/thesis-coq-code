@@ -16,8 +16,8 @@ doc_dir:
 clean: 
 	rm -fr *.html *.vo *.glob doc/
 
-practice.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo 
-	coqc practice.v
+Soundness.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo Soundness.v
+	coqc Soundness.v
 
 Parity.vo: Parity.v Aux.vo 
 	coqc Parity.v
@@ -25,14 +25,14 @@ Parity.vo: Parity.v Aux.vo
 ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo 
 	coqc ConcreteInterpreter.v
 
-AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo
+AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo
 	coqc AbstractInterpreter.v
 
 AbstractBool.vo: AbstractBool.v
 	coqc AbstractBool.v
 
-AbstractState.vo: AbstractState.v Parity.vo Maps.vo
-	coqc AbstractState.v
+AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo
+	coqc AbstractStore.v
 
 %.vo : %.v
 	coqc $<

@@ -3,7 +3,7 @@ Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Arith.Even.
 
 Require Import AbstractBool.
-Require Import AbstractState.
+Require Import AbstractStore.
 Require Import AbstractInterpreter.
 Require Import Aux.
 Require Import ConcreteInterpreter.
@@ -33,7 +33,7 @@ Proof.
 
 Lemma abstract_aexp_var_sound : forall x,
   sound_aexp (AVar x).
-Proof. intros. unfold sound_aexp. intros. simpl. unfold sound_state in H.
+Proof. intros. unfold sound_aexp. intros. simpl. unfold sound_store in H.
   apply H. Qed.
 
 Theorem abstract_aexp_eval_sound : forall e,
@@ -81,10 +81,10 @@ Lemma abstract_ceval_ass_sound : forall y a,
   sound_com (y ::= a).
 Proof.
   unfold sound_com. 
-  intros. simpl. unfold t_update, sound_state. intros.
+  intros. simpl. unfold t_update, sound_store. intros.
   destruct (beq_string y x). 
   - apply abstract_aexp_eval_sound. apply H.
-  - unfold sound_state in H. apply H.
+  - unfold sound_store in H. apply H.
 Qed.
 
 Lemma abstract_ceval_seq_sound : forall c1 c2,

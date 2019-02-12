@@ -1,4 +1,4 @@
-Require Import AbstractState.
+Require Import AbstractStore.
 Require Import AbstractBool.
 Require Import ConcreteInterpreter.
 Require Import Language.
@@ -7,7 +7,7 @@ Require Import Parity.
 
 Open Scope com_scope.
 
-Fixpoint abstract_eval_aexp (st : abstract_state) (e : aexp) : parity :=
+Fixpoint abstract_eval_aexp (st : abstract_store) (e : aexp) : parity :=
   match e with 
   | ANum n => extract_par n
   | AVar x => (st x)
@@ -18,10 +18,10 @@ Fixpoint abstract_eval_aexp (st : abstract_state) (e : aexp) : parity :=
   end.
 
 Definition sound_aexp (e : aexp) := forall ast st,
-  sound_state ast st -> 
+  sound_store ast st -> 
   sound_par (abstract_eval_aexp ast e) (eval_aexp st e).
 
-Fixpoint beval_abstract (st : abstract_state) (b : bexp) : abstr_bool :=
+Fixpoint beval_abstract (st : abstract_store) (b : bexp) : abstr_bool :=
   match b with
   | BFalse => ab_false
   | BTrue => ab_true
@@ -36,10 +36,10 @@ Fixpoint beval_abstract (st : abstract_state) (b : bexp) : abstr_bool :=
   end.
 
 Definition sound_bexp (b : bexp) := forall ast st,
-  sound_state ast st ->
+  sound_store ast st ->
   sound_ab (beval_abstract ast b) (eval_bexp st b).
 
-Fixpoint ceval_abstract (st : abstract_state) (c : com) : abstract_state :=
+Fixpoint ceval_abstract (st : abstract_store) (c : com) : abstract_store :=
   match c with
   | CSkip => st
   | c1 ;; c2 =>
@@ -49,6 +49,6 @@ Fixpoint ceval_abstract (st : abstract_state) (c : com) : abstract_state :=
   end.
 
 Definition sound_com (c : com) := forall ast st,
-  sound_state ast st -> 
-  sound_state (ceval_abstract ast c) (ceval st c).
+  sound_store ast st -> 
+  sound_store (ceval_abstract ast c) (ceval st c).
 
