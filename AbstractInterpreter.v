@@ -39,6 +39,14 @@ Definition sound_bexp (b : bexp) := forall ast st,
   sound_store ast st ->
   sound_ab (beval_abstract ast b) (eval_bexp st b).
 
+Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) : abstract_store :=
+  match b with
+  | ab_true   => st1
+  | ab_false  => st2
+  | ab_top    => abstract_store_join st1 st2
+  | ab_bottom => abstract_store_bottom
+  end.
+
 Fixpoint ceval_abstract (st : abstract_store) (c : com) : abstract_store :=
   match c with
   | CSkip => st
@@ -46,6 +54,8 @@ Fixpoint ceval_abstract (st : abstract_store) (c : com) : abstract_store :=
       let st' := ceval_abstract st c1 in
       ceval_abstract st' c2
   | x ::= a => t_update st x (abstract_eval_aexp st a)
+  | CIf b c1 c2 =>
+     eval_if_abstract (beval_abstract st b) (ceval_abstract st c1) (ceval_abstract st c2)
   end.
 
 Definition sound_com (c : com) := forall ast st,

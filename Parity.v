@@ -2,7 +2,7 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Arith.Even.
 Require Import Coq.Sets.Partial_Order.
-
+Require Import AbstractBool.
 Require Import Aux.
 
 (** * Parity *)
@@ -12,11 +12,6 @@ Inductive parity : Type :=
   | par_odd : parity
   | par_top : parity
   | par_bottom : parity.
-
-Inductive isNumber : nat -> Prop :=
-  | nIsNumber : forall n, isNumber n.
-
-Inductive noNumber : nat -> Prop :=.
 
 Inductive parity_ensemble : parity -> Prop :=
   | par_ens_all : forall p, parity_ensemble p.
@@ -36,12 +31,12 @@ destruct p1, p2, p3; intros; try constructor;
 
 (** ** Abstraction and concretizations functions *)
 
-Definition gamma_par (p : parity) : (nat -> Prop) :=
+Definition gamma_par (p : parity) (n : nat) : Prop :=
   match p with
-  | par_even => even
-  | par_odd => odd
-  | par_top => isNumber
-  | par_bottom => noNumber
+  | par_even => even n
+  | par_odd => odd n
+  | par_top => True
+  | par_bottom => False
   end.
 
 Fixpoint extract_par (n : nat) : parity :=
@@ -52,6 +47,15 @@ Fixpoint extract_par (n : nat) : parity :=
   end.
 
 Definition sound_par (p : parity) (n : nat) := gamma_par p n.
+
+Definition parity_join (p1 p2 : parity) : parity :=
+  match p1, p2 with
+  | par_bottom, p | p, par_bottom => p
+  | par_top, _ | _, par_top => par_top
+  | par_even, par_even => par_even
+  | par_odd, par_odd => par_odd
+  | par_even, par_odd | par_odd, par_even => par_top 
+  end.
 
 (** ** Operations *)
 
@@ -251,42 +255,38 @@ Lemma parity_plus_sound : forall p1 p2 n1 n2,
   sound_par p1 n1 ->
   sound_par p2 n2 ->
   sound_par (parity_plus p1 p2) (n1 + n2).
-Proof. unfold sound_par.
-  intros. destruct p2.
-  - (* par_even *) rewrite <- parity_plus_par_even. apply gamma_par_add_even.
-    simpl in H0. assumption. assumption.
-  - (* p2 = par_odd *)
-    simpl in *. destruct p1.
-    + simpl. apply odd_plus_r. simpl in H. assumption. assumption.
-    + simpl in *. apply odd_even_plus; assumption. 
-    + simpl. constructor.
-    + inversion H.
-  - (* p2 = par_top *)
-    simpl. rewrite <- parity_plus_comm. destruct p1; simpl; try constructor.
-    inversion H.
-  - inversion H0.
+Proof.
+  destruct p1, p2; simpl; try tauto;
+    eauto using odd_even_plus, even_even_plus, odd_plus_l, odd_plus_r.
 Qed.
 
 Lemma parity_mult_sound: forall p1 p2 n1 n2,
   sound_par p1 n1 ->
   sound_par p2 n2 ->
   sound_par (parity_mult p1 p2) (n1 * n2).
-Proof. unfold sound_par.
-  intros. destruct p1; simpl in *.
-  - (* p1 = par_even *)
-    apply even_mult_l. assumption.
-  - (* p1 = par_odd *)
-    destruct p2; simpl in *.
-    + (* p2 = par_even *)
-      apply even_mult_r. assumption.
-    + (* p2 = par_odd *)
-      apply odd_mult; assumption.
-    + (* p2 = par_top *)
-      constructor.
-    + (* p2 = par_bottom *)
-      inversion H0.
-  - (* p1 = par_top *)
-    constructor.
-  - inversion H.
+Proof.
+  destruct p1, p2; simpl; try tauto;
+    eauto using even_mult_l, even_mult_r, odd_mult.
 Qed.
 
+(** Equality *)
+Definition parity_eq (p1 p2 : parity) : abstr_bool :=
+  match p1, p2 with
+  | par_even, par_odd => ab_false
+  | par_odd, par_even => ab_false
+  | par_bottom, _ | _, par_bottom => ab_bottom
+  | _, _ => ab_top
+  end.
+
+Lemma Is_true_eqb n1 n2 : Bool.Is_true (Nat.eqb n1 n2) <-> n1 = n2.
+Admitted.
+
+Lemma parity_eq_sound : forall p1 p2 n1 n2,
+  gamma_par p1 n1 ->
+  gamma_par p2 n2 -> 
+  gamma_bool (parity_eq p1 p2) (Nat.eqb n1 n2).
+Proof.
+  destruct p1, p2; simpl; try tauto.
+  - intros n1 n2 ?? ->%Is_true_eqb. eauto using not_even_and_odd.
+  - intros n1 n2 ?? ->%Is_true_eqb. eauto using not_even_and_odd.
+Qed.

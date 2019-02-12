@@ -8,23 +8,14 @@ Inductive abstr_bool : Type :=
   | ab_top    : abstr_bool
   | ab_bottom : abstr_bool.
 
-Definition Is_false (b: bool) :=
-  match b with
-  | true => False
-  | false => True
-  end.
-
-Definition Is_bool (b: bool) := True.
-Definition No_bool (b: bool) := False.
-
 (** * Correspondence with bool *)
 
-Definition gamma_bool (ab: abstr_bool) : (bool -> Prop) :=
+Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
   match ab with
-  | ab_true   => Is_true
-  | ab_false  => Is_false
-  | ab_top    => Is_bool
-  | ab_bottom => No_bool
+  | ab_true   => Is_true b
+  | ab_false  => ~Is_true b
+  | ab_top    => True
+  | ab_bottom => False
   end.
 
 Definition extract_bool (b: bool) : abstr_bool :=
@@ -70,13 +61,7 @@ Lemma and_ab_sound : forall ab1 ab2 b1 b2,
   sound_ab ab1 b1 ->
   sound_ab ab2 b2 ->
   sound_ab (and_ab ab1 ab2) (andb b1 b2).
-Proof. intros. destruct ab1; destruct b1; inversion H.
-  - simpl. assumption.
-  - destruct ab2; try inversion H0; try reflexivity.
-  - destruct ab2; try inversion H0; try reflexivity. 
-    simpl. destruct b2; try reflexivity; try inversion H0.
-  - destruct ab2; try reflexivity. inversion H0.
-Qed.
+Proof. destruct ab1, b1, ab2, b2; simpl; tauto. Qed.
 
 (** ** Or *)
 
@@ -106,14 +91,7 @@ Lemma or_ab_sound : forall ab1 ab2 b1 b2,
   sound_ab ab1 b1 ->
   sound_ab ab2 b2 ->
   sound_ab (or_ab ab1 ab2) (orb b1 b2).
-Proof. intros. destruct ab1; destruct b1; inversion H.
-  - destruct ab2; try reflexivity; try inversion H0.
-  - simpl. assumption.
-  - destruct ab2; try reflexivity; try inversion H0.
-  - destruct ab2; try reflexivity. 
-    + simpl. destruct b2; try reflexivity; try inversion H0.
-    + inversion H0.
-Qed.
+Proof. destruct ab1, b1, ab2, b2; simpl; tauto. Qed.
 
 (** ** Negation *)
 Definition neg_ab (b : abstr_bool) : abstr_bool :=
@@ -132,7 +110,4 @@ Proof. intros. destruct ab1, ab2; try reflexivity; try inversion H. Qed.
 Lemma neg_ab_sound : forall ab b,
   sound_ab ab b ->
   sound_ab (neg_ab ab) (negb b).
-Proof. intros. unfold sound_ab. 
-  destruct ab, b; try inversion H; try reflexivity.
-Qed.
-
+Proof. destruct ab, b; simpl; tauto. Qed.

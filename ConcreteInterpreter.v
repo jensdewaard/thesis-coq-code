@@ -25,6 +25,9 @@ Fixpoint eval_bexp (st : state) (e : bexp) : bool :=
   | BAnd b1 b2 => andb (eval_bexp st b1) (eval_bexp st b2)
   end.
 
+Definition eval_if (b : bool) (st1 st2 : state) : state :=
+  if b then st1 else st2.
+
 Fixpoint ceval (st : state) (c : com) : state :=
   match c with
   | CSkip => st
@@ -32,6 +35,6 @@ Fixpoint ceval (st : state) (c : com) : state :=
       let st' := ceval st c1 in
       ceval st' c2
   | x ::= a => t_update st x (eval_aexp st a)
+  | CIf b c1 c2 =>
+     eval_if (eval_bexp st b) (ceval st c1) (ceval st c2)
   end.
-
-
