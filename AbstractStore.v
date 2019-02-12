@@ -25,3 +25,26 @@ Proof.
   - unfold sound_par in H0. assumption.
   - unfold sound_store in H. apply H.
 Qed.
+
+Require Import Coq.Logic.FunctionalExtensionality.
+Lemma abstract_store_join_assoc : forall ast1 ast2,
+  abstract_store_join ast1 ast2 = abstract_store_join ast2 ast1.
+Proof. 
+  intros. unfold abstract_store_join. apply functional_extensionality.
+  intros. apply parity_join_assoc. Qed.
+
+Lemma abstract_store_join_sound_left : forall ast1 ast2 st,
+  sound_store ast1 st ->
+  sound_store (abstract_store_join ast1 ast2) st.
+Proof. 
+  unfold sound_store. intros. unfold abstract_store_join. apply
+  parity_join_sound_left. apply H.
+Qed.
+
+Corollary abstract_store_join_sound_right : forall ast1 ast2 st,
+  sound_store ast2 st ->
+  sound_store (abstract_store_join ast1 ast2) st.
+Proof. 
+  unfold sound_store. intros. unfold abstract_store_join. apply
+  parity_join_sound_right. apply H.
+Qed.

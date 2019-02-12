@@ -57,6 +57,22 @@ Definition parity_join (p1 p2 : parity) : parity :=
   | par_even, par_odd | par_odd, par_even => par_top 
   end.
 
+Lemma parity_join_assoc : forall (p1 p2 : parity),
+  parity_join p1 p2 = parity_join p2 p1.
+Proof. destruct p1, p2; auto. Qed.
+  
+Lemma parity_join_sound_left : forall p1 p2 n,
+  gamma_par p1 n -> gamma_par (parity_join p1 p2) n.
+Proof. 
+  intros. destruct p1, p2; simpl in *; tauto. 
+Qed.
+
+Corollary parity_join_sound_right : forall p1 p2 n,
+  gamma_par p2 n -> gamma_par (parity_join p1 p2) n.
+Proof. 
+  intros. destruct p1, p2; simpl in *; tauto. 
+Qed.
+
 (** ** Operations *)
 
 (** *** Plus *)

@@ -25,11 +25,8 @@ Fixpoint beval_abstract (st : abstract_store) (b : bexp) : abstr_bool :=
   match b with
   | BFalse => ab_false
   | BTrue => ab_true
-  | BEq e1 e2 => match (abstract_eval_aexp st e1), (abstract_eval_aexp st e2) with
-                 | par_even, par_odd => ab_false
-                 | par_odd, par_even => ab_false
-                 | _, _ => ab_top
-                 end
+  | BEq e1 e2 => 
+      parity_eq (abstract_eval_aexp st e1) (abstract_eval_aexp st e2)
   | BLe e1 e2=> ab_top
   | BNot b => neg_ab (beval_abstract st b)
   | BAnd b1 b2 => and_ab (beval_abstract st b1) (beval_abstract st b2)

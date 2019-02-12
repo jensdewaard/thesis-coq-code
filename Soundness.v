@@ -49,30 +49,20 @@ Qed.
 Lemma abstract_beval_eq_sound : forall a1 a2,
   sound_bexp (BEq a1 a2).
 Proof.
-  unfold sound_bexp. intros. simpl. pose proof abstract_aexp_eval_sound. 
-  unfold sound_aexp in H0. assert (sound_par (abstract_eval_aexp ast a1)
-  (eval_aexp st a1)).
-  { apply H0. assumption. }
-  assert (sound_par (abstract_eval_aexp ast a2) (eval_aexp st a2)).
-  { apply H0. assumption. }
-  clear H0. 
-  destruct (abstract_eval_aexp ast a1) eqn:Ha1; 
-  destruct (abstract_eval_aexp ast a2) eqn:Ha2; try reflexivity; simpl in *.
-  - destruct (Nat.eqb (eval_aexp st a1) (eval_aexp st a2)) eqn:Heq; 
-    try reflexivity.
-    pose proof not_even_and_odd. apply Nat.eqb_eq in Heq. rewrite Heq in H1.
-    simpl. apply H0 with (n:=(eval_aexp st a2)); assumption.
-  - destruct (Nat.eqb (eval_aexp st a1) (eval_aexp st a2)) eqn:Heq;
-    try reflexivity.
-    pose proof not_even_and_odd. apply Nat.eqb_eq in Heq. rewrite Heq in H1.
-    simpl. apply H0 with (n:=(eval_aexp st a2)); assumption.
+  unfold sound_bexp. intros. 
+  unfold sound_ab. apply parity_eq_sound.
+  apply abstract_aexp_eval_sound. assumption. apply abstract_aexp_eval_sound.
+  assumption.
 Qed.
 
 Theorem abstract_beval_sound : forall e,
   sound_bexp e.
 Proof. 
-  unfold sound_bexp. intros. induction e; try reflexivity.
+  unfold sound_bexp. intros. induction e.
+  - reflexivity. 
+  - simpl. tauto. 
   - apply abstract_beval_eq_sound. assumption. 
+  - reflexivity.
   - simpl. apply neg_ab_sound. assumption.
   - simpl. apply and_ab_sound. assumption. assumption.
 Qed.
@@ -95,6 +85,24 @@ Proof.
   unfold sound_com. intros. apply H0. apply H. assumption.
 Qed.
 
+Lemma abstract_ceval_if_sound : forall b c1 c2,
+  sound_com c1 ->
+  sound_com c2 ->
+  sound_com (CIf b c1 c2).
+Proof. 
+  unfold sound_com. intros. simpl. 
+  pose proof abstract_beval_sound. unfold sound_bexp in H2. 
+  assert (sound_ab (beval_abstract ast b) (eval_bexp st b)).
+  { apply H2. assumption. }
+  destruct (eval_bexp st b), (beval_abstract ast b);
+    unfold sound_ab, gamma_bool, not in H3; try inversion H3.
+  - apply H; assumption.
+  - exfalso. apply H3. reflexivity.
+  - simpl. apply abstract_store_join_sound_left. auto.
+  - simpl. auto. 
+  - simpl. apply abstract_store_join_sound_right. auto.
+Qed.
+
 Theorem abstract_ceval_sound : forall c,
   sound_com c.
 Proof. 
@@ -102,5 +110,6 @@ Proof.
   - (* SKIP *) unfold sound_com. simpl. intros. assumption.
   - (* CSeq *) apply abstract_ceval_seq_sound; assumption.
   - apply abstract_ceval_ass_sound.
+  -  apply abstract_ceval_if_sound; assumption.
 Qed.
 
