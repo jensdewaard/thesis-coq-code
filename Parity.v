@@ -48,31 +48,6 @@ Fixpoint extract_par (n : nat) : parity :=
 
 Definition sound_par (p : parity) (n : nat) := gamma_par p n.
 
-Definition parity_join (p1 p2 : parity) : parity :=
-  match p1, p2 with
-  | par_bottom, p | p, par_bottom => p
-  | par_top, _ | _, par_top => par_top
-  | par_even, par_even => par_even
-  | par_odd, par_odd => par_odd
-  | par_even, par_odd | par_odd, par_even => par_top 
-  end.
-
-Lemma parity_join_assoc : forall (p1 p2 : parity),
-  parity_join p1 p2 = parity_join p2 p1.
-Proof. destruct p1, p2; auto. Qed.
-  
-Lemma parity_join_sound_left : forall p1 p2 n,
-  gamma_par p1 n -> gamma_par (parity_join p1 p2) n.
-Proof. 
-  intros. destruct p1, p2; simpl in *; tauto. 
-Qed.
-
-Corollary parity_join_sound_right : forall p1 p2 n,
-  gamma_par p2 n -> gamma_par (parity_join p1 p2) n.
-Proof. 
-  intros. destruct p1, p2; simpl in *; tauto. 
-Qed.
-
 (** ** Operations *)
 
 (** *** Plus *)
@@ -305,4 +280,70 @@ Proof.
   destruct p1, p2; simpl; try tauto.
   - intros n1 n2 ?? ->%Is_true_eqb. eauto using not_even_and_odd.
   - intros n1 n2 ?? ->%Is_true_eqb. eauto using not_even_and_odd.
+Qed.
+
+(** ** Join *)
+Definition parity_join (p1 p2 : parity) : parity :=
+  match p1, p2 with
+  | par_bottom, p | p, par_bottom => p
+  | par_top, _ | _, par_top => par_top
+  | par_even, par_even => par_even
+  | par_odd, par_odd => par_odd
+  | par_even, par_odd | par_odd, par_even => par_top 
+  end.
+
+Lemma parity_join_comm : forall (p1 p2 : parity),
+  parity_join p1 p2 = parity_join p2 p1.
+Proof. destruct p1, p2; auto. Qed.
+
+Lemma parity_join_assoc : forall (p1 p2 p3 : parity),
+  parity_join p1 (parity_join p2 p3) = parity_join (parity_join p1 p2) p3.
+Proof. 
+  intros. destruct p1, p2, p3; auto.
+Qed.
+
+Lemma parity_join_idem : forall (p : parity),
+  parity_join p p = p.
+Proof. 
+  intros. destruct p; auto.
+Qed.
+  
+Lemma parity_join_sound_left : forall p1 p2 n,
+  gamma_par p1 n -> gamma_par (parity_join p1 p2) n.
+Proof. 
+  intros. destruct p1, p2; simpl in *; tauto. 
+Qed.
+
+Corollary parity_join_sound_right : forall p1 p2 n,
+  gamma_par p2 n -> gamma_par (parity_join p1 p2) n.
+Proof. 
+  intros. destruct p1, p2; simpl in *; tauto. 
+Qed.
+
+(** ** Meet *)
+Definition parity_meet (p1 p2 : parity) : parity :=
+  match p1, p2 with
+  | par_bottom, _ | _, par_bottom => par_bottom
+  | par_top, p | p, par_top => p
+  | par_even, par_even => par_even
+  | par_odd, par_odd => par_odd
+  | par_even, par_odd | par_odd, par_even => par_bottom
+  end.
+
+Lemma parity_meet_comm : forall (p1 p2 : parity),
+  parity_meet p1 p2 = parity_meet p2 p1.
+Proof. 
+  intros. destruct p1, p2; auto. 
+Qed.
+
+Lemma parity_meet_assoc : forall (p1 p2 p3 : parity),
+  parity_meet p1 (parity_meet p2 p3) = parity_meet (parity_meet p1 p2) p3.
+Proof. 
+  intros. destruct p1, p2, p3; auto.
+Qed.
+
+Lemma parity_meet_idem : forall (p : parity),
+  parity_meet p p = p.
+Proof. 
+  intros. destruct p; auto. 
 Qed.

@@ -27,11 +27,11 @@ Proof.
 Qed.
 
 Require Import Coq.Logic.FunctionalExtensionality.
-Lemma abstract_store_join_assoc : forall ast1 ast2,
+Lemma abstract_store_join_comm : forall ast1 ast2,
   abstract_store_join ast1 ast2 = abstract_store_join ast2 ast1.
 Proof. 
   intros. unfold abstract_store_join. apply functional_extensionality.
-  intros. apply parity_join_assoc. Qed.
+  intros. apply parity_join_comm. Qed.
 
 Lemma abstract_store_join_sound_left : forall ast1 ast2 st,
   sound_store ast1 st ->
@@ -48,3 +48,20 @@ Proof.
   unfold sound_store. intros. unfold abstract_store_join. apply
   parity_join_sound_right. apply H.
 Qed.
+
+Lemma abstract_store_join_assoc : forall ast1 ast2 ast3,
+  abstract_store_join ast1 (abstract_store_join ast2 ast3) =
+  abstract_store_join (abstract_store_join ast1 ast2) ast3.
+Proof. 
+  intros. unfold abstract_store_join. apply functional_extensionality.
+  intros. rewrite <- parity_join_assoc. reflexivity.
+Qed.
+
+Lemma abstract_store_join_idem : forall ast,
+  abstract_store_join ast ast = ast.
+Proof. 
+  intros. unfold abstract_store_join. apply functional_extensionality.
+  intros. rewrite parity_join_idem. reflexivity.
+Qed.
+
+

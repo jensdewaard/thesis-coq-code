@@ -113,3 +113,20 @@ Proof.
   -  apply abstract_ceval_if_sound; assumption.
 Qed.
 
+Class Galois {A : Set} {B : Type} : Type :=
+{
+  gamma : A -> B -> Prop;
+  extract : B -> A;
+}.
+
+Instance galois_parity_nat : Galois :=
+{
+  gamma := gamma_par;
+  extract := extract_par
+}.
+
+Instance galois_boolean : Galois :=
+{
+  gamma := gamma_bool;
+  extract := extract_bool
+}.

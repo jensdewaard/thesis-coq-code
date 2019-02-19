@@ -10,6 +10,11 @@ Inductive abstr_bool : Type :=
 
 (** * Correspondence with bool *)
 
+Inductive ab_leb : abstr_bool -> abstr_bool -> Prop :=
+  | ab_leb_bottom : forall ab, ab_leb ab_bottom ab
+  | ab_leb_top : forall ab, ab_leb ab ab_top
+  | ab_leb_refl : forall ab, ab_leb ab ab.
+
 Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
   match ab with
   | ab_true   => Is_true b
@@ -111,3 +116,54 @@ Lemma neg_ab_sound : forall ab b,
   sound_ab ab b ->
   sound_ab (neg_ab ab) (negb b).
 Proof. destruct ab, b; simpl; tauto. Qed.
+
+(** ** Join *)
+Definition ab_join (ab1 ab2 : abstr_bool) : abstr_bool :=
+  match ab1, ab2 with
+  | ab_bottom, b | b, ab_bottom => b
+  | ab_top, _ | _, ab_top => ab_top
+  | ab_true, ab_true => ab_true
+  | ab_false, ab_false => ab_false
+  | ab_true, ab_false | ab_false, ab_true => ab_top
+  end.
+
+Lemma ab_join_comm : forall (ab1 ab2 : abstr_bool),
+  ab_join ab1 ab2 = ab_join ab2 ab1.
+Proof. 
+  intros. destruct ab1, ab2; auto. 
+Qed.
+
+Lemma ab_join_assoc : forall (ab1 ab2 ab3 : abstr_bool),
+  ab_join ab1 (ab_join ab2 ab3) = ab_join (ab_join ab1 ab2) ab3.
+Proof. 
+  intros. destruct ab1, ab2, ab3; auto.
+Qed.
+
+Lemma ab_join_idem : forall ab,
+  ab_join ab ab = ab.
+Proof. 
+  intros. destruct ab; auto.
+Qed.
+
+(** ** Meet *)
+Definition ab_meet (ab1 ab2 : abstr_bool) : abstr_bool :=
+  match ab1, ab2 with
+  | ab_bottom, _ | _, ab_bottom => ab_bottom
+  | ab_top, b | b, ab_top => b
+  | ab_true, ab_true => ab_true
+  | ab_false, ab_false => ab_false
+  | ab_true, ab_false | ab_false, ab_true => ab_bottom
+  end.
+
+
+Lemma ab_meet_assoc : forall (ab1 ab2 : abstr_bool),
+  ab_meet ab1 ab2 = ab_meet ab2 ab1.
+Proof. 
+  intros. destruct ab1, ab2; auto.
+Qed.
+
+Lemma ab_meet_idem : forall ab,
+  ab_meet ab ab = ab.
+Proof. 
+  intros. destruct ab; auto. 
+Qed.
