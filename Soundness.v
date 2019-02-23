@@ -110,23 +110,68 @@ Proof.
   - (* SKIP *) unfold sound_com. simpl. intros. assumption.
   - (* CSeq *) apply abstract_ceval_seq_sound; assumption.
   - apply abstract_ceval_ass_sound.
-  -  apply abstract_ceval_if_sound; assumption.
+  - apply abstract_ceval_if_sound; assumption.
 Qed.
 
-Class Galois {A : Set} {B : Type} : Type :=
+Record IsGalois {A B} (g : B -> A -> Prop)  
+                      (e : A->B)
+                      (j : B->B->B) 
+                      (o : B->B->Prop) :=
 {
-  gamma : A -> B -> Prop;
-  extract : B -> A;
 }.
 
-Instance galois_parity_nat : Galois :=
+
+Class Galois (A : Type) (B : Type) : Type :=
+{
+  gamma : B -> A -> Prop;
+  extract : A -> B;
+  join : B -> B -> B;
+  order : B -> B -> Prop;
+  galois_order_refl : forall b, order b b;
+  galois_order_trans : forall a b c, order a b -> order b c -> order a c;
+  galois_gamma_extract : forall a, gamma (extract a) a;
+  galois_join_ub : forall a b, order a (join a b) /\ order b (join a b);
+}.
+Arguments gamma {_ _ _}.
+
+(* 
+- require ordering is a preorder (reflexive and transistative 
+- join needs interact with order somehow, and are an upper bound operator 
+- gamma should be monotone
+- forall n, gamma (extract n) n.
+  *)
+
+Instance galois_parity_nat : Galois nat parity :=
 {
   gamma := gamma_par;
-  extract := extract_par
+  extract := extract_par;
+  join := parity_join;
+  order := parity_le;
 }.
-
-Instance galois_boolean : Galois :=
+- intros. destruct b; constructor. 
+- apply parity_le_trans.
+- apply gamma_extract_n_n.
+- intros. destruct a, b; simpl; split; try constructor.
+Defined.
+ 
+Instance galois_boolean : Galois bool abstr_bool :=
 {
   gamma := gamma_bool;
-  extract := extract_bool
+  extract := extract_bool;
+  order := ab_le;
+  join := ab_join;
 }.
+- apply ab_le_refl.
+- apply ab_le_trans.
+- destruct a; simpl; auto.
+- intros. destruct a, b; simpl; split; try constructor.
+Defined.
+
+Definition sound2 {A B : Type} `{Galois A B} (f :A -> A -> A) (f' : B-> B -> B) :=
+  forall a1 a2 b1 b2 , gamma b1 a1 -> gamma b2 a2 -> gamma (f' b1 b2) (f a1 a2). 
+
+Theorem sound_parity_plus : sound2 plus parity_plus.
+Proof.
+  unfold sound2. intros. apply parity_plus_sound; assumption.
+Qed.
+

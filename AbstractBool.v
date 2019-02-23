@@ -10,10 +10,16 @@ Inductive abstr_bool : Type :=
 
 (** * Correspondence with bool *)
 
-Inductive ab_leb : abstr_bool -> abstr_bool -> Prop :=
-  | ab_leb_bottom : forall ab, ab_leb ab_bottom ab
-  | ab_leb_top : forall ab, ab_leb ab ab_top
-  | ab_leb_refl : forall ab, ab_leb ab ab.
+Inductive ab_le : abstr_bool -> abstr_bool -> Prop :=
+  | ab_le_bottom : forall ab, ab_le ab_bottom ab
+  | ab_le_top : forall ab, ab_le ab ab_top
+  | ab_le_refl : forall ab, ab_le ab ab.
+
+Lemma ab_le_trans :forall a b c,
+  ab_le a b -> ab_le b c -> ab_le a c.
+Proof. 
+  intros. destruct a, b, c; try constructor; try inversion H0; try inversion H.
+Qed.
 
 Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
   match ab with

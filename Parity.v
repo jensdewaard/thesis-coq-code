@@ -347,3 +347,4 @@ Lemma parity_meet_idem : forall (p : parity),
 Proof. 
   intros. destruct p; auto. 
 Qed.
+

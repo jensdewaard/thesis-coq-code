@@ -19,7 +19,7 @@ clean:
 Soundness.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo Soundness.v
 	coqc Soundness.v
 
-Parity.vo: Parity.v Aux.vo 
+Parity.vo: Parity.v Aux.vo AbstractBool.vo
 	coqc Parity.v
 
 ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo 
@@ -31,7 +31,7 @@ AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo A
 AbstractBool.vo: AbstractBool.v
 	coqc AbstractBool.v
 
-AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo
+AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo AbstractBool.vo
 	coqc AbstractStore.v
 
 %.vo : %.v
