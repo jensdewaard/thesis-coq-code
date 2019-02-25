@@ -2,8 +2,10 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Arith.Even.
 Require Import Coq.Sets.Partial_Order.
+
 Require Import AbstractBool.
 Require Import Aux.
+Require Import Preorder.
 
 (** * Parity *)
 
@@ -29,14 +31,21 @@ Lemma parity_le_trans : forall p1 p2 p3,
 destruct p1, p2, p3; intros; try constructor; 
   try inversion H; try inversion H0. Qed.
 
+Instance proset_parity : PreorderedSet parity :=
+{
+  preorder := parity_le;
+  preorder_refl := parity_le_refl;
+  preorder_trans := parity_le_trans;
+}.
+
 (** ** Abstraction and concretizations functions *)
 
-Definition gamma_par (p : parity) (n : nat) : Prop :=
+Definition gamma_par (p : parity) : nat -> Prop :=
   match p with
-  | par_even => even n
-  | par_odd => odd n
-  | par_top => True
-  | par_bottom => False
+  | par_even => even 
+  | par_odd => odd 
+  | par_top => (fun n => True)
+  | par_bottom => fun n => False
   end.
 
 Fixpoint extract_par (n : nat) : parity :=

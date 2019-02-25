@@ -8,6 +8,7 @@ Require Import AbstractInterpreter.
 Require Import Aux.
 Require Import ConcreteInterpreter.
 Require Import Parity.
+Require Import Preorder.
 Require Import Maps.
 Require Import Language.
 
@@ -121,18 +122,13 @@ Record IsGalois {A B} (g : B -> A -> Prop)
 }.
 
 
-Class Galois (A : Type) (B : Type) : Type :=
+Class Galois (A B : Type) `{PreorderedSet A} `{PreorderedSet B} : Type :=
 {
   gamma : B -> A -> Prop;
-  extract : A -> B;
-  join : B -> B -> B;
-  order : B -> B -> Prop;
-  galois_order_refl : forall b, order b b;
-  galois_order_trans : forall a b c, order a b -> order b c -> order a c;
-  galois_gamma_extract : forall a, gamma (extract a) a;
-  galois_join_ub : forall a b, order a (join a b) /\ order b (join a b);
+  gamma_monotone : forall b b', preorder b b' -> preorder (gamma b) (gamma b');  
 }.
-Arguments gamma {_ _ _}.
+Arguments Build_Galois A B {_ _ _ _}.
+Arguments gamma {_ _ _ _ _}.
 
 (* 
 - require ordering is a preorder (reflexive and transistative 
@@ -140,38 +136,37 @@ Arguments gamma {_ _ _}.
 - gamma should be monotone
 - forall n, gamma (extract n) n.
   *)
+Print types_to_prop.
+Print preorder_nat.
+Print proset_parity.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
   gamma := gamma_par;
-  extract := extract_par;
-  join := parity_join;
-  order := parity_le;
 }.
-- intros. destruct b; constructor. 
-- apply parity_le_trans.
-- apply gamma_extract_n_n.
-- intros. destruct a, b; simpl; split; try constructor.
-Defined.
- 
+- destruct b, b'; simpl; intros; try constructor; try inversion H;
+    intros; try tauto.
+Qed.
+
+
 Instance galois_boolean : Galois bool abstr_bool :=
 {
   gamma := gamma_bool;
-  extract := extract_bool;
-  order := ab_le;
-  join := ab_join;
 }.
-- apply ab_le_refl.
-- apply ab_le_trans.
-- destruct a; simpl; auto.
-- intros. destruct a, b; simpl; split; try constructor.
+- destruct b, b'; constructor; intros; destruct x; simpl; 
+    try inversion H0; try inversion H; tauto.
 Defined.
+
+
+Definition sound {A B : Type} `{Galois A B} (f : A->A) (f' : B->B) :=
+  forall b a, gamma b a -> gamma (f' b) (f a).
 
 Definition sound2 {A B : Type} `{Galois A B} (f :A -> A -> A) (f' : B-> B -> B) :=
   forall a1 a2 b1 b2 , gamma b1 a1 -> gamma b2 a2 -> gamma (f' b1 b2) (f a1 a2). 
 
-Theorem sound_parity_plus : sound2 plus parity_plus.
+(* Theorem sound_parity_plus : forall x p, 
+  gamma p x -> sound (plus x) (parity_plus p).
 Proof.
-  unfold sound2. intros. apply parity_plus_sound; assumption.
-Qed.
+  unfold sound. intros. apply parity_plus_sound; assumption.
+Qed. *)
 

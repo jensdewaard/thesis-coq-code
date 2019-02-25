@@ -1,4 +1,5 @@
 Require Import Coq.Bool.Bool.
+Require Import Preorder.
 
 (** * Definition *)
 
@@ -20,6 +21,13 @@ Lemma ab_le_trans :forall a b c,
 Proof. 
   intros. destruct a, b, c; try constructor; try inversion H0; try inversion H.
 Qed.
+
+Instance preorder_ab : PreorderedSet abstr_bool :=
+{
+  preorder := ab_le;
+  preorder_refl := ab_le_refl;
+  preorder_trans := ab_le_trans;
+}.
 
 Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
   match ab with
