@@ -44,11 +44,5 @@ Instance types_to_prop : forall (A : Type), PreorderedSet (A -> Prop) :=
   preorder_refl := preordered_set_le_refl;
   preorder_trans := preordered_set_le_trans;
 }.
-
-Instance nat_to_prop : PreorderedSet (nat -> Prop) := {
-  preorder := preordered_set_le;
-}.
-- constructor.
-- intros. constructor. intros. inversion H; inversion H0; subst; auto.
-Qed.
+Arguments types_to_prop {A}.
 

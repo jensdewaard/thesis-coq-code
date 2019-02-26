@@ -55,6 +55,13 @@ Fixpoint extract_par (n : nat) : parity :=
   | S (S n) => extract_par n
   end.
 
+Lemma gamma_par_monotone : forall p1 p2,
+  preorder p1 p2 -> preorder (gamma_par p1) (gamma_par p2).
+Proof.
+  destruct p1, p2; simpl; intros; try constructor; try inversion H;
+    intros; try tauto.
+Qed.
+
 Definition sound_par (p : parity) (n : nat) := gamma_par p n.
 
 (** ** Operations *)

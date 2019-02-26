@@ -129,44 +129,47 @@ Class Galois (A B : Type) `{PreorderedSet A} `{PreorderedSet B} : Type :=
 }.
 Arguments Build_Galois A B {_ _ _ _}.
 Arguments gamma {_ _ _ _ _}.
+Print gamma.
 
+Instance galois_self {A :Type} `{PreorderedSet A} : Galois A A :=
+{
+  gamma := fun _ _ => True;
+}.
+- intros. simpl. constructor.
+Defined.
 (* 
-- require ordering is a preorder (reflexive and transistative 
-- join needs interact with order somehow, and are an upper bound operator 
-- gamma should be monotone
+Discuss with Sven
+
+- Add an extract function to the galois definition?
+- Definition of soundness
+
 - forall n, gamma (extract n) n.
   *)
-Print types_to_prop.
-Print preorder_nat.
-Print proset_parity.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
   gamma := gamma_par;
+  gamma_monotone := gamma_par_monotone;
 }.
-- destruct b, b'; simpl; intros; try constructor; try inversion H;
-    intros; try tauto.
-Qed.
-
 
 Instance galois_boolean : Galois bool abstr_bool :=
 {
   gamma := gamma_bool;
+  gamma_monotone := gamma_bool_monotone;
 }.
-- destruct b, b'; constructor; intros; destruct x; simpl; 
-    try inversion H0; try inversion H; tauto.
-Defined.
 
 
-Definition sound {A B : Type} `{Galois A B} (f : A->A) (f' : B->B) :=
+Definition sound {A B A' B' : Type} 
+  `{Galois A B} `{Galois A' B'}
+  (f : A->A) (f' : B->B) :=
   forall b a, gamma b a -> gamma (f' b) (f a).
 
 Definition sound2 {A B : Type} `{Galois A B} (f :A -> A -> A) (f' : B-> B -> B) :=
   forall a1 a2 b1 b2 , gamma b1 a1 -> gamma b2 a2 -> gamma (f' b1 b2) (f a1 a2). 
 
-(* Theorem sound_parity_plus : forall x p, 
-  gamma p x -> sound (plus x) (parity_plus p).
+Theorem sound_parity_plus :
+  sound2 plus parity_plus.
 Proof.
-  unfold sound. intros. apply parity_plus_sound; assumption.
-Qed. *)
+  unfold sound2; intros. apply parity_plus_sound; assumption.
+Qed.
 
