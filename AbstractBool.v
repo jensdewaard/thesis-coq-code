@@ -46,8 +46,8 @@ Definition extract_bool (b: bool) : abstr_bool :=
 Lemma gamma_bool_monotone : forall b1 b2,
   preorder b1 b2 -> preorder (gamma_bool b1) (gamma_bool b2).
 Proof.
-  destruct b1, b2; constructor; intros; destruct x; simpl; 
-    try inversion H0; try inversion H; tauto.
+  destruct b1, b2; constructor; intros; destruct x; simpl in *; 
+    try inversion H0; try inversion H; try tauto. 
 Qed.
 
 Definition sound_ab (ab: abstr_bool) (b: bool) := gamma_bool ab b.

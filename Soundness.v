@@ -129,13 +129,12 @@ Class Galois (A B : Type) `{PreorderedSet A} `{PreorderedSet B} : Type :=
 }.
 Arguments Build_Galois A B {_ _ _ _}.
 Arguments gamma {_ _ _ _ _}.
-Print gamma.
 
 Instance galois_self {A :Type} `{PreorderedSet A} : Galois A A :=
 {
   gamma := fun _ _ => True;
 }.
-- intros. simpl. constructor.
+- intros b b' H'. simpl. constructor.  reflexivity.
 Defined.
 (* 
 Discuss with Sven
@@ -145,6 +144,12 @@ Discuss with Sven
 
 - forall n, gamma (extract n) n.
   *)
+
+Lemma test : forall {X : Type} (P Q : X -> Prop) (x : X),
+  preorder P Q -> P x -> Q x.
+Proof. 
+  intros. simpl in H. destruct H. apply H. apply H0.
+Qed.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
@@ -157,7 +162,6 @@ Instance galois_boolean : Galois bool abstr_bool :=
   gamma := gamma_bool;
   gamma_monotone := gamma_bool_monotone;
 }.
-
 
 Definition sound {A B A' B' : Type} 
   `{Galois A B} `{Galois A' B'}
@@ -173,3 +177,30 @@ Proof.
   unfold sound2; intros. apply parity_plus_sound; assumption.
 Qed.
 
+Lemma widen {A A' B:Type} `{Galois B A'}:
+  forall (f1 f2 : A->A') (x:A) (a:B),
+  pointwise_ordering f1 f2 -> gamma (f1 x) a -> gamma (f2 x) a.
+Proof. 
+  intros. apply test with (P:=(gamma (f1 x))) 
+    (Q:=(gamma (f2 x))). 
+    - apply gamma_monotone. destruct H2. apply H2.
+    - apply H3.
+Qed.
+
+
+Definition gamma_fun {A A' B B' : Type} `{Galois B A} `{Galois B' A'} : 
+  (A->A') -> (B -> B') -> Prop :=
+  fun f' f => forall b a, gamma b a -> gamma (f' b) (f a).
+
+Instance GFun {A A' B B' : Type}
+  `{PreorderedSet A} `{PreorderedSet A'}
+  `{PreorderedSet B} `{PreorderedSet B'}
+  : 
+  Galois B A -> Galois B' A' -> Galois (B -> B') (A->A') :=
+{
+  gamma := gamma_fun;
+}.
+intros f f'. simpl. constructor. intros f_b. destruct H3. 
+intros. unfold gamma_fun in *. intros. 
+eapply widen with (f3:=f1). constructor. apply H3. apply H4. apply H5.
+Defined.

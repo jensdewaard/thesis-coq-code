@@ -27,10 +27,15 @@ Instance preorder_bool : PreorderedSet bool :=
 Defined.
 
 Inductive preordered_set_le {A : Type} : (A -> Prop) -> (A -> Prop) -> Prop := 
-  | preordered_set_le_refl : forall set, preordered_set_le set set
   | preordered_set_le_allin : forall (set1 set2 : (A -> Prop)),
       (forall (x : A), set1 x -> set2 x) -> preordered_set_le set1 set2.
 Arguments preordered_set_le {_}.
+
+Lemma preordered_set_le_refl : forall {A:Type} (a : (A->Prop)),
+  preordered_set_le a a.
+Proof.
+  intros. constructor. intros. assumption.
+Qed.
 
 Lemma preordered_set_le_trans : forall {A:Type} (x y z : (A->Prop)),
   preordered_set_le x y -> preordered_set_le y z -> preordered_set_le x z.
@@ -46,3 +51,33 @@ Instance types_to_prop : forall (A : Type), PreorderedSet (A -> Prop) :=
 }.
 Arguments types_to_prop {A}.
 
+Inductive pointwise_ordering {A A':Type} `{PreorderedSet A'} : 
+  (A->A') -> (A->A') -> Prop :=
+  | pointwise : forall (f1 f2 : (A->A')),
+      (forall x, preorder (f1 x) (f2 x)) -> pointwise_ordering f1 f2.
+      
+Lemma pointwise_ordering_refl : 
+  forall {A A':Type} `{PreorderedSet A'} (f : A -> A'),
+  pointwise_ordering f f.
+Proof. 
+  intros A H f. constructor. intro x. apply preorder_refl.
+Qed.
+
+Lemma pointwise_ordering_trans : forall {A A': Type} `{PreorderedSet A'} 
+  (f1 f2 f3 : A -> A'),
+  pointwise_ordering f1 f2 -> pointwise_ordering f2 f3 -> 
+  pointwise_ordering f1 f3.
+Proof.
+  intros A A' H f1 f2 f3. constructor. 
+  inversion H0; subst; clear H0.
+  inversion H1; subst; clear H1.
+  intro x. apply preorder_trans with (y:=(f2 x)); auto.
+Qed.
+
+Instance preordered_function_spaces : forall (A A' : Type), 
+  PreorderedSet A' -> PreorderedSet (A->A')
+:= {
+  preorder := pointwise_ordering;
+  preorder_refl := pointwise_ordering_refl;
+  preorder_trans := pointwise_ordering_trans;
+}. 
