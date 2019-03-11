@@ -165,7 +165,7 @@ Instance galois_boolean : Galois bool abstr_bool :=
 
 Definition sound {A B A' B' : Type} 
   `{Galois A B} `{Galois A' B'}
-  (f : A->A) (f' : B->B) :=
+  (f : A->A') (f' : B->B') :=
   forall b a, gamma b a -> gamma (f' b) (f a).
 
 Definition sound2 {A B : Type} `{Galois A B} (f :A -> A -> A) (f' : B-> B -> B) :=
