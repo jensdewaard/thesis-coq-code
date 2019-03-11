@@ -22,7 +22,7 @@ Inductive com : Type :=
 Bind Scope com_scope with com.
 Notation "'SKIP'" :=
      CSkip : com_scope.
-Notation "c1 ;; c2" :=
+Notation "c1 ;c; c2" :=
     (CSeq c1 c2) (at level 80, right associativity) : com_scope.
 Notation "x '::=' a" :=
     (CAss x a) (at level 60) : com_scope.
