@@ -2,39 +2,54 @@ Require Import Coq.Arith.Arith.
 
 Require Import Language.
 Require Import Maps.
+Require Import Monad.
 
 Definition state := total_map nat.
 
 Open Scope com_scope.
 
-Fixpoint eval_aexp (st : state) (e : aexp) : nat := 
+Fixpoint eval_aexp (e : aexp) : State nat := 
   match e with
-  | ANum n => n
-  | AVar x => st x
-  | APlus e1 e2 => eval_aexp st e1 + eval_aexp st e2
-  | AMult e1 e2 => eval_aexp st e1 * eval_aexp st e2
+  | ANum n => return_state n
+  | AVar x => bind_state get (fun st => return_state (st x))
+  | APlus e1 e2 => 
+      bind_state (eval_aexp e1) 
+        (fun n1 => bind_state (eval_aexp e2) 
+          (fun n2 => return_state (n1 + n2)))
+  | AMult e1 e2 => 
+      bind_state (eval_aexp e2)
+        (fun n1 => bind_state (eval_aexp e2)
+          (fun n2 => return_state (n1 * n2)))
   end.
 
-Fixpoint eval_bexp (st : state) (e : bexp) : bool :=
+Fixpoint eval_bexp (e : bexp) : State bool :=
   match e with
-  | BTrue => true
-  | BFalse => false
-  | BEq a1 a2 => Nat.eqb (eval_aexp st a1) (eval_aexp st a2)
-  | BLe a1 a2 => Nat.leb (eval_aexp st a1) (eval_aexp st a2)
-  | BNot b => negb (eval_bexp st b)
-  | BAnd b1 b2 => andb (eval_bexp st b1) (eval_bexp st b2)
+  | BTrue => return_state true
+  | BFalse => return_state false
+  | BEq a1 a2 =>
+      bind_state (eval_aexp a1)
+        (fun n1 => bind_state (eval_aexp a2)
+          (fun n2 => return_state (Nat.eqb n1 n2)))
+  | BLe a1 a2 =>
+      bind_state (eval_aexp a2)
+        (fun n1 => bind_state (eval_aexp a2)
+          (fun n2 => return_state (Nat.leb n1 n2)))
+  | BNot b => 
+      bind_state (eval_bexp b) (fun b => return_state (negb b))
+  | BAnd b1 b2 =>
+      bind_state (eval_bexp b1) 
+        (fun b1 => bind_state (eval_bexp b2)
+          (fun b2 => return_state (andb b1 b2)))
   end.
 
 Definition eval_if (b : bool) (st1 st2 : state) : state :=
   if b then st1 else st2.
 
-Fixpoint ceval (st : state) (c : com) : state :=
+Fixpoint ceval (c : com) : State unit :=
   match c with
-  | CSkip => st
+  | CSkip => return_state tt
   | c1 ;; c2 => 
-      let st' := ceval st c1 in
-      ceval st' c2
-  | x ::= a => t_update st x (eval_aexp st a)
-  | CIf b c1 c2 =>
-     eval_if (eval_bexp st b) (ceval st c1) (ceval st c2)
+      bind_state (ceval c1) (fun _ => ceval c2)
+  | x ::= a => bind_state (eval_aexp a) (fun (n : nat) => 
+      bind_state get (fun st => put (t_update st x n)))
   end.

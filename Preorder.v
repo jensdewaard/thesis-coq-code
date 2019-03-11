@@ -81,3 +81,11 @@ Instance preordered_function_spaces : forall (A A' : Type),
   preorder_refl := pointwise_ordering_refl;
   preorder_trans := pointwise_ordering_trans;
 }. 
+
+Lemma preorder_props : forall {X : Type} (P Q : X -> Prop) (x : X),
+  preorder P Q -> P x -> Q x.
+Proof. 
+  intros. simpl in H. destruct H. apply H. apply H0.
+Qed.
+
+

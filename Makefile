@@ -19,7 +19,7 @@ doc_dir:
 clean: 
 	rm -fr *.html *.vo *.glob doc/
 
-Soundness.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo Soundness.v Preorder.vo
+Soundness.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo Soundness.v Preorder.vo Galois.vo
 	$(COQC) $(COQOPT) Soundness.v
 
 Parity.vo: Parity.v Aux.vo AbstractBool.vo Preorder.vo
@@ -28,10 +28,10 @@ Parity.vo: Parity.v Aux.vo AbstractBool.vo Preorder.vo
 Preorder.vo: Preorder.v
 	$(COQC) $(COQOPT) Preorder.v
 
-ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo 
+ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo  Monad.vo
 	$(COQC) $(COQOPT) ConcreteInterpreter.v
 
-AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo
+AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo Monad.vo
 	$(COQC) $(COQOPT) AbstractInterpreter.v
 
 AbstractBool.vo: AbstractBool.v Preorder.vo
@@ -42,6 +42,9 @@ AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo AbstractBool.vo
 
 Monad.vo: Monad.v AbstractStore.vo
 	$(COQC) $(COQOPT) Monad.v
+
+Galois.vo: Galois.v Preorder.vo
+	$(COQC) $(COQOPT) Galois.v
 
 %.vo : %.v
 	$(COQC) $(COQOPT) $<

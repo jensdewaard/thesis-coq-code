@@ -3,38 +3,43 @@ Require Import AbstractBool.
 Require Import ConcreteInterpreter.
 Require Import Language.
 Require Import Maps.
+Require Import Monad.
 Require Import Parity.
 
 Open Scope com_scope.
 
-Fixpoint abstract_eval_aexp (st : abstract_store) (e : aexp) : parity :=
+Fixpoint abstract_eval_aexp (e : aexp) : State parity :=
   match e with 
-  | ANum n => extract_par n
-  | AVar x => (st x)
+  | ANum n => return_state (extract_par n)
+  | AVar x => 
+      bind_state get (fun st => return_state (st x))
   | APlus p1 p2 => 
-      parity_plus (abstract_eval_aexp st p1) (abstract_eval_aexp st p2)
+      bind_state (abstract_eval_aexp p1)
+        (fun n1 => bind_state (abstract_eval_aexp p2)
+          (fun n2 => return_state (parity_plus n1 n2)))
   | AMult p1 p2 =>
-      parity_mult (abstract_eval_aexp st p1) (abstract_eval_aexp st p2)
+      bind_state (abstract_eval_aexp p1)
+        (fun n1 => bind_state (abstract_eval_aexp p2)
+          (fun n2 => return_state (parity_mult n1 n2)))
   end.
 
-Definition sound_aexp (e : aexp) := forall ast st,
-  sound_store ast st -> 
-  sound_par (abstract_eval_aexp ast e) (eval_aexp st e).
-
-Fixpoint beval_abstract (st : abstract_store) (b : bexp) : abstr_bool :=
+Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
   match b with
-  | BFalse => ab_false
-  | BTrue => ab_true
+  | BFalse => return_state (ab_false)
+  | BTrue => return_state (ab_true)
   | BEq e1 e2 => 
-      parity_eq (abstract_eval_aexp st e1) (abstract_eval_aexp st e2)
-  | BLe e1 e2=> ab_top
-  | BNot b => neg_ab (beval_abstract st b)
-  | BAnd b1 b2 => and_ab (beval_abstract st b1) (beval_abstract st b2)
+      bind_state (abstract_eval_aexp e1)
+        (fun n1 => bind_state (abstract_eval_aexp e2)
+          (fun n2 => return_state (parity_eq n1 n2)))
+  | BLe e1 e2=> return_state ab_top
+  | BNot b => 
+      bind_state (beval_abstract b)
+        (fun b => return_state (neg_ab b))
+  | BAnd b1 b2 => 
+      bind_state (beval_abstract b1)
+        (fun b1' => bind_state (beval_abstract b2)
+          (fun b2' => return_state (and_ab b1' b2')))
   end.
-
-Definition sound_bexp (b : bexp) := forall ast st,
-  sound_store ast st ->
-  sound_ab (beval_abstract ast b) (eval_bexp st b).
 
 Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) : abstract_store :=
   match b with
@@ -44,18 +49,16 @@ Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) : abstra
   | ab_bottom => abstract_store_bottom
   end.
 
-Fixpoint ceval_abstract (st : abstract_store) (c : com) : abstract_store :=
+Fixpoint ceval_abstract (c : com) : State unit :=
   match c with
-  | CSkip => st
+  | CSkip => return_state tt
   | c1 ;; c2 =>
-      let st' := ceval_abstract st c1 in
-      ceval_abstract st' c2
-  | x ::= a => t_update st x (abstract_eval_aexp st a)
-  | CIf b c1 c2 =>
-     eval_if_abstract (beval_abstract st b) (ceval_abstract st c1) (ceval_abstract st c2)
+      bind_state (ceval_abstract c1)
+        (fun _ => ceval_abstract c2)
+  | x ::= a => 
+      bind_state (abstract_eval_aexp a)
+        (fun n => bind_state get 
+          (fun st => put (t_update st x n)))
   end.
 
-Definition sound_com (c : com) := forall ast st,
-  sound_store ast st -> 
-  sound_store (ceval_abstract ast c) (ceval st c).
 

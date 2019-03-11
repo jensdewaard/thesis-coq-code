@@ -17,8 +17,7 @@ Inductive bexp : Type :=
 Inductive com : Type :=
   | CSkip : com
   | CSeq : com -> com -> com
-  | CAss : string -> aexp -> com
-  | CIf : bexp -> com -> com -> com.
+  | CAss : string -> aexp -> com.
 
 Bind Scope com_scope with com.
 Notation "'SKIP'" :=
