@@ -40,5 +40,8 @@ AbstractBool.vo: AbstractBool.v Preorder.vo
 AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo AbstractBool.vo
 	$(COQC) $(COQOPT) AbstractStore.v
 
+Monad.vo: Monad.v AbstractStore.vo
+	$(COQC) $(COQOPT) Monad.v
+
 %.vo : %.v
 	$(COQC) $(COQOPT) $<
