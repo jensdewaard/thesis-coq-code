@@ -43,7 +43,7 @@ AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo AbstractBool.vo
 Monad.vo: Monad.v AbstractStore.vo
 	$(COQC) $(COQOPT) Monad.v
 
-Galois.vo: Galois.v Preorder.vo
+Galois.vo: Galois.v Preorder.vo Parity.vo AbstractBool.vo
 	$(COQC) $(COQOPT) Galois.v
 
 %.vo : %.v

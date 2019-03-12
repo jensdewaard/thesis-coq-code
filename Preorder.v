@@ -82,6 +82,14 @@ Instance preordered_function_spaces : forall (A A' : Type),
   preorder_trans := pointwise_ordering_trans;
 }. 
 
+Instance preorder_endofunction : forall A,
+  PreorderedSet A -> PreorderedSet (A->A)
+:= {
+  preorder := pointwise_ordering;
+  preorder_refl := pointwise_ordering_refl;
+  preorder_trans := pointwise_ordering_trans;
+}.
+
 Lemma preorder_props : forall {X : Type} (P Q : X -> Prop) (x : X),
   preorder P Q -> P x -> Q x.
 Proof. 

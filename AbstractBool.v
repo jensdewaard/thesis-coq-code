@@ -50,7 +50,6 @@ Proof.
     try inversion H0; try inversion H; try tauto. 
 Qed.
 
-Definition sound_ab (ab: abstr_bool) (b: bool) := gamma_bool ab b.
 
 (** * Operations *)
 
@@ -84,9 +83,9 @@ Lemma and_ab_assoc : forall b1 b2 b3,
 Proof. destruct b1, b2, b3; reflexivity. Qed.
 
 Lemma and_ab_sound : forall ab1 ab2 b1 b2,
-  sound_ab ab1 b1 ->
-  sound_ab ab2 b2 ->
-  sound_ab (and_ab ab1 ab2) (andb b1 b2).
+  gamma_bool ab1 b1 ->
+  gamma_bool ab2 b2 ->
+  gamma_bool (and_ab ab1 ab2) (andb b1 b2).
 Proof. destruct ab1, b1, ab2, b2; simpl; tauto. Qed.
 
 (** ** Or *)
@@ -114,9 +113,9 @@ Lemma or_ab_assoc : forall b1 b2 b3,
 Proof. intros. destruct b1, b2, b3; reflexivity. Qed.
 
 Lemma or_ab_sound : forall ab1 ab2 b1 b2,
-  sound_ab ab1 b1 ->
-  sound_ab ab2 b2 ->
-  sound_ab (or_ab ab1 ab2) (orb b1 b2).
+  gamma_bool ab1 b1 ->
+  gamma_bool ab2 b2 ->
+  gamma_bool (or_ab ab1 ab2) (orb b1 b2).
 Proof. destruct ab1, b1, ab2, b2; simpl; tauto. Qed.
 
 (** ** Negation *)
@@ -134,8 +133,8 @@ Lemma neg_ab_injective : forall ab1 ab2, neg_ab ab1 = neg_ab ab2 -> ab1 = ab2.
 Proof. intros. destruct ab1, ab2; try reflexivity; try inversion H. Qed.
 
 Lemma neg_ab_sound : forall ab b,
-  sound_ab ab b ->
-  sound_ab (neg_ab ab) (negb b).
+  gamma_bool ab b ->
+  gamma_bool (neg_ab ab) (negb b).
 Proof. destruct ab, b; simpl; tauto. Qed.
 
 (** ** Join *)

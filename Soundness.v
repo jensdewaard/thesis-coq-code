@@ -14,56 +14,56 @@ Require Import Parity.
 Require Import Preorder.
 Open Scope com_scope.
 
-Instance galois_parity_nat : Galois nat parity :=
-{
-  gamma := gamma_par;
-  gamma_monotone := gamma_par_monotone;
-}.
-
-Instance galois_boolean : Galois bool abstr_bool :=
-{
-  gamma := gamma_bool;
-  gamma_monotone := gamma_bool_monotone;
-}.
-
 Definition sound {A B A' B' : Type} 
   `{Galois A B} `{Galois A' B'}
   (f : A->A') (f' : B->B') :=
   forall b a, gamma b a -> gamma (f' b) (f a).
 
-Definition sound2 {A B : Type} `{Galois A B} (f :A -> A -> A) (f' : B-> B -> B) :=
-  forall a1 a2 b1 b2 , gamma b1 a1 -> gamma b2 a2 -> gamma (f' b1 b2) (f a1 a2). 
-
-Theorem sound_parity_plus :
-  sound2 plus parity_plus.
+Lemma sound_parity_plus :
+  sound plus parity_plus.
 Proof.
-  unfold sound2; intros. apply parity_plus_sound; assumption.
+  unfold sound. simpl. unfold gamma_fun; intros. simpl. 
+  destruct b, b0; simpl in *; try tauto;
+  auto using even_even_plus, odd_plus_r, odd_plus_l, odd_even_plus.
 Qed.
 
-Lemma widen {A A' B:Type} `{Galois B A'}:
-  forall (f1 f2 : A->A') (x:A) (a:B),
-  pointwise_ordering f1 f2 -> gamma (f1 x) a -> gamma (f2 x) a.
+Lemma sound_parity_mult :
+  sound mult parity_mult.
 Proof. 
-  intros. 
-  apply preorder_props with (P:=(gamma (f1 x))) 
-    (Q:=(gamma (f2 x))). 
-    - apply gamma_monotone. destruct H2. apply H2.
-    - apply H3.
+  unfold sound. simpl. unfold gamma_fun. intros. simpl.
+  destruct b, b0; simpl in *; try tauto; 
+  auto using even_mult_l, even_mult_r, odd_mult.
 Qed.
 
-Definition gamma_fun {A A' B B' : Type} `{Galois B A} `{Galois B' A'} : 
-  (A->A') -> (B -> B') -> Prop :=
-  fun f' f => forall b a, gamma b a -> gamma (f' b) (f a).
+Lemma sound_parity_eq :
+  sound Nat.eqb parity_eq.
+Proof.
+  unfold sound. simpl. unfold gamma_fun. intros.
+  destruct b, b0; simpl in *; try tauto; unfold not; intros.
+  - apply Bool.Is_true_eq_true in H1. apply Nat.eqb_eq in H1. subst.
+    eauto using not_even_and_odd. 
+  - apply Bool.Is_true_eq_true in H1. apply Nat.eqb_eq in H1. subst.
+    eauto using not_even_and_odd.
+Qed.
 
-Instance GFun {A A' B B' : Type}
-  `{PreorderedSet A} `{PreorderedSet A'}
-  `{PreorderedSet B} `{PreorderedSet B'}
-  : 
-  Galois B A -> Galois B' A' -> Galois (B -> B') (A->A') :=
-{
-  gamma := gamma_fun;
-}.
-intros f f'. simpl. constructor. intros f_b. destruct H3. 
-intros. unfold gamma_fun in *. intros. 
-eapply widen with (f3:=f1). constructor. apply H3. apply H4. apply H5.
-Defined.
+Lemma sound_ab_and :
+  sound andb and_ab.
+Proof. 
+  unfold sound. simpl. unfold gamma_fun. intros.
+  destruct b, b0, a, a0; simpl in *; tauto.
+Qed.
+
+Lemma sound_ab_or :
+  sound orb or_ab.
+Proof.
+  unfold sound. simpl. unfold gamma_fun. intros.
+  destruct b, b0, a, a0; simpl in *; tauto.
+Qed.
+
+Lemma sound_ab_neg :
+  sound negb neg_ab.
+Proof.
+  unfold sound. simpl. unfold gamma_fun. intros.
+  destruct b, a; simpl in *; tauto.
+Qed.
+

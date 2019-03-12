@@ -62,8 +62,6 @@ Proof.
     intros; try tauto.
 Qed.
 
-Definition sound_par (p : parity) (n : nat) := gamma_par p n.
-
 (** ** Operations *)
 
 (** *** Plus *)
@@ -258,24 +256,6 @@ Proof.
   - inversion H.
 Qed.
 
-Lemma parity_plus_sound : forall p1 p2 n1 n2,
-  sound_par p1 n1 ->
-  sound_par p2 n2 ->
-  sound_par (parity_plus p1 p2) (n1 + n2).
-Proof.
-  destruct p1, p2; simpl; try tauto;
-    eauto using odd_even_plus, even_even_plus, odd_plus_l, odd_plus_r.
-Qed.
-
-Lemma parity_mult_sound: forall p1 p2 n1 n2,
-  sound_par p1 n1 ->
-  sound_par p2 n2 ->
-  sound_par (parity_mult p1 p2) (n1 * n2).
-Proof.
-  destruct p1, p2; simpl; try tauto;
-    eauto using even_mult_l, even_mult_r, odd_mult.
-Qed.
-
 (** Equality *)
 Definition parity_eq (p1 p2 : parity) : abstr_bool :=
   match p1, p2 with
@@ -285,18 +265,6 @@ Definition parity_eq (p1 p2 : parity) : abstr_bool :=
   | _, _ => ab_top
   end.
 
-Lemma Is_true_eqb n1 n2 : Bool.Is_true (Nat.eqb n1 n2) <-> n1 = n2.
-Admitted.
-
-Lemma parity_eq_sound : forall p1 p2 n1 n2,
-  gamma_par p1 n1 ->
-  gamma_par p2 n2 -> 
-  gamma_bool (parity_eq p1 p2) (Nat.eqb n1 n2).
-Proof.
-  destruct p1, p2; simpl; try tauto.
-  - intros n1 n2 ?? ->%Is_true_eqb. eauto using not_even_and_odd.
-  - intros n1 n2 ?? ->%Is_true_eqb. eauto using not_even_and_odd.
-Qed.
 
 (** ** Join *)
 Definition parity_join (p1 p2 : parity) : parity :=

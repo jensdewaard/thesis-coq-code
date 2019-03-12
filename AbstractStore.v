@@ -17,12 +17,12 @@ Definition abstract_store_join
 
 Lemma t_update_sound : forall ast st x p n,
   sound_store ast st ->
-  sound_par p n ->
+  gamma_par p n ->
   sound_store (t_update ast x p) (t_update st x n).
 Proof. 
   intros. unfold sound_store.  intros. unfold t_update. 
   destruct (beq_string x x0). 
-  - unfold sound_par in H0. assumption.
+  - assumption.
   - unfold sound_store in H. apply H.
 Qed.
 
