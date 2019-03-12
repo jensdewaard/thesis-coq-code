@@ -47,7 +47,7 @@ Fixpoint eval_bexp (e : bexp) : State bool :=
       return_state (andb b1' b2')
   end.
 
-Definition eval_if (b : bool) (st1 st2 : state) : state :=
+Definition eval_if {S A} (b : bool) (st1 st2 : @State S A) : @State S A :=
   if b then st1 else st2.
 
 Fixpoint ceval (c : com) : State unit :=
@@ -59,5 +59,7 @@ Fixpoint ceval (c : com) : State unit :=
       n << (eval_aexp a) ;
       st << get ;
       put (t_update st x n)
-  | CIf b c1 c2 => fail
+  | CIf b c1 c2 => 
+      b' << (eval_bexp b) ;
+      eval_if b' (ceval c1) (ceval c2)
   end.

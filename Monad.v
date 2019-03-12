@@ -19,7 +19,7 @@ Definition get {S : Type} : State S := fun st => Some (st, st).
 Definition put {S : Type} (st' : S) : @State S unit := 
   fun st => Some (tt, st').
 
-Definition fail {S : Type} : @State S unit :=
+Definition fail {S A : Type} : @State S A :=
   fun st => None.
 
  

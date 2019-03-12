@@ -42,14 +42,15 @@ Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
       returnM (and_ab b1' b2')
   end.
 
-Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) 
-  : abstract_store :=
+Definition eval_if_abstract {S A} (b : abstr_bool) (st1 st2 : @State S A) 
+  : @State S A :=
   match b with
   | ab_true   => st1
   | ab_false  => st2
-  | ab_top    => abstract_store_join st1 st2
-  | ab_bottom => abstract_store_bottom
+  | ab_top    => fail
+  | ab_bottom => fail
   end.
+
 
 Fixpoint ceval_abstract (c : com) : State unit :=
   match c with
@@ -60,7 +61,9 @@ Fixpoint ceval_abstract (c : com) : State unit :=
       p << (abstract_eval_aexp a) ;
       st << get ;
       put (t_update st x p)
-  | CIf b c1 c2 => fail
+  | CIf b c1 c2 => 
+      b' << (beval_abstract b) ;
+      eval_if_abstract b' (ceval_abstract c1) (ceval_abstract c2)
   end.
 
 
