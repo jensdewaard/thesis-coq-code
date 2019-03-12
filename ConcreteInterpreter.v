@@ -4,6 +4,7 @@ Require Import Utf8.
 Require Import Language.
 Require Import Maps.
 Require Import Monad.
+Require Import AbstractStore.
 
 Definition state := total_map nat.
 
@@ -11,18 +12,18 @@ Open Scope com_scope.
 
 Fixpoint eval_aexp (e : aexp) : State nat := 
   match e with
-  | ANum n => return_state n
+  | ANum n => returnM n
   | AVar x => 
       st << get ;
-      return_state (st x)
+      returnM (st x)
   | APlus e1 e2 => 
       n1 << (eval_aexp e1) ;
       n2 << (eval_aexp e2) ;
-      return_state (n1 + n2)
+      returnM (n1 + n2)
   | AMult e1 e2 => 
       n1 << (eval_aexp e1) ;
       n2 << (eval_aexp e2) ;
-      return_state (n1 + n2)
+      returnM (n1 + n2)
   end.
 
 Fixpoint eval_bexp (e : bexp) : State bool :=

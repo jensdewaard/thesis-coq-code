@@ -1,4 +1,5 @@
 Require Import Utf8.
+Require Import AbstractStore.
 
 Definition State {S : Type} (A : Type) := S -> (A * S)%type.
 
@@ -18,16 +19,17 @@ Class Monad (M : Type -> Type) : Type :=
   returnM : forall A, A -> M A;
   bind : forall A B, M A  -> (A -> M B) -> M B;
 }.
+Arguments Build_Monad {_ _ _}.
+Arguments returnM {_ _ _}.
+Arguments bind {_ _ _ _}.
 
-Instance state_monad {S : Type} : Monad (@State S) := 
-{
+Instance state_monad {S : Type} : Monad (@State S) := {
   returnM := (@return_state S);
   bind := (@bind_state S);
 }.
 
-
-Notation "x '<<' y ; z" := (bind_state y (fun x => z))
+Notation "x '<<' y ; z" := (bind y (fun x => z))
   (at level 20, y at level 100, z at level 200, only parsing).
 
-Notation "x ;; z" := (bind_state x (fun _ => z))
+Notation "x ;; z" := (bind x (fun _ => z))
     (at level 100, z at level 200, only parsing, right associativity).

@@ -10,36 +10,36 @@ Open Scope com_scope.
 
 Fixpoint abstract_eval_aexp (e : aexp) : State parity :=
   match e with 
-  | ANum n => return_state (extract_par n)
+  | ANum n => returnM (extract_par n)
   | AVar x =>
       st << get ;
-      return_state (st x)
+      returnM (st x)
   | APlus p1 p2 => 
       p1' << (abstract_eval_aexp p1) ;
       p2' << (abstract_eval_aexp p2) ;
-      return_state (parity_plus p1' p2')
+      returnM (parity_plus p1' p2')
   | AMult p1 p2 =>
       p1' << (abstract_eval_aexp p1) ;
       p2' << (abstract_eval_aexp p2) ;
-      return_state (parity_mult p1' p2')
+      returnM (parity_mult p1' p2')
   end.
 
 Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
   match b with
-  | BFalse => return_state (ab_false)
-  | BTrue => return_state (ab_true)
+  | BFalse => returnM (ab_false)
+  | BTrue => returnM (ab_true)
   | BEq e1 e2 => 
       e1' << (abstract_eval_aexp e1) ;
       e2' << (abstract_eval_aexp e2) ;
-      return_state (parity_eq e1' e2')
+      returnM (parity_eq e1' e2')
   | BLe e1 e2=> return_state ab_top
   | BNot b => 
       b' << (beval_abstract b) ;
-      return_state (neg_ab b')
+      returnM (neg_ab b')
   | BAnd b1 b2 =>
       b1' << (beval_abstract b1) ;
       b2' << (beval_abstract b2) ;
-      return_state (and_ab b1' b2')
+      returnM (and_ab b1' b2')
   end.
 
 Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) : abstract_store :=
