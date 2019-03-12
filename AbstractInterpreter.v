@@ -60,6 +60,7 @@ Fixpoint ceval_abstract (c : com) : State unit :=
       p << (abstract_eval_aexp a) ;
       st << get ;
       put (t_update st x p)
+  | CIf b c1 c2 => fail
   end.
 
 

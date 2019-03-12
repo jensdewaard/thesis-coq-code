@@ -59,4 +59,5 @@ Fixpoint ceval (c : com) : State unit :=
       n << (eval_aexp a) ;
       st << get ;
       put (t_update st x n)
+  | CIf b c1 c2 => fail
   end.
