@@ -2,8 +2,8 @@
 SOURCES=$(wildcard *.v)
 OBJECTS=$(patsubst %.v,%.vo,$(SOURCES))
 GLOBS=$(patsubst %.v,%.glob,$(SOURCES))
-COQC=/usr/local/bin/coqc
-COQDOC=/usr/local/bin/coqdoc
+COQC=$(shell which coqc)
+COQDOC=$(shell which coqdoc)
 COQOPT=-R . Thesis
 
 .PHONY: all html clean

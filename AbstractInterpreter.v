@@ -42,7 +42,8 @@ Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
       returnM (and_ab b1' b2')
   end.
 
-Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) : abstract_store :=
+Definition eval_if_abstract (b : abstr_bool) (st1 st2 : abstract_store) 
+  : abstract_store :=
   match b with
   | ab_true   => st1
   | ab_false  => st2

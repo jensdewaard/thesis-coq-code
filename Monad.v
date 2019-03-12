@@ -1,18 +1,24 @@
 Require Import Utf8.
 Require Import AbstractStore.
 
-Definition State {S : Type} (A : Type) := S -> (A * S)%type.
+
+Definition State {S : Type} (A : Type) := S -> option (A * S)%type.
 
 Definition return_state {S A : Type} (x : A) : State A :=
-  fun (st : S) => (x, st).
+  fun (st : S) => Some (x, st).
 
 Definition bind_state {S A B : Type} (m : @State S A) (f : A -> @State S B) 
     : State B :=
-  fun st => let (x, st') := (m st) in f x st'.
+  fun st => match m st with
+            | Some (x, st') => f x st'
+            | None => None
+            end.
 
-Definition get {S : Type} : State S := fun st => (st, st).
+Definition get {S : Type} : State S := fun st => Some (st, st).
 
-Definition put {S : Type} (st' : S) : @State S unit := fun st => (tt, st').
+Definition put {S : Type} (st' : S) : @State S unit := 
+  fun st => Some (tt, st').
+
  
 Class Monad (M : Type -> Type) : Type :=
 {
