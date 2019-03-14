@@ -51,7 +51,6 @@ Definition eval_if_abstract {S A} (b : abstr_bool) (st1 st2 : @State S A)
   | ab_bottom => fail
   end.
 
-
 Fixpoint ceval_abstract (c : com) : State unit :=
   match c with
   | CSkip => return_state tt
@@ -64,6 +63,7 @@ Fixpoint ceval_abstract (c : com) : State unit :=
   | CIf b c1 c2 => 
       b' << (beval_abstract b) ;
       eval_if_abstract b' (ceval_abstract c1) (ceval_abstract c2)
+  | try c1 catch c2 => eval_catch (ceval_abstract c1) (ceval_abstract c2)
   end.
 
 
