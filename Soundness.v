@@ -19,9 +19,10 @@ Definition sound {A B A' B' : Type}
   (f : A->A') (f' : B->B') :=
   forall b a, gamma b a -> gamma (f' b) (f a).
 
+
 Lemma sound_parity_plus :
-  sound plus parity_plus.
-Proof.
+  (gamma parity_plus) plus.
+Proof. intros ? ? ? ? ? ?.
   unfold sound. simpl. unfold gamma_fun; intros. simpl. 
   destruct b, b0; simpl in *; try tauto;
   auto using even_even_plus, odd_plus_r, odd_plus_l, odd_even_plus.

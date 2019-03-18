@@ -73,4 +73,5 @@ Fixpoint ceval (c : com) : State unit :=
       b' << (eval_bexp b) ;
       eval_if b' (ceval c1) (ceval c2)
   | try c1 catch c2 => eval_catch (ceval c1) (ceval c2)
+  | CFail => fail
   end.

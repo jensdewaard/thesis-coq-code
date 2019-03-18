@@ -64,6 +64,23 @@ Fixpoint ceval_abstract (c : com) : State unit :=
       b' << (beval_abstract b) ;
       eval_if_abstract b' (ceval_abstract c1) (ceval_abstract c2)
   | try c1 catch c2 => eval_catch (ceval_abstract c1) (ceval_abstract c2)
+  | CFail => fail
   end.
 
+(* write a project plan not a thesis 
+  
+technical plan:
+  extract shared interpreter
+  define lemmas
+  rewrite operations on datatypes as monads
 
+writing plan:
+  project plan <----
+  document what is done
+  mention precision vs. soundness
+  sense of direction
+  presentation
+
+case study:
+  taint analysis
+  *)

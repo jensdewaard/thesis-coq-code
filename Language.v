@@ -19,7 +19,8 @@ Inductive com : Type :=
   | CSeq : com -> com -> com
   | CAss : string -> aexp -> com
   | CIf  : bexp -> com -> com -> com
-  | CTryCatch : com -> com -> com.
+  | CTryCatch : com -> com -> com
+  | CFail : com.
 
 Bind Scope com_scope with com.
 Notation "'SKIP'" :=
