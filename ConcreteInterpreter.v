@@ -6,11 +6,9 @@ Require Import Maps.
 Require Import Monad.
 Require Import AbstractStore.
 
-Definition state := total_map nat.
-
 Open Scope com_scope.
 
-Fixpoint eval_aexp (e : aexp) : State nat := 
+Fixpoint eval_aexp (e : aexp) : State store nat := 
   match e with
   | ANum n => returnM n
   | AVar x => 
@@ -26,33 +24,29 @@ Fixpoint eval_aexp (e : aexp) : State nat :=
       returnM (n1 + n2)
   end.
 
-Fixpoint eval_bexp (e : bexp) : State bool :=
+Fixpoint eval_bexp (e : bexp) : State store bool :=
   match e with
-  | BTrue => return_state true
-  | BFalse => return_state false
+  | BTrue => returnM true
+  | BFalse => returnM false
   | BEq a1 a2 =>
       n1 << (eval_aexp a1) ;
       n2 << (eval_aexp a2) ;
-      return_state (Nat.eqb n1 n2)
+      returnM (Nat.eqb n1 n2)
   | BLe a1 a2 =>
       n1 << (eval_aexp a1) ;
       n2 << (eval_aexp a2) ;
-      return_state (Nat.leb n1 n2)
+      returnM (Nat.leb n1 n2)
   | BNot b => 
       b' << (eval_bexp b) ;
-      return_state (negb b')
+      returnM (negb b')
   | BAnd b1 b2 =>
       b1' << (eval_bexp b1) ;
       b2' << (eval_bexp b2) ;
-      return_state (andb b1' b2')
+      returnM (andb b1' b2')
   end.
 
 Definition eval_if {S A} (b : bool) (st1 st2 : @State S A) : @State S A :=
   if b then st1 else st2.
-
-Print fail.
-Print State.
-
 
 Definition eval_catch {S A} (st1 st2 : @State S A) : @State S A :=
   fun st => match (st1 st) with
@@ -60,9 +54,9 @@ Definition eval_catch {S A} (st1 st2 : @State S A) : @State S A :=
   | _ => (st1 st)
   end.
 
-Fixpoint ceval (c : com) : State unit :=
+Fixpoint ceval (c : com) : State store unit :=
   match c with
-  | CSkip => return_state tt
+  | CSkip => returnM tt
   | c1 ;c; c2 => 
       (ceval c1) ;; (ceval c2)
   | x ::= a => 

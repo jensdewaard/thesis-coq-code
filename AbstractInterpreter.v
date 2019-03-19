@@ -8,7 +8,7 @@ Require Import Parity.
 
 Open Scope com_scope.
 
-Fixpoint abstract_eval_aexp (e : aexp) : State parity :=
+Fixpoint abstract_eval_aexp (e : aexp) : State abstract_store parity :=
   match e with 
   | ANum n => returnM (extract_par n)
   | AVar x =>
@@ -24,7 +24,7 @@ Fixpoint abstract_eval_aexp (e : aexp) : State parity :=
       returnM (parity_mult p1' p2')
   end.
 
-Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
+Fixpoint beval_abstract (b : bexp) : State abstract_store abstr_bool :=
   match b with
   | BFalse => returnM (ab_false)
   | BTrue => returnM (ab_true)
@@ -32,7 +32,7 @@ Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
       e1' << (abstract_eval_aexp e1) ;
       e2' << (abstract_eval_aexp e2) ;
       returnM (parity_eq e1' e2')
-  | BLe e1 e2=> return_state ab_top
+  | BLe e1 e2=> returnM ab_top
   | BNot b => 
       b' << (beval_abstract b) ;
       returnM (neg_ab b')
@@ -42,8 +42,8 @@ Fixpoint beval_abstract (b : bexp) : State abstr_bool :=
       returnM (and_ab b1' b2')
   end.
 
-Definition eval_if_abstract {S A} (b : abstr_bool) (st1 st2 : @State S A) 
-  : @State S A :=
+Definition eval_if_abstract {S A} (b : abstr_bool) (st1 st2 : State S A) 
+  : State S A :=
   match b with
   | ab_true   => st1
   | ab_false  => st2
@@ -51,9 +51,9 @@ Definition eval_if_abstract {S A} (b : abstr_bool) (st1 st2 : @State S A)
   | ab_bottom => fail
   end.
 
-Fixpoint ceval_abstract (c : com) : State unit :=
+Fixpoint ceval_abstract (c : com) : State abstract_store unit :=
   match c with
-  | CSkip => return_state tt
+  | CSkip => returnM tt
   | c1 ;c; c2 =>
       (ceval_abstract c1) ;; (ceval_abstract c2)
   | x ::= a => 
