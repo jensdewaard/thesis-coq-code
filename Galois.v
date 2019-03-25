@@ -1,6 +1,8 @@
 Require Import AbstractBool.
+Require Import AbstractStore.
 Require Import Parity.
 Require Import Preorder.
+Require Import Monad.
 
 Record IsGalois {A B} (g : B -> A -> Prop)  
                       (e : A->B)
@@ -41,6 +43,29 @@ Definition gamma_fun {A A' B B' : Type} `{Galois B A} `{Galois B' A'} :
   (A->A') -> (B -> B') -> Prop :=
   fun f' f => forall b a, gamma b a -> gamma (f' b) (f a).
 
+Definition gamma_option {A B} `{Galois B A} :
+  option A -> option B -> Prop :=
+  fun oa => fun ob => match oa, ob with
+               | None, None => True
+               | None, Some b => True
+               | Some a, Some b => gamma a b
+               | Some a, None => False
+               end.
+               
+Compute gamma_option (Some par_even) (Some 2).
+
+Lemma gamma_option_monotone : 
+  forall oa ob, preorder oa ob -> preorder (gamma_option oa) (gamma_option ob).
+Proof.
+  simpl. intros. inversion H; subst.
+  - apply preordered_set_le_refl.
+  - simpl in *. unfold gamma_option. constructor. intros.
+    destruct x; reflexivity.
+  - unfold gamma_option. constructor. intros. destruct x.
+    + simpl. reflexivity.
+    + inversion H1.
+Qed.
+
 Lemma widen {A A' B:Type} `{Galois B A'}:
   forall (f1 f2 : A->A') (x:A) (a:B),
   pointwise_ordering f1 f2 -> gamma (f1 x) a -> gamma (f2 x) a.
@@ -64,3 +89,20 @@ intros f f'. simpl. constructor. intros f_b. destruct H3.
 intros. unfold gamma_fun in *. intros. 
 eapply widen with (f3:=f1). constructor. apply H3. apply H4. apply H5.
 Defined.
+
+Instance galois_store : Galois store abstract_store :=
+{
+  gamma := gamma_store;
+  gamma_monotone := gamma_store_monotone;
+}.
+
+Instance galois_state {S S' A A' : Type}
+  `{Galois S S'}
+  `{Galois A A'}
+  :
+  Galois S S' -> Galois A A' -> Galois (State S A) (State S' A').
+Proof. 
+  intros. apply GFun. assumption. 
+Admitted.
+  
+

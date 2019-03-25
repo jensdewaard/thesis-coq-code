@@ -1,5 +1,6 @@
 Require Import Maps.
 Require Import Parity.
+Require Import Preorder.
 
 Definition store := total_map nat.
 Definition abstract_store := total_map parity.
@@ -64,5 +65,13 @@ Proof.
   intros. rewrite parity_join_idem. reflexivity.
 Qed.
 
+Definition gamma_store : abstract_store -> store -> Prop :=
+  fun _ => fun st => True.
 
 
+Definition gamma_store_monotone :
+  forall st st', 
+  preorder st st' -> preorder (gamma_store st) (gamma_store st').
+Proof. 
+  intros. simpl. apply preordered_set_le_refl.
+Qed.

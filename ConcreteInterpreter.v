@@ -21,7 +21,7 @@ Fixpoint eval_aexp (e : aexp) : State store nat :=
   | AMult e1 e2 => 
       n1 << (eval_aexp e1) ;
       n2 << (eval_aexp e2) ;
-      returnM (n1 + n2)
+      returnM (n1 * n2)
   end.
 
 Fixpoint eval_bexp (e : bexp) : State store bool :=

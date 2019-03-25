@@ -96,4 +96,84 @@ Proof.
   intros. simpl in H. destruct H. apply H. apply H0.
 Qed.
 
+Inductive preordered_option_le {A : Type} 
+  `{PreorderedSet A} :
+  (option A) -> (option A) -> Prop :=
+  | pre_opt_refl : forall o, preordered_option_le o o
+  | pre_opt_none_some : forall (a : A), preordered_option_le (Some a) None
+  | pre_opt_some_some : forall (a a' : A), 
+      preorder a a' -> preordered_option_le (Some a) (Some a').
 
+Lemma preordered_option_le_trans 
+  {A} `{PreorderedSet A}
+  : forall (a b c : option A),
+  preordered_option_le a b -> preordered_option_le b c -> preordered_option_le
+  a c.
+Proof. 
+  intros. induction H0.
+  - assumption.
+  - inversion H1; subst; constructor.
+  - inversion H1; subst. 
+    + constructor. assumption.
+    + constructor. 
+    + constructor. eapply preorder_trans.
+      * apply H0.
+      * apply H3.
+Qed.
+
+Inductive preorder_pair_le {A B : Type} 
+  `{PreorderedSet A} `{PreorderedSet B}
+  : (prod A B) -> (prod A B) -> Prop :=
+  | preorder_pair : forall (a a' : A) (b b' : B), 
+      preorder a a' -> preorder b b' -> preorder_pair_le (a,b) (a',b').
+
+Lemma preorder_pair_le_refl {A B}
+  `{PreorderedSet A} `{PreorderedSet B}
+  :
+  forall (a : prod A B),
+  preorder_pair_le a a.
+Proof. 
+  intros. destruct a. constructor; apply preorder_refl.
+Qed.
+
+Lemma preorder_pair_le_trans {A B}
+  `{PreorderedSet A} `{PreorderedSet B} :
+  forall (a b c : prod A B),
+  preorder_pair_le a b -> preorder_pair_le b c -> preorder_pair_le a c.
+Proof. 
+  intros. inversion H2; subst.  inversion H1; subst. constructor.
+  - eapply preorder_trans. apply H8. apply H3.
+  - eapply preorder_trans. apply H9. apply H4.
+Qed.
+
+Instance preorder_pairs : 
+  forall A B, PreorderedSet A -> PreorderedSet B -> PreorderedSet (A * B)%type :=
+{
+  preorder := preorder_pair_le;
+  preorder_refl := preorder_pair_le_refl;
+  preorder_trans := preorder_pair_le_trans;
+}.
+
+Instance preorder_option :
+  forall A, PreorderedSet A -> PreorderedSet (option A) :=
+{
+  preorder := preordered_option_le;
+  preorder_refl := pre_opt_refl;
+  preorder_trans := preordered_option_le_trans;
+}.
+
+Inductive unit_le : unit -> unit -> Prop :=
+  | unit_le_refl : forall x, unit_le x x.
+
+Lemma unit_le_trans : forall a b c,
+  unit_le a b -> unit_le b c -> unit_le a c.
+Proof.
+  intros. destruct a, b, c. assumption.
+Qed.
+
+Instance preorder_unit : PreorderedSet unit :=
+{
+  preorder := unit_le;
+  preorder_refl := unit_le_refl;
+  preorder_trans := unit_le_trans;
+}.

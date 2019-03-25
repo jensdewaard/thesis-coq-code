@@ -1,5 +1,6 @@
 Require Import Utf8.
 Require Import AbstractStore.
+Require Import Preorder.
 
 
 Definition State (S : Type) (A : Type) := S -> option (A * S)%type.
@@ -36,6 +37,13 @@ Instance state_monad {S : Type} : Monad (State S) := {
   returnM := (return_state S);
   bind := (bind_state S);
 }.
+
+Instance preorder_state : 
+  forall S A, PreorderedSet S -> PreorderedSet A -> PreorderedSet (State S A).
+Proof. 
+  intros. unfold State. apply preordered_function_spaces. apply
+  preorder_option. apply preorder_pairs; assumption.
+Qed.
 
 Notation "x '<<' y ; z" := (bind y (fun x => z))
   (at level 20, y at level 100, z at level 200, only parsing).
