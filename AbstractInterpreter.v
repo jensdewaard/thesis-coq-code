@@ -32,7 +32,10 @@ Fixpoint beval_abstract (b : bexp) : State abstract_store abstr_bool :=
       e1' << (abstract_eval_aexp e1) ;
       e2' << (abstract_eval_aexp e2) ;
       returnM (parity_eq e1' e2')
-  | BLe e1 e2=> returnM ab_top
+  | BLe e1 e2=> 
+     e1' << (abstract_eval_aexp e1) ;
+     e2' << (abstract_eval_aexp e2) ;
+     returnM (ab_top)
   | BNot b => 
       b' << (beval_abstract b) ;
       returnM (neg_ab b')

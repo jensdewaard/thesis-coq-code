@@ -1,12 +1,17 @@
 Require Import Coq.Arith.Arith.
+Require Import Coq.Classes.RelationClasses.
 
 Class PreorderedSet (X : Type) : Type :=
 {
   preorder : X -> X -> Prop;
-  preorder_refl: forall x, preorder x x;
-  preorder_trans: forall x y z, preorder x y -> preorder y z -> preorder x z;
+  preorder_refl: Reflexive preorder;
+  preorder_trans: Transitive preorder;
 }.
 Arguments Build_PreorderedSet X {_ _ _}.
+
+Definition monotone {A A'} `{PreorderedSet A, PreorderedSet A'} :
+  (A -> A') -> Prop :=
+  fun f => forall (a a': A), preorder a a' -> preorder (f a) (f a').
 
 Instance preorder_nat : PreorderedSet nat := 
 {
@@ -18,77 +23,81 @@ Instance preorder_nat : PreorderedSet nat :=
 Inductive bool_le : bool -> bool -> Prop :=
   | bool_le_refl : forall b, bool_le b b.
 
+Lemma bool_le_trans : Transitive bool_le.
+Proof.
+  unfold Transitive. intros. destruct x, y, z; try constructor; tauto.
+Qed.
+
 Instance preorder_bool : PreorderedSet bool :=
 {
   preorder := bool_le;
+  preorder_refl := bool_le_refl;
+  preorder_trans := bool_le_trans;
 }.
-- destruct x; constructor.
-- destruct x, y, z; try constructor; tauto.
-Defined.
 
-Inductive preordered_set_le {A : Type} : (A -> Prop) -> (A -> Prop) -> Prop := 
+Section preordered_sets_le.
+Context {A : Type}.
+
+Inductive preordered_set_le : (A -> Prop) -> (A -> Prop) -> Prop := 
   | preordered_set_le_allin : forall (set1 set2 : (A -> Prop)),
       (forall (x : A), set1 x -> set2 x) -> preordered_set_le set1 set2.
-Arguments preordered_set_le {_}.
 
-Lemma preordered_set_le_refl : forall {A:Type} (a : (A->Prop)),
+Lemma preordered_set_le_refl : forall (a : (A->Prop)),
   preordered_set_le a a.
 Proof.
   intros. constructor. intros. assumption.
 Qed.
 
-Lemma preordered_set_le_trans : forall {A:Type} (x y z : (A->Prop)),
+Lemma preordered_set_le_trans : forall (x y z : (A->Prop)),
   preordered_set_le x y -> preordered_set_le y z -> preordered_set_le x z.
 Proof. 
   intros. constructor. inversion H; inversion H0; subst; auto.
 Qed.
 
-Instance types_to_prop : forall (A : Type), PreorderedSet (A -> Prop) :=
+Global Instance types_to_prop : PreorderedSet (A -> Prop) :=
 {
   preorder := preordered_set_le;
   preorder_refl := preordered_set_le_refl;
   preorder_trans := preordered_set_le_trans;
 }.
-Arguments types_to_prop {A}.
+End preordered_sets_le.
+About types_to_prop.
 
-Inductive pointwise_ordering {A A':Type} `{PreorderedSet A'} : 
+Section preordered_functions.
+Context {A A' : Type} `{PreorderedSet A'}.
+
+Inductive pointwise_ordering : 
   (A->A') -> (A->A') -> Prop :=
   | pointwise : forall (f1 f2 : (A->A')),
       (forall x, preorder (f1 x) (f2 x)) -> pointwise_ordering f1 f2.
-      
+
 Lemma pointwise_ordering_refl : 
-  forall {A A':Type} `{PreorderedSet A'} (f : A -> A'),
-  pointwise_ordering f f.
+  Reflexive pointwise_ordering.
 Proof. 
-  intros A H f. constructor. intro x. apply preorder_refl.
+  intros f. constructor. intro x. apply preorder_refl.
 Qed.
 
-Lemma pointwise_ordering_trans : forall {A A': Type} `{PreorderedSet A'} 
-  (f1 f2 f3 : A -> A'),
-  pointwise_ordering f1 f2 -> pointwise_ordering f2 f3 -> 
-  pointwise_ordering f1 f3.
+Lemma pointwise_ordering_trans : 
+  Transitive pointwise_ordering.
 Proof.
-  intros A A' H f1 f2 f3. constructor. 
+  constructor.
+  intros. 
   inversion H0; subst; clear H0.
   inversion H1; subst; clear H1.
-  intro x. apply preorder_trans with (y:=(f2 x)); auto.
+  eapply preorder_trans. apply H2. apply H0.
 Qed.
 
-Instance preordered_function_spaces : forall (A A' : Type), 
-  PreorderedSet A' -> PreorderedSet (A->A')
-:= {
-  preorder := pointwise_ordering;
-  preorder_refl := pointwise_ordering_refl;
-  preorder_trans := pointwise_ordering_trans;
-}. 
-
-Instance preorder_endofunction : forall A,
-  PreorderedSet A -> PreorderedSet (A->A)
-:= {
+Global Instance preordered_function_spaces : 
+  PreorderedSet (A->A') :=
+{
   preorder := pointwise_ordering;
   preorder_refl := pointwise_ordering_refl;
   preorder_trans := pointwise_ordering_trans;
 }.
+  
+End preordered_functions.
+
+About preordered_function_spaces.
 
 Lemma preorder_props : forall {X : Type} (P Q : X -> Prop) (x : X),
   preorder P Q -> P x -> Q x.
@@ -96,17 +105,18 @@ Proof.
   intros. simpl in H. destruct H. apply H. apply H0.
 Qed.
 
-Inductive preordered_option_le {A : Type} 
-  `{PreorderedSet A} :
+Section preordered_options.
+Context {A} `{PreorderedSet A}.
+
+Inductive preordered_option_le :
   (option A) -> (option A) -> Prop :=
   | pre_opt_refl : forall o, preordered_option_le o o
   | pre_opt_none_some : forall (a : A), preordered_option_le (Some a) None
   | pre_opt_some_some : forall (a a' : A), 
       preorder a a' -> preordered_option_le (Some a) (Some a').
 
-Lemma preordered_option_le_trans 
-  {A} `{PreorderedSet A}
-  : forall (a b c : option A),
+Lemma preordered_option_le_trans : 
+  forall (a b c : option A),
   preordered_option_le a b -> preordered_option_le b c -> preordered_option_le
   a c.
 Proof. 
@@ -121,46 +131,49 @@ Proof.
       * apply H3.
 Qed.
 
-Inductive preorder_pair_le {A B : Type} 
-  `{PreorderedSet A} `{PreorderedSet B}
-  : (prod A B) -> (prod A B) -> Prop :=
+Global Instance preorder_option :
+  PreorderedSet (option A). 
+Proof.
+  intros. esplit with (preorder := preordered_option_le).
+  - (* reflexivity *) unfold Reflexive. apply pre_opt_refl.
+  - (* transitivity *) unfold Transitive. apply preordered_option_le_trans.
+Defined.
+
+End preordered_options.
+About preorder_option.
+
+Section preordered_pairs.
+Context {A B : Type} `{PreorderedSet A, PreorderedSet B}.
+
+Inductive preorder_pair_le : 
+  (prod A B) -> (prod A B) -> Prop :=
   | preorder_pair : forall (a a' : A) (b b' : B), 
       preorder a a' -> preorder b b' -> preorder_pair_le (a,b) (a',b').
 
-Lemma preorder_pair_le_refl {A B}
-  `{PreorderedSet A} `{PreorderedSet B}
-  :
-  forall (a : prod A B),
-  preorder_pair_le a a.
+Lemma preorder_pair_le_refl :
+  Reflexive preorder_pair_le.
 Proof. 
-  intros. destruct a. constructor; apply preorder_refl.
+  intros a.
+  destruct a. constructor; apply preorder_refl.
 Qed.
 
-Lemma preorder_pair_le_trans {A B}
-  `{PreorderedSet A} `{PreorderedSet B} :
-  forall (a b c : prod A B),
-  preorder_pair_le a b -> preorder_pair_le b c -> preorder_pair_le a c.
+Lemma preorder_pair_le_trans :
+  Transitive preorder_pair_le.
 Proof. 
-  intros. inversion H2; subst.  inversion H1; subst. constructor.
-  - eapply preorder_trans. apply H8. apply H3.
-  - eapply preorder_trans. apply H9. apply H4.
+  intros x y z. 
+  intros. inversion H1; subst.  inversion H2; subst. constructor.
+  - eapply preorder_trans. apply H3. apply H7.
+  - eapply preorder_trans. apply H4. apply H9.
 Qed.
 
-Instance preorder_pairs : 
-  forall A B, PreorderedSet A -> PreorderedSet B -> PreorderedSet (A * B)%type :=
+Global Instance preorder_pairs : 
+  PreorderedSet (A * B)%type :=
 {
   preorder := preorder_pair_le;
   preorder_refl := preorder_pair_le_refl;
   preorder_trans := preorder_pair_le_trans;
 }.
-
-Instance preorder_option :
-  forall A, PreorderedSet A -> PreorderedSet (option A) :=
-{
-  preorder := preordered_option_le;
-  preorder_refl := pre_opt_refl;
-  preorder_trans := preordered_option_le_trans;
-}.
+End preordered_pairs.
 
 Inductive unit_le : unit -> unit -> Prop :=
   | unit_le_refl : forall x, unit_le x x.

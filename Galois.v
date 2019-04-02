@@ -4,28 +4,15 @@ Require Import Parity.
 Require Import Preorder.
 Require Import Monad.
 
-Record IsGalois {A B} (g : B -> A -> Prop)  
-                      (e : A->B)
-                      (j : B->B->B) 
-                      (o : B->B->Prop) :=
-{
-}.
+Typeclasses eauto := 10.
 
-
-Class Galois (A B : Type) `{PreorderedSet A} `{PreorderedSet B} : Type :=
+Class Galois (A B : Type) `{PreorderedSet A, PreorderedSet B} : Type :=
 {
   gamma : B -> A -> Prop;
-  gamma_monotone : forall b b', preorder b b' -> preorder (gamma b) (gamma b');  
+  gamma_monotone : monotone gamma;
 }.
 Arguments Build_Galois A B {_ _ _ _}.
 Arguments gamma {_ _ _ _ _}.
-
-
-Instance galois_self {A :Type} `{PreorderedSet A} : Galois A A :=
-{
-  gamma := fun _ _ => True;
-}. simpl. constructor. reflexivity.
-Defined.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
@@ -39,11 +26,45 @@ Instance galois_boolean : Galois bool abstr_bool :=
   gamma_monotone := gamma_bool_monotone;
 }.
 
-Definition gamma_fun {A A' B B' : Type} `{Galois B A} `{Galois B' A'} : 
-  (A->A') -> (B -> B') -> Prop :=
-  fun f' f => forall b a, gamma b a -> gamma (f' b) (f a).
+Lemma widen {A B} `{Galois B A}:
+  forall (f f' : A) (b : B),
+  preorder f f' -> gamma f b -> gamma f' b.
+Proof.
+  intros. apply preorder_props with (P:=(gamma f)).
+  - apply gamma_monotone. assumption.
+  - assumption.
+Qed.
 
-Definition gamma_option {A B} `{Galois B A} :
+Section galois_functions.
+Context {A A' B B' : Type} 
+  `{Galois B A, Galois B' A'}
+.
+
+Definition gamma_fun : 
+  (A->A') -> (B -> B') -> Prop :=
+  fun f' f => forall (a : A) (b : B), gamma a b -> gamma (f' a) (f b).
+
+Lemma gamma_fun_monotone :
+  monotone gamma_fun.
+Proof.
+  constructor. 
+  intros. simpl in *. unfold gamma_fun in *. intros. 
+  apply widen with (f:= a a0). destruct H5; apply H5.
+  apply H6. apply H7.
+Qed.
+
+Global Instance GFun : 
+  Galois (B -> B') (A->A').
+Proof.
+  intros. esplit with (gamma:=gamma_fun). apply gamma_fun_monotone.
+Defined.
+
+End galois_functions.
+
+Section galois_options.
+Context {B A} `{Galois B A}.
+
+Definition gamma_option :
   option A -> option B -> Prop :=
   fun oa => fun ob => match oa, ob with
                | None, None => True
@@ -51,58 +72,102 @@ Definition gamma_option {A B} `{Galois B A} :
                | Some a, Some b => gamma a b
                | Some a, None => False
                end.
-               
-Compute gamma_option (Some par_even) (Some 2).
 
-Lemma gamma_option_monotone : 
-  forall oa ob, preorder oa ob -> preorder (gamma_option oa) (gamma_option ob).
+Lemma gamma_option_monotone  : 
+  monotone gamma_option.
 Proof.
-  simpl. intros. inversion H; subst.
-  - apply preordered_set_le_refl.
-  - simpl in *. unfold gamma_option. constructor. intros.
-    destruct x; reflexivity.
-  - unfold gamma_option. constructor. intros. destruct x.
-    + simpl. reflexivity.
-    + inversion H1.
+  unfold monotone. intros. simpl in *. constructor. intros.
+  inversion H2; subst.
+  - assumption.
+  - destruct x; constructor.
+  - destruct x.
+    + simpl. eapply widen. apply H4. apply H3.
+    + inversion H3.
 Qed.
 
-Lemma widen {A A' B:Type} `{Galois B A'}:
-  forall (f1 f2 : A->A') (x:A) (a:B),
-  pointwise_ordering f1 f2 -> gamma (f1 x) a -> gamma (f2 x) a.
-Proof. 
-  intros. 
-  apply preorder_props with (P:=(gamma (f1 x))) 
-    (Q:=(gamma (f2 x))). 
-    - apply gamma_monotone. destruct H2. apply H2.
-    - apply H3.
-Qed.
-
-Instance GFun {A A' B B' : Type}
-  `{PreorderedSet A} `{PreorderedSet A'}
-  `{PreorderedSet B} `{PreorderedSet B'}
-  : 
-  Galois B A -> Galois B' A' -> Galois (B -> B') (A->A') :=
+Global Instance galois_option : 
+  Galois (option B) (option A) := 
 {
-  gamma := gamma_fun;
+  gamma := gamma_option;
+  gamma_monotone := gamma_option_monotone;  
 }.
-intros f f'. simpl. constructor. intros f_b. destruct H3. 
-intros. unfold gamma_fun in *. intros. 
-eapply widen with (f3:=f1). constructor. apply H3. apply H4. apply H5.
-Defined.
+End galois_options.
 
-Instance galois_store : Galois store abstract_store :=
+Section galois_store.
+
+Definition gamma_store : abstract_store -> store -> Prop :=
+  fun st' => fun st => forall x, gamma (st' x) (st x).
+
+Definition gamma_store_monotone : monotone gamma_store.
+Proof. unfold monotone.
+  intros ast ast'. simpl. constructor. intros st. unfold gamma_store in *. 
+  intros Hgamma x. destruct H. eapply widen. apply H. apply Hgamma.
+Qed.
+
+Global Instance galois_store : Galois store abstract_store :=
 {
   gamma := gamma_store;
   gamma_monotone := gamma_store_monotone;
 }.
 
-Instance galois_state {S S' A A' : Type}
-  `{Galois S S'}
-  `{Galois A A'}
-  :
-  Galois S S' -> Galois A A' -> Galois (State S A) (State S' A').
-Proof. 
-  intros. apply GFun. assumption. 
-Admitted.
-  
+End galois_store.
 
+Section galois_pairs.
+Context {A B C D} `{Galois B A} `{Galois D C}.
+
+Definition gamma_pairs :
+  prod A C-> prod B D -> Prop := 
+  fun (p1 : A*C) (p2 : B*D) => 
+  gamma (fst p1) (fst p2) /\ gamma (snd p1) (snd p2).
+
+Lemma gamma_pairs_monotone :
+  monotone gamma_pairs.
+Proof.
+  unfold monotone. intros [a c] [a' c'].
+  intro. simpl. constructor. intros [b d]. unfold gamma_pairs; simpl.
+  intros [Hab Hac]. inversion H5; subst. split.
+  - eapply widen. apply H9. apply Hab.
+  - eapply widen. apply H11. apply Hac. 
+Qed.
+
+Global Instance galois_pairs :
+  Galois (B*D) (A*C) :=
+{
+  gamma := gamma_pairs;
+  gamma_monotone := gamma_pairs_monotone;
+}.
+End galois_pairs.
+
+Section galois_state.
+Context {S S' A A'} 
+  `{Galois S S', Galois A A'}.
+
+Global Instance galois_state :
+  Galois (State S A) (State S' A').
+Proof.
+  intros. unfold State. 
+  assert (Galois (A*S) (A'*S')).
+  { apply galois_pairs. }
+  assert (Galois (option (A*S)) (option (A'*S'))).
+  { apply galois_option. }
+  apply GFun. 
+Defined.
+End galois_state.
+
+Section galois_unit.
+Definition gamma_unit : 
+  unit -> unit -> Prop :=  
+  fun tt tt => True.
+
+Lemma gamma_unit_monotone : monotone gamma_unit.
+Proof.
+  unfold monotone.
+  intros. simpl. constructor. reflexivity.
+Qed.
+
+Global Instance galois_unit : Galois unit unit := 
+{
+  gamma := gamma_unit;
+  gamma_monotone := gamma_unit_monotone;
+}. 
+End galois_unit.

@@ -45,10 +45,10 @@ Fixpoint eval_bexp (e : bexp) : State store bool :=
       returnM (andb b1' b2')
   end.
 
-Definition eval_if {S A} (b : bool) (st1 st2 : @State S A) : @State S A :=
+Definition eval_if {S A} (b : bool) (st1 st2 : State S A) : State S A :=
   if b then st1 else st2.
 
-Definition eval_catch {S A} (st1 st2 : @State S A) : @State S A :=
+Definition eval_catch {S A} (st1 st2 : State S A) : State S A :=
   fun st => match (st1 st) with
   | None => (st2 st)
   | _ => (st1 st)

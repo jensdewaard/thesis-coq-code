@@ -65,13 +65,16 @@ Proof.
   intros. rewrite parity_join_idem. reflexivity.
 Qed.
 
-Definition gamma_store : abstract_store -> store -> Prop :=
-  fun _ => fun st => True.
+Instance preordered_abstract_store : PreorderedSet abstract_store
+:= {
+  preorder := pointwise_ordering;
+  preorder_refl := pointwise_ordering_refl;
+  preorder_trans := pointwise_ordering_trans;
+}.
 
-
-Definition gamma_store_monotone :
-  forall st st', 
-  preorder st st' -> preorder (gamma_store st) (gamma_store st').
-Proof. 
-  intros. simpl. apply preordered_set_le_refl.
-Qed.
+Instance preordered_store : PreorderedSet store 
+:= {
+  preorder := pointwise_ordering;
+  preorder_refl := pointwise_ordering_refl;
+  preorder_trans := pointwise_ordering_trans;
+}.

@@ -2,7 +2,6 @@ Require Import Utf8.
 Require Import AbstractStore.
 Require Import Preorder.
 
-
 Definition State (S : Type) (A : Type) := S -> option (A * S)%type.
 
 Definition return_state (S A : Type) (x : A) : State S A :=
@@ -19,6 +18,18 @@ Definition get {S : Type} : State S S := fun st => Some (st, st).
 
 Definition put {S : Type} (st' : S) : State S unit := 
   fun st => Some (tt, st').
+  
+(*Definition abstract_state_join (S A : Type) 
+  (st1 st2 : State abstract_store A) : 
+  State S unit :=
+  fun st => match st1 st, st2 st with
+                           | Some (x, st1'), Some (y, st2') => 
+                              Some(x, (abstract_store_join st1' st2'))
+                           | None, Some(y, st2') => Some(y, st2')
+                           | Some (x, st1'), None => Some(x, st1')
+                           | _ , _=> None
+                           end.
+*)
 
 Definition fail {S A : Type} : State S A :=
   fun st => None.
@@ -38,12 +49,18 @@ Instance state_monad {S : Type} : Monad (State S) := {
   bind := (bind_state S);
 }.
 
-Instance preorder_state : 
-  forall S A, PreorderedSet S -> PreorderedSet A -> PreorderedSet (State S A).
+Section preordered_state.
+Context {S A : Type} `{PreorderedSet S, PreorderedSet A}.
+
+Lemma preorder_state : 
+  PreorderedSet (State S A).
 Proof. 
-  intros. unfold State. apply preordered_function_spaces. apply
-  preorder_option. apply preorder_pairs; assumption.
+  intros. unfold State. assert (PreorderedSet (A*S)). 
+  apply preorder_pairs. assert (PreorderedSet (option (A*S))).
+  apply preorder_option.
+  apply preordered_function_spaces. 
 Qed.
+End preordered_state.
 
 Notation "x '<<' y ; z" := (bind y (fun x => z))
   (at level 20, y at level 100, z at level 200, only parsing).

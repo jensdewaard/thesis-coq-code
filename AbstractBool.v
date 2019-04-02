@@ -43,9 +43,9 @@ Definition extract_bool (b: bool) : abstr_bool :=
   | false => ab_false
   end.
 
-Lemma gamma_bool_monotone : forall b1 b2,
-  preorder b1 b2 -> preorder (gamma_bool b1) (gamma_bool b2).
+Lemma gamma_bool_monotone : monotone gamma_bool.
 Proof.
+  unfold monotone. intros b1 b2 ?.
   destruct b1, b2; constructor; intros; destruct x; simpl in *; 
     try inversion H0; try inversion H; try tauto. 
 Qed.
