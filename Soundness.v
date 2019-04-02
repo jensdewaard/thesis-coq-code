@@ -5,7 +5,6 @@ Require Import Coq.Arith.Even.
 Require Import AbstractBool.
 Require Import AbstractStore.
 Require Import AbstractInterpreter.
-Require Import Aux.
 Require Import ConcreteInterpreter.
 Require Import Galois.
 Require Import Language.

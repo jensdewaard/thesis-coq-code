@@ -19,10 +19,10 @@ doc_dir:
 clean: 
 	rm -fr *.html *.vo *.glob doc/
 
-Soundness.vo: Aux.vo ConcreteInterpreter.vo AbstractInterpreter.vo Soundness.v Preorder.vo Galois.vo
+Soundness.vo: ConcreteInterpreter.vo AbstractInterpreter.vo Soundness.v Preorder.vo Galois.vo
 	$(COQC) $(COQOPT) Soundness.v
 
-Parity.vo: Parity.v Aux.vo AbstractBool.vo Preorder.vo
+Parity.vo: Parity.v AbstractBool.vo Preorder.vo
 	$(COQC) $(COQOPT) Parity.v
 
 Preorder.vo: Preorder.v

@@ -4,7 +4,6 @@ Require Import Coq.Arith.Even.
 Require Import Coq.Sets.Partial_Order.
 
 Require Import AbstractBool.
-Require Import Aux.
 Require Import Preorder.
 
 (** * Parity *)
@@ -241,9 +240,9 @@ Proof.
   - (* S x *)
     replace (mult 2 (S x)) with (plus (mult 2 x) 2).
     + rewrite extract_distr. rewrite IHx. reflexivity.
-    + simpl. rewrite <- plus_n_O. 
-      rewrite -> add_succ_r. rewrite -> add_succ_r. rewrite <- plus_n_O.
-      rewrite <- add_succ_r. reflexivity.
+    + simpl. rewrite <- plus_n_O. rewrite plus_comm. simpl.
+      rewrite <- Nat.add_succ_l. 
+      rewrite plus_comm. reflexivity.
 Qed.
 
 
