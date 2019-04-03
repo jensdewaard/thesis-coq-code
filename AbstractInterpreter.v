@@ -56,7 +56,14 @@ Definition eval_if_abstract {S A} `{Joinable S, Joinable A}
   | ab_bottom => fail
   end.
   
-About unit_joinable.
+Print State.
+
+Definition eval_catch_abstract {S A} `{Joinable S, Joinable A} 
+  (st1 st2 : State S A) : State S A :=
+  fun st => match (st1 st) with
+  | None => join_op st1 st2 st
+  | _ => st1 st
+  end.
 
 Fixpoint ceval_abstract (c : com) : State abstract_store unit :=
   match c with
@@ -70,7 +77,8 @@ Fixpoint ceval_abstract (c : com) : State abstract_store unit :=
   | CIf b c1 c2 => 
       b' << (beval_abstract b) ;
       eval_if_abstract b' (ceval_abstract c1) (ceval_abstract c2)
-  | try c1 catch c2 => eval_catch (ceval_abstract c1) (ceval_abstract c2)
+  | try c1 catch c2 => 
+      eval_catch_abstract (ceval_abstract c1) (ceval_abstract c2)
   | CFail => fail
   end.
 

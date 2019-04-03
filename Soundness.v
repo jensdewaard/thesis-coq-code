@@ -231,7 +231,8 @@ Lemma sound_try_catch : forall c1 c2,
   sound (ceval (CTryCatch c1 c2)) (ceval_abstract (CTryCatch c1 c2)).
 Proof.
   intros c1 c2 H1 H2 st ast Hstore.  
-  simpl. unfold eval_catch. destruct (ceval_abstract c1 ast) eqn:Habs1;
+  simpl. unfold eval_catch, eval_catch_abstract. 
+  destruct (ceval_abstract c1 ast) eqn:Habs1;
   destruct (ceval c1 st) eqn:Hconc1. 
   - (* abstract eval and concrete eval succeed *) 
     rewrite <- Hconc1, <- Habs1. apply H1. apply Hstore.
@@ -239,12 +240,12 @@ Proof.
     unfold sound in H1. apply H1 in Hstore.
     rewrite Habs1 in Hstore. rewrite Hconc1 in Hstore. inversion Hstore.
   - (* abstract fails and concrete succeeds, should contradict?? *)
-    destruct (ceval_abstract c2 ast) eqn:Habs2.
-    + admit.
-    + reflexivity.
+    unfold sound in H1. apply H1 in Hstore.
+    simpl. unfold join_state. rewrite Habs1. reflexivity.
   - (* both fail *)
-    apply H2; apply Hstore.
-Admitted.
+    simpl. unfold join_state. rewrite Habs1. simpl.
+    destruct (ceval c2 st); reflexivity.
+Qed.
 
 Theorem sound_interpreter:
   forall c, sound (ceval c) (ceval_abstract c).
