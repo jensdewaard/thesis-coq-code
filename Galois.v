@@ -26,7 +26,7 @@ Instance galois_boolean : Galois bool abstr_bool :=
   gamma_monotone := gamma_bool_monotone;
 }.
 
-Lemma widen {A B} `{Galois B A}:
+Lemma widen {A B : Type} `{Galois B A}:
   forall (f f' : A) (b : B),
   preorder f f' -> gamma f b -> gamma f' b.
 Proof.
@@ -40,9 +40,9 @@ Context {A A' B B' : Type}
   `{Galois B A, Galois B' A'}
 .
 
-Definition gamma_fun : 
-  (A->A') -> (B -> B') -> Prop :=
-  fun f' f => forall (a : A) (b : B), gamma a b -> gamma (f' a) (f b).
+Definition gamma_fun (f' : A-> A') (f : B -> B') : 
+Prop :=
+  forall (a : A) (b : B), gamma a b -> gamma (f' a) (f b).
 
 Lemma gamma_fun_monotone :
   monotone gamma_fun.
@@ -54,10 +54,11 @@ Proof.
 Qed.
 
 Global Instance GFun : 
-  Galois (B -> B') (A->A').
-Proof.
-  intros. esplit with (gamma:=gamma_fun). apply gamma_fun_monotone.
-Defined.
+  Galois (B -> B') (A->A') :=
+{
+  gamma := gamma_fun;
+  gamma_monotone := gamma_fun_monotone;
+}.
 
 End galois_functions.
 

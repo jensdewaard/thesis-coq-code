@@ -1,6 +1,8 @@
 Require Import Utf8.
 Require Import AbstractStore.
+Require Import Joinable.
 Require Import Preorder.
+Require Import FunctionalExtensionality.
 
 Definition State (S : Type) (A : Type) := S -> option (A * S)%type.
 
@@ -34,7 +36,36 @@ Definition put {S : Type} (st' : S) : State S unit :=
 Definition fail {S A : Type} : State S A :=
   fun st => None.
 
- 
+Section state_joinable.
+Context {S A : Type} `{Joinable S} `{Joinable A}.
+
+Definition join_state
+  (st1 st2 : State S A) : State S A :=
+  fun st => join_op (st1 st) (st2 st).
+  
+Lemma join_state_upperbound : forall st st',
+  preorder st (join_state st st').
+Proof.
+  intros. simpl. constructor. intros. simpl. 
+  unfold join_state. simpl. apply option_join_upperbound.
+Qed.
+
+
+Lemma join_state_comm : forall st st', 
+  join_state st st' = join_state st' st.
+Proof.
+  intros. unfold join_state. apply functional_extensionality. intros.
+  rewrite join_comm. reflexivity.
+Qed.
+
+
+Global Instance state_joinable : Joinable (State S A) := {
+  join_op := join_state;
+  join_upper_bound := join_state_upperbound;
+  join_comm := join_state_comm;
+}.
+End state_joinable.
+
 Class Monad (M : Type -> Type) : Type :=
 {
   returnM : forall A, A -> M A;

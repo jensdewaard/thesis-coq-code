@@ -31,7 +31,7 @@ Preorder.vo: Preorder.v
 ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo  Monad.vo
 	$(COQC) $(COQOPT) ConcreteInterpreter.v
 
-AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo Monad.vo
+AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo Monad.vo Joinable.vo
 	$(COQC) $(COQOPT) AbstractInterpreter.v
 
 AbstractBool.vo: AbstractBool.v Preorder.vo
@@ -40,14 +40,17 @@ AbstractBool.vo: AbstractBool.v Preorder.vo
 AbstractStore.vo: AbstractStore.v Parity.vo Maps.vo AbstractBool.vo
 	$(COQC) $(COQOPT) AbstractStore.v
 
-Monad.vo: Monad.v AbstractStore.vo
+Monad.vo: Monad.v AbstractStore.vo Joinable.vo
 	$(COQC) $(COQOPT) Monad.v
 
-Galois.vo: Galois.v Preorder.vo Parity.vo AbstractBool.vo
+Galois.vo: Galois.v Preorder.vo Parity.vo AbstractBool.vo AbstractStore.vo Monad.vo
 	$(COQC) $(COQOPT) Galois.v
 
 Language.vo: Preorder.vo Parity.vo AbstractBool.vo
 	$(COQC) $(COQOPT) Language.v
+
+Joinable.vo: AbstractStore.vo
+	$(COQC) $(COQOPT) Joinable.v
 
 %.vo : %.v
 	$(COQC) $(COQOPT) $<

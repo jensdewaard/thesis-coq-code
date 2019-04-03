@@ -2,6 +2,7 @@ Require Import AbstractStore.
 Require Import AbstractBool.
 Require Import ConcreteInterpreter.
 Require Import Language.
+Require Import Joinable.
 Require Import Maps.
 Require Import Monad.
 Require Import Parity.
@@ -45,14 +46,17 @@ Fixpoint beval_abstract (b : bexp) : State abstract_store abstr_bool :=
       returnM (and_ab b1' b2')
   end.
 
-Definition eval_if_abstract {S A} (b : abstr_bool) (st1 st2 : State S A) 
+Definition eval_if_abstract {S A} `{Joinable S, Joinable A} 
+  (b : abstr_bool) (st1 st2 : State S A) 
   : State S A :=
   match b with
   | ab_true   => st1
   | ab_false  => st2
-  | ab_top    => fail
+  | ab_top    => join_op st1 st2
   | ab_bottom => fail
   end.
+  
+About unit_joinable.
 
 Fixpoint ceval_abstract (c : com) : State abstract_store unit :=
   match c with

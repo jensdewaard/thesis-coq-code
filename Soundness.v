@@ -7,6 +7,7 @@ Require Import AbstractStore.
 Require Import AbstractInterpreter.
 Require Import ConcreteInterpreter.
 Require Import Galois.
+Require Import Joinable.
 Require Import Language.
 Require Import Maps.
 Require Import Monad.
@@ -36,9 +37,9 @@ Proof.
   - reflexivity. 
 Qed.
 
-Tactic Notation "bind" := apply bind_state_sound;[auto| |auto].
+Tactic Notation "bind" := apply bind_state_sound;auto;try reflexivity.
 
-Tactic Notation "pairs" := unfold gamma_pairs; simpl; split.
+Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
 
 Lemma sound_parity_plus :
   sound plus parity_plus.
@@ -94,38 +95,20 @@ Proof.
   intros.
   unfold sound. simpl.
   induction a.
-  - (* ANum *) simpl. unfold gamma_pairs; simpl. split.
-    + apply gamma_par_extract_n_n.
-    + apply H.
-  - (* AVar *) simpl. unfold gamma_pairs; simpl. split.
-    + simpl in H. unfold gamma_store in H. apply H.
-    + apply H.
-  - (* APlus *) simpl in *. intros st ast H. apply bind_state_sound.
-    + unfold sound. intros st' ast' Hgamma. simpl in Hgamma. 
-      apply IHa1. apply Hgamma.
-    + unfold sound. intros n p Hgamma. simpl. unfold gamma_fun. 
-      intros ast' st'. intros Hstore. simpl. apply bind_state_sound.
-      * unfold sound. intros st'' ast''. intros Hgamma'. apply IHa2.
-        assumption.
-      * unfold sound. intros n' p' Hgamma'. simpl. unfold gamma_fun.
-        intros ast'' st'' Hgamma''. simpl. unfold gamma_pairs; simpl; split.
-        { apply sound_parity_plus; assumption. }
-        { apply Hgamma''. }
-      * apply Hstore.
-    + apply H.
+  - (* ANum *) simpl. pairs. apply gamma_par_extract_n_n.
+  - (* AVar *) simpl. pairs. unfold gamma_store in H. apply H.
+  - (* APlus *) simpl in *. intros st ast H. bind.
+    unfold sound. intros n p Hgamma. simpl. unfold gamma_fun. 
+    intros ast' st'. intros Hstore. simpl. bind.
+    unfold sound. intros n' p' Hgamma'. simpl. unfold gamma_fun.
+    intros ast'' st'' Hgamma''. simpl. pairs.
+    apply sound_parity_plus; assumption.
   - (* AMult *) intros st ast Hstore. simpl. 
-    apply bind_state_sound; unfold sound.
-    + intros st' ast' Hstore'. simpl. apply IHa1; assumption.
-    + intros n p Hpar. simpl. unfold gamma_fun. intros ast' st' Hstore'.
-      simpl. apply bind_state_sound.
-      * unfold sound. intros st'' ast'' Hstore''. simpl. apply IHa2. 
-        apply Hstore''.
-      * unfold sound. intros n' p' Hpar'. simpl. unfold gamma_fun.
-        intros ast'' st'' Hstore''. simpl. unfold gamma_pairs;simpl;split.
-        { apply sound_parity_mult; assumption. }
-        { apply Hstore''. }
-      * apply Hstore'.
-    + apply Hstore.
+    bind. intros n p Hpar. simpl. unfold gamma_fun. intros ast' st' Hstore'.
+    simpl. bind.
+    unfold sound. intros n' p' Hpar'. simpl. unfold gamma_fun.
+    intros ast'' st'' Hstore''. simpl. pairs.
+    apply sound_parity_mult; assumption.
 Qed.
 
 Lemma eval_bexp_beq_sound : forall n n',
@@ -138,8 +121,8 @@ Proof.
   unfold sound. intros n p Hpar. simpl. unfold gamma_fun.
   intros ast' st' Hstore'. simpl. bind. 
   unfold sound. intros n' p' Hpar'. simpl. unfold gamma_fun.
-  intros ast'' st'' Hstore''. simpl. unfold gamma_pairs;simpl;split.
-  apply sound_parity_eq. assumption. assumption. assumption.
+  intros ast'' st'' Hstore''. simpl. pairs.
+  apply sound_parity_eq. assumption. assumption.
 Qed.
 
 Lemma eval_bexp_ble_sound : forall n n', 
@@ -160,9 +143,8 @@ Proof.
   intros b H.
   unfold sound. intros st ast Hstore. simpl. bind.
   unfold sound. intros b' ab Hbool. simpl. unfold gamma_fun. 
-    intros aast' st' Hstore'. pairs.
-    + apply sound_ab_neg. apply Hbool.
-    + apply Hstore'.
+  intros aast' st' Hstore'. pairs.
+  apply sound_ab_neg. apply Hbool.
 Qed.
 
 Lemma eval_bexp_and_sound : forall b1 b2,
@@ -172,11 +154,10 @@ sound (eval_bexp (BAnd b1 b2)) (beval_abstract (BAnd b1 b2)).
 Proof. 
   intros b1 b2 H1 H2. unfold sound. intros st ast Hstore.
   simpl. bind. unfold sound. intros b ab Hbool. simpl. unfold gamma_fun.
-    intros ast' st' Hstore'. simpl. bind.
-    + unfold sound. intros b' ab' Hbool'. simpl. unfold gamma_fun.
-      intros ast'' st'' Hstore''. simpl. pairs.
-      * apply sound_ab_and; assumption.
-      * assumption.
+  intros ast' st' Hstore'. simpl. bind.
+  unfold sound. intros b' ab' Hbool'. simpl. unfold gamma_fun.
+  intros ast'' st'' Hstore''. simpl. pairs.
+  - apply sound_ab_and; assumption.
 Qed.
 
 Theorem eval_bexp_sound :
@@ -184,9 +165,9 @@ Theorem eval_bexp_sound :
 Proof.
   induction b.
   - simpl. unfold sound. intros st ast Hstore. simpl. 
-    unfold gamma_pairs; simpl; split; auto.
+    pairs.
   - simpl. unfold sound. intros st ast Hstore. simpl.
-    unfold gamma_pairs; simpl; split; auto.
+    pairs.
   - apply eval_bexp_beq_sound; apply eval_aexp_sound.
   - apply eval_bexp_ble_sound; apply eval_aexp_sound.
   - apply eval_bexp_not_sound. apply IHb.
@@ -219,39 +200,50 @@ Lemma sound_if : forall b c1 c2,
   sound (ceval c2) (ceval_abstract c2) ->
   sound (ceval (CIf b c1 c2)) (ceval_abstract (CIf b c1 c2)).
 Proof. 
-  intros. simpl. apply bind_state_sound. 
-  - apply eval_bexp_sound.
-  - unfold sound. intros. simpl. unfold gamma_fun. intros. simpl.
-    unfold eval_if_abstract. unfold eval_if. destruct a.
-    + destruct b0. apply H. apply H2. inversion H1.
-    + destruct b0. 
-      * simpl in *. unfold not in H1. exfalso. apply H1. reflexivity.
-      * apply H0. apply H2.
-    + admit. 
-    + inversion H1.
-Admitted.
+  intros. simpl. bind.
+  { apply eval_bexp_sound. }
+  unfold sound. intros. simpl.
+  unfold eval_if_abstract. unfold eval_if. destruct a.
+  - (* ab_true *) destruct b0. unfold gamma_fun; intros. apply H. apply H2. inversion H1.
+  - (* ab_false *) destruct b0. 
+    + (* true, contradiction *) simpl in *. unfold not in H1. 
+      exfalso. apply H1. reflexivity.
+    + (* false *) unfold gamma_fun;intros. apply H0. apply H2.
+  - (* ab_top *) destruct b0.
+    + (* true *)
+      assert (preorder (ceval_abstract c1) (join_op (ceval_abstract c1) (ceval_abstract c2))).
+      apply join_upper_bound.
+      unfold gamma_fun; intros.
+      simpl in H2. inversion H2; subst. 
+      eapply widen. apply H4. auto.
+    + (* false *) 
+      assert (preorder (ceval_abstract c2) (join_op (ceval_abstract c1) (ceval_abstract c2))).
+      { rewrite join_comm. apply join_upper_bound. }
+      unfold gamma_fun; intros.
+      simpl in H2. inversion H2; subst.
+      eapply widen. apply H4. auto.
+  - (* ab_bottom *) inversion H1.
+Qed.
 
 Lemma sound_try_catch : forall c1 c2,
   sound (ceval c1) (ceval_abstract c1) ->
   sound (ceval c2) (ceval_abstract c2) ->
   sound (ceval (CTryCatch c1 c2)) (ceval_abstract (CTryCatch c1 c2)).
 Proof.
-  intros c1 c2 H1 H2. simpl. unfold sound. intros st ast Hstore.
-  simpl. unfold eval_catch. destruct (ceval_abstract c1 ast) eqn:Habs1.
-  - destruct (ceval c1 st) eqn:Hconc1. 
-    + rewrite <- Habs1, <- Hconc1. unfold sound in H1. apply H1. assumption.
-    + unfold sound in H1. simpl in H1. 
-      assert (gamma_option (ceval_abstract c1 ast) (ceval c1 st)).
-      { apply H1. apply Hstore. }
-      rewrite Habs1 in H. rewrite Hconc1 in H. inversion H.
-  - destruct (ceval c1 st) eqn:Hconc1. 
-    + unfold sound in H1. simpl in *. 
-      destruct (ceval_abstract c2 ast).
-      * simpl. destruct p, p0. pairs.
-        { reflexivity. }
-        { admit. }
-      * reflexivity.
-    + apply H2. apply Hstore.
+  intros c1 c2 H1 H2 st ast Hstore.  
+  simpl. unfold eval_catch. destruct (ceval_abstract c1 ast) eqn:Habs1;
+  destruct (ceval c1 st) eqn:Hconc1. 
+  - (* abstract eval and concrete eval succeed *) 
+    rewrite <- Hconc1, <- Habs1. apply H1. apply Hstore.
+  - (* abstract succeeds and concrete fails, contradiction *)
+    unfold sound in H1. apply H1 in Hstore.
+    rewrite Habs1 in Hstore. rewrite Hconc1 in Hstore. inversion Hstore.
+  - (* abstract fails and concrete succeeds, should contradict?? *)
+    destruct (ceval_abstract c2 ast) eqn:Habs2.
+    + admit.
+    + reflexivity.
+  - (* both fail *)
+    apply H2; apply Hstore.
 Admitted.
 
 Theorem sound_interpreter:
