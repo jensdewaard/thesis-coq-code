@@ -1,40 +1,27 @@
 Require Import Coq.Arith.Arith.
 Require Import Utf8.
 
+Require Import AbstractStore.
 Require Import Language.
 Require Import Maps.
 Require Import Monad.
-Require Import AbstractStore.
+Require Import SharedInterpreter.
 
 Open Scope com_scope.
 
-Fixpoint eval_aexp (e : aexp) : State store nat := 
-  match e with
-  | ANum n => returnM n
-  | AVar x => 
-      st << get ;
-      returnM (st x)
-  | APlus e1 e2 => 
-      n1 << (eval_aexp e1) ;
-      n2 << (eval_aexp e2) ;
-      returnM (n1 + n2)
-  | AMult e1 e2 => 
-      n1 << (eval_aexp e1) ;
-      n2 << (eval_aexp e2) ;
-      returnM (n1 * n2)
-  end.
+Definition concrete_aexp := shared_aexp store nat (fun x => x) plus mult.
 
 Fixpoint eval_bexp (e : bexp) : State store bool :=
   match e with
   | BTrue => returnM true
   | BFalse => returnM false
   | BEq a1 a2 =>
-      n1 << (eval_aexp a1) ;
-      n2 << (eval_aexp a2) ;
+      n1 << (concrete_aexp a1) ;
+      n2 << (concrete_aexp a2) ;
       returnM (Nat.eqb n1 n2)
   | BLe a1 a2 =>
-      n1 << (eval_aexp a1) ;
-      n2 << (eval_aexp a2) ;
+      n1 << (concrete_aexp a1) ;
+      n2 << (concrete_aexp a2) ;
       returnM (Nat.leb n1 n2)
   | BNot b => 
       b' << (eval_bexp b) ;
@@ -61,7 +48,7 @@ Fixpoint ceval (c : com) : State store unit :=
   | c1 ;c; c2 => 
       (ceval c1) ;; (ceval c2)
   | x ::= a => 
-      n << (eval_aexp a) ;
+      n << (concrete_aexp a) ;
       st << get ;
       put (t_update st x n)
   | CIf b c1 c2 => 

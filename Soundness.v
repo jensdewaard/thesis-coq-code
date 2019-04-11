@@ -47,6 +47,7 @@ Admitted.
 
 Hint Resolve bind_state_sound.
 
+
 Tactic Notation "bind" := apply bind_state_sound;auto;try reflexivity.
 
 Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
@@ -100,7 +101,7 @@ Proof.
 Qed.
 
 Theorem eval_aexp_sound :
-  forall a, sound (eval_aexp a) (abstract_eval_aexp a).
+  forall a, sound (concrete_aexp a) (abstract_aexp a).
 Proof.
   intros.
   unfold sound. simpl.
@@ -122,27 +123,24 @@ Proof.
 Qed.
 
 Lemma eval_bexp_beq_sound : forall n n',
-sound (eval_aexp n) (abstract_eval_aexp n) ->
-sound (eval_aexp n') (abstract_eval_aexp n') ->
 sound (eval_bexp (BEq n n')) (beval_abstract (BEq n n')).
 Proof. 
-  unfold sound. simpl. intros a a' IH1 IH2 st ast Hstore. simpl. 
-  bind.
+  unfold sound. simpl. intros a a' st ast Hstore. simpl. 
+  bind. apply eval_aexp_sound.
   unfold sound. intros n p Hpar. simpl. unfold gamma_fun.
   intros ast' st' Hstore'. simpl. bind. 
   unfold sound. intros n' p' Hpar'. simpl. unfold gamma_fun.
+  apply eval_aexp_sound. assumption.
   intros ast'' st'' Hstore''. simpl. pairs.
   apply sound_parity_eq. assumption. assumption.
 Qed.
 
 Lemma eval_bexp_ble_sound : forall n n', 
-sound (eval_aexp n) (abstract_eval_aexp n) ->
-sound (eval_aexp n') (abstract_eval_aexp n') ->
 sound (eval_bexp (BLe n n')) (beval_abstract (BLe n n')).
 Proof. 
-  intros a a' H1 H2. simpl. apply bind_state_sound. assumption.
+  intros a a'. simpl. bind. apply eval_aexp_sound.
   unfold sound. intros n p Hpar. simpl. unfold gamma_fun. intros ast st Hstore.
-  simpl. bind. unfold sound. intros n' p' Hpar'. simpl. unfold gamma_fun. 
+  simpl. bind. unfold sound. intros n' p' Hpar'. apply eval_aexp_sound. assumption. 
   intros ast' st' Hstore'. simpl. pairs; auto.
 Qed.
 

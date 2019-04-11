@@ -6,36 +6,24 @@ Require Import Joinable.
 Require Import Maps.
 Require Import Monad.
 Require Import Parity.
+Require Import SharedInterpreter.
 
 Open Scope com_scope.
 
-Fixpoint abstract_eval_aexp (e : aexp) : State abstract_store parity :=
-  match e with 
-  | ANum n => returnM (extract_par n)
-  | AVar x =>
-      st << get ;
-      returnM (st x)
-  | APlus p1 p2 => 
-      p1' << (abstract_eval_aexp p1) ;
-      p2' << (abstract_eval_aexp p2) ;
-      returnM (parity_plus p1' p2')
-  | AMult p1 p2 =>
-      p1' << (abstract_eval_aexp p1) ;
-      p2' << (abstract_eval_aexp p2) ;
-      returnM (parity_mult p1' p2')
-  end.
+Definition abstract_aexp := shared_aexp abstract_store parity 
+  extract_par parity_plus parity_mult.
 
 Fixpoint beval_abstract (b : bexp) : State abstract_store abstr_bool :=
   match b with
   | BFalse => returnM (ab_false)
   | BTrue => returnM (ab_true)
   | BEq e1 e2 => 
-      e1' << (abstract_eval_aexp e1) ;
-      e2' << (abstract_eval_aexp e2) ;
+      e1' << (abstract_aexp e1) ;
+      e2' << (abstract_aexp e2) ;
       returnM (parity_eq e1' e2')
   | BLe e1 e2=> 
-     e1' << (abstract_eval_aexp e1) ;
-     e2' << (abstract_eval_aexp e2) ;
+     e1' << (abstract_aexp e1) ;
+     e2' << (abstract_aexp e2) ;
      returnM (ab_top)
   | BNot b => 
       b' << (beval_abstract b) ;
@@ -70,7 +58,7 @@ Fixpoint ceval_abstract (c : com) : State abstract_store unit :=
   | c1 ;c; c2 =>
       (ceval_abstract c1) ;; (ceval_abstract c2)
   | x ::= a => 
-      p << (abstract_eval_aexp a) ;
+      p << (abstract_aexp a) ;
       st << get ;
       put (t_update st x p)
   | CIf b c1 c2 => 

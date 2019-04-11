@@ -28,10 +28,10 @@ Parity.vo: Parity.v AbstractBool.vo Preorder.vo
 Preorder.vo: Preorder.v
 	$(COQC) $(COQOPT) Preorder.v
 
-ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo  Monad.vo
+ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo  Monad.vo SharedInterpreter.vo
 	$(COQC) $(COQOPT) ConcreteInterpreter.v
 
-AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo Monad.vo Joinable.vo
+AbstractInterpreter.vo: AbstractInterpreter.v ConcreteInterpreter.vo Parity.vo AbstractStore.vo Monad.vo Joinable.vo SharedInterpreter.vo
 	$(COQC) $(COQOPT) AbstractInterpreter.v
 
 AbstractBool.vo: AbstractBool.v Preorder.vo
