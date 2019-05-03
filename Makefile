@@ -49,7 +49,7 @@ Galois.vo: Galois.v Preorder.vo Parity.vo AbstractBool.vo AbstractStore.vo Monad
 Language.vo: Preorder.vo Parity.vo AbstractBool.vo
 	$(COQC) $(COQOPT) Language.v
 
-Joinable.vo: AbstractStore.vo
+Joinable.vo: AbstractStore.vo Joinable.v
 	$(COQC) $(COQOPT) Joinable.v
 
 %.vo : %.v

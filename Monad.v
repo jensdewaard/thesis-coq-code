@@ -16,23 +16,23 @@ Definition bind_state (S A B : Type) (m : State S A) (f : A -> State S B)
             | None => None
             end.
 
+(*
+Inductive result
+  | return
+  | fail
+  | crashd
+in de monad state
+
+fix semantiek van catch mbv bovenstaande
+merge de evaluatie van bools en nats
+abstract en concrete values/monads/state/etc
+  *)
+
 Definition get {S : Type} : State S S := fun st => Some (st, st).
 
 Definition put {S : Type} (st' : S) : State S unit := 
   fun st => Some (tt, st').
   
-(*Definition abstract_state_join (S A : Type) 
-  (st1 st2 : State abstract_store A) : 
-  State S unit :=
-  fun st => match st1 st, st2 st with
-                           | Some (x, st1'), Some (y, st2') => 
-                              Some(x, (abstract_store_join st1' st2'))
-                           | None, Some(y, st2') => Some(y, st2')
-                           | Some (x, st1'), None => Some(x, st1')
-                           | _ , _=> None
-                           end.
-*)
-
 Definition fail {S A : Type} : State S A :=
   fun st => None.
 
@@ -43,26 +43,24 @@ Definition join_state
   (st1 st2 : State S A) : State S A :=
   fun st => join_op (st1 st) (st2 st).
   
-Lemma join_state_upperbound : forall st st',
+Lemma join_state_upperbound_left : forall st st',
   preorder st (join_state st st').
 Proof.
   intros. simpl. constructor. intros. simpl. 
-  unfold join_state. simpl. apply option_join_upperbound.
+  unfold join_state. simpl. apply option_join_upperbound_left.
 Qed.
 
-
-Lemma join_state_comm : forall st st', 
-  join_state st st' = join_state st' st.
+Lemma join_state_upperbound_right : forall st st',
+  preorder st' (join_state st st').
 Proof.
-  intros. unfold join_state. apply functional_extensionality. intros.
-  rewrite join_comm. reflexivity.
+  intros. simpl. constructor. intros. simpl.
+  unfold join_state. simpl. apply option_join_upperbound_right.
 Qed.
-
 
 Global Instance state_joinable : Joinable (State S A) := {
   join_op := join_state;
-  join_upper_bound := join_state_upperbound;
-  join_comm := join_state_comm;
+  join_upper_bound_left := join_state_upperbound_left;
+  join_upper_bound_right := join_state_upperbound_right;
 }.
 End state_joinable.
 

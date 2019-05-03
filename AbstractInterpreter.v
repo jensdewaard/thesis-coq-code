@@ -56,8 +56,6 @@ Definition eval_if_abstract {S A} `{Joinable S, Joinable A}
   | ab_bottom => fail
   end.
   
-Print State.
-
 Definition eval_catch_abstract {S A} `{Joinable S, Joinable A} 
   (st1 st2 : State S A) : State S A :=
   fun st => match (st1 st) with
@@ -81,21 +79,3 @@ Fixpoint ceval_abstract (c : com) : State abstract_store unit :=
       eval_catch_abstract (ceval_abstract c1) (ceval_abstract c2)
   | CFail => fail
   end.
-
-(* write a project plan not a thesis 
-  
-technical plan:
-  extract shared interpreter
-  define lemmas
-  rewrite operations on datatypes as monads
-
-writing plan:
-  project plan <----
-  document what is done
-  mention precision vs. soundness
-  sense of direction
-  presentation
-
-case study:
-  taint analysis
-  *)

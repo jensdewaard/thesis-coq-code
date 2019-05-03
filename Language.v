@@ -4,9 +4,14 @@ Require Import AbstractBool.
 
 Inductive value : Type :=
   | VNat : nat -> value
-  | VBool : bool -> value
-  | VAbstractBool : abstr_bool -> value
-  | VParity : parity -> value.
+  | VBool : bool -> value.
+
+Inductive avalue : Type :=
+  | VParity : parity -> avalue
+  | VAbstrBool : abstr_bool -> avalue
+.
+
+(* expand on the above *)
 
 Inductive aexp : Type :=
   | ANum : nat -> aexp
@@ -43,6 +48,9 @@ Notation "'try' c1 'catch' c2" :=
 Definition plus_op (v1 v2 : value) : option value :=
   match v1, v2 with
   |  VNat x, VNat y =>  Some (VNat (plus x y))
-  |  VParity x, VParity y => Some (VParity (parity_plus x y))
   | _, _ => None
   end.
+
+(* zoek naar papers over 'auto' in coq, en het maken van proofs
+  mogelijk falen *)
+

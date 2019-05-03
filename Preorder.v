@@ -140,7 +140,6 @@ Proof.
 Defined.
 
 End preordered_options.
-About preorder_option.
 
 Section preordered_pairs.
 Context {A B : Type} `{PreorderedSet A, PreorderedSet B}.

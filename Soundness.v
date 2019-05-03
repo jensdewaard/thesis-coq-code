@@ -14,6 +14,8 @@ Require Import Monad.
 Require Import Parity.
 Require Import Preorder.
 
+Create HintDb soundness.
+
 Definition sound {A B A' B' : Type} 
   `{Galois B A} `{Galois B' A'}
   (f : B->B') (f' : A->A') :=
@@ -184,6 +186,8 @@ Proof.
     unfold sound in H2. apply H2. apply H3.
 Qed.
 
+Hint Resolve sound_seq.
+
 Lemma sound_assignment : forall x a,
   sound (ceval (CAss x a)) (ceval_abstract (CAss x a)).
 Proof. 
@@ -194,6 +198,8 @@ Proof.
     + constructor.
     + unfold gamma_store. intros x'. apply t_update_sound; assumption.
 Qed.
+
+Hint Resolve sound_assignment.
   
 Lemma sound_if : forall b c1 c2,
   sound (ceval c1) (ceval_abstract c1) ->
@@ -212,18 +218,20 @@ Proof.
   - (* ab_top *) destruct b0.
     + (* true *)
       assert (preorder (ceval_abstract c1) (join_op (ceval_abstract c1) (ceval_abstract c2))).
-      apply join_upper_bound.
+      apply join_upper_bound_left.
       unfold gamma_fun; intros.
       simpl in H2. inversion H2; subst. 
       eapply widen. apply H4. auto.
     + (* false *) 
       assert (preorder (ceval_abstract c2) (join_op (ceval_abstract c1) (ceval_abstract c2))).
-      { rewrite join_comm. apply join_upper_bound. }
+      apply join_upper_bound_right.
       unfold gamma_fun; intros.
       simpl in H2. inversion H2; subst.
       eapply widen. apply H4. auto.
   - (* ab_bottom *) inversion H1.
 Qed.
+
+Hint Resolve sound_if.
 
 Lemma sound_try_catch : forall c1 c2,
   sound (ceval c1) (ceval_abstract c1) ->
@@ -247,15 +255,26 @@ Proof.
     destruct (ceval c2 st); reflexivity.
 Qed.
 
+Hint Resolve sound_try_catch.
+
+Lemma sound_fail : 
+  sound (ceval CFail) (ceval_abstract CFail).
+Proof.
+  unfold sound. reflexivity.
+Qed.
+
+Hint Resolve sound_fail.
+
+Lemma sound_skip :
+  sound (ceval SKIP) (ceval_abstract SKIP).
+Proof.
+  simpl. split; auto. simpl. reflexivity.
+Qed.
+
+Hint Resolve sound_skip.
+
 Theorem sound_interpreter:
   forall c, sound (ceval c) (ceval_abstract c).
 Proof.
-  intros. induction c; unfold sound; intros.
-  - (* SKIP *) simpl in *. unfold gamma_pairs. simpl.
-    split; auto; reflexivity.
-  - (* Sequence *) apply sound_seq; assumption.
-  - (* Assignment *) apply sound_assignment; assumption.
-  - (* If *) apply sound_if; assumption.
-  - (* Try-Catch *) apply sound_try_catch; assumption.
-  - (* Fail *) reflexivity.
+  intros. induction c; auto with soundness.
 Qed.
