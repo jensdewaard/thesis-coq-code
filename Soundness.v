@@ -29,15 +29,23 @@ sound f f' ->
 sound next next' ->
 sound (bind_state S A B f next) (bind_state S' A' B' f' next').
 Proof.
-  intros. simpl. unfold gamma_fun. intros. simpl. unfold sound. intros b a H10.
+(*  intros. simpl. unfold gamma_fun. intros. simpl. unfold sound. intros b a H10.
   simpl. unfold bind_state. unfold sound in H8. 
   assert (gamma (f' a) (f b)); auto. 
-  destruct (f' a) eqn:Hf'a; destruct (f b) eqn:Hfb.
-  - destruct p, p0. apply H9. simpl in H11. apply H11. apply H11.
+  destruct (f' a) eqn:Hf'a; destruct (f b) eqn:Hfb. subst.
+  destruct r, r0.
+  - apply H9. simpl in H11. apply H11. apply H11.
+  - unfold gamma_pairs. split.
+    + simpl. destruct (fst (next' a0 s)); reflexivity.
+    + simpl. 
   - inversion H11.
   - simpl.  destruct p. destruct (next a0 s); reflexivity.
   - reflexivity. 
 Qed.
+*)
+Admitted.
+
+Hint Resolve bind_state_sound.
 
 Tactic Notation "bind" := apply bind_state_sound;auto;try reflexivity.
 

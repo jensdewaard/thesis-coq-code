@@ -1,19 +1,27 @@
 Require Import Utf8.
+Require Import Coq.Classes.RelationClasses.
+
 Require Import AbstractStore.
 Require Import Joinable.
 Require Import Preorder.
 Require Import FunctionalExtensionality.
 
-Definition State (S : Type) (A : Type) := S -> option (A * S)%type.
+Inductive result (A : Type) : Type :=
+  | returnR : A -> result A
+  | crashed : result A
+  | failed : result A.
+
+Definition State (S : Type) (A : Type) := S -> ((result A) * S)%type.
 
 Definition return_state (S A : Type) (x : A) : State S A :=
-  fun (st : S) => Some (x, st).
+  fun (st : S) => (returnR A x, st).
 
 Definition bind_state (S A B : Type) (m : State S A) (f : A -> State S B) 
     : State S B :=
   fun st => match m st with
-            | Some (x, st') => f x st'
-            | None => None
+            | (returnR _ x, st') => f x st'
+            | (crashed _, st') => (crashed B, st')
+            | (failed _, st') => (failed B, st')
             end.
 
 (*
@@ -28,13 +36,84 @@ merge de evaluatie van bools en nats
 abstract en concrete values/monads/state/etc
   *)
 
-Definition get {S : Type} : State S S := fun st => Some (st, st).
+Definition get {S : Type} : State S S := fun st => (returnR S st, st).
 
 Definition put {S : Type} (st' : S) : State S unit := 
-  fun st => Some (tt, st').
+  fun st => (returnR unit tt, st').
   
 Definition fail {S A : Type} : State S A :=
-  fun st => None.
+  fun st => (failed A, st).
+
+Section result_preorder.
+Context {A : Type} `{PreorderedSet A}.
+
+Inductive result_le : result A -> result A -> Prop :=
+  | result_le_crashed : forall r, result_le r (crashed A)
+  | result_le_return_failed : forall a, result_le (returnR A a) (failed A)
+  | result_le_failed : result_le (failed A) (failed A)
+  | result_le_return : forall a1 a2, 
+      preorder a1 a2 -> result_le (returnR A a1) (returnR A a2).
+
+Lemma result_le_refl :
+  Reflexive result_le.
+Proof.
+  unfold Reflexive. destruct x; constructor.
+  apply preorder_refl.
+Qed.
+
+Lemma result_le_trans :
+  Transitive result_le.
+Proof.
+  unfold Transitive.
+  intros x y z H1 H2.
+  inversion H1; inversion H2; subst; try constructor; try inversion H2.
+  injection H6. intro H8. subst. eapply preorder_trans.
+  apply H0. apply H5.
+Qed.
+
+Global Instance result_preorder : PreorderedSet (result A) := {
+  preorder := result_le;
+  preorder_refl := result_le_refl;
+  preorder_trans := result_le_trans;
+}.
+End result_preorder.
+
+Section result_joinable.
+Context {A : Type} `{Joinable A}.
+
+Definition join_result (r1 r2 : result A) : result A :=
+  match r1, r2 with
+  | crashed _, _ | _, crashed _ => crashed A
+  | failed _, _ | _, failed _ => failed A
+  | returnR _ a1, returnR _ a2 => returnR A (join_op a1 a2)
+  end.
+
+Lemma join_result_upperbound_left :
+  forall r1 r2, preorder r1 (join_result r1 r2).
+Proof. 
+  intros r1 r2. simpl. destruct r1.
+  - destruct r2; simpl; constructor. apply join_upper_bound_left.
+  - simpl. constructor.
+  - simpl. destruct r2; simpl; constructor.
+Qed.
+
+Lemma join_result_upperbound_right :
+  forall r1 r2, preorder r2 (join_result r1 r2).
+Proof. 
+  intros r1 r2. simpl. destruct r1.
+  - destruct r2; simpl; constructor.
+    apply join_upper_bound_right.
+  - simpl. constructor.
+  - simpl. destruct r2; simpl; constructor.
+Qed.
+
+Global Instance result_joinable : Joinable (result A) := {
+  join_op := join_result;
+  join_upper_bound_left := join_result_upperbound_left;
+  join_upper_bound_right := join_result_upperbound_right;
+}.
+
+End result_joinable.
 
 Section state_joinable.
 Context {S A : Type} `{Joinable S} `{Joinable A}.
@@ -47,14 +126,14 @@ Lemma join_state_upperbound_left : forall st st',
   preorder st (join_state st st').
 Proof.
   intros. simpl. constructor. intros. simpl. 
-  unfold join_state. simpl. apply option_join_upperbound_left.
+  unfold join_state. simpl. apply pair_join_upperbound_left.
 Qed.
 
 Lemma join_state_upperbound_right : forall st st',
   preorder st' (join_state st st').
 Proof.
   intros. simpl. constructor. intros. simpl.
-  unfold join_state. simpl. apply option_join_upperbound_right.
+  unfold join_state. simpl. apply pair_join_upperbound_right.
 Qed.
 
 Global Instance state_joinable : Joinable (State S A) := {

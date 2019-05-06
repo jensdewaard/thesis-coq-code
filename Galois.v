@@ -139,6 +139,33 @@ Global Instance galois_pairs :
 }.
 End galois_pairs.
 
+Section galois_result.
+Context {A A' : Type} `{Galois A' A}.
+
+Definition gamma_result : result A -> result A' -> Prop :=
+  fun r1 => fun r2 => match r1, r2 with
+                      | returnR _ x, returnR _ y => gamma x y
+                      | _, crashed _ => True
+                      | returnR _ _, failed _ => True
+                      | _, _ => False
+                      end.
+
+Lemma gamma_result_monotone :
+  monotone gamma_result.
+Proof.
+  unfold monotone. intros a a' Hpred. simpl in *. constructor. intros x Hgamma.
+
+Admitted.
+
+Global Instance galois_result :
+  Galois (result A') (result A) :=
+{
+  gamma := gamma_result;
+  gamma_monotone := gamma_result_monotone;
+}.
+
+End galois_result.
+
 Section galois_state.
 Context {S S' A A'} 
   `{Galois S S', Galois A A'}.

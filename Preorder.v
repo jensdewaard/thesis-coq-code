@@ -61,7 +61,6 @@ Global Instance types_to_prop : PreorderedSet (A -> Prop) :=
   preorder_trans := preordered_set_le_trans;
 }.
 End preordered_sets_le.
-About types_to_prop.
 
 Section preordered_functions.
 Context {A A' : Type} `{PreorderedSet A'}.
@@ -96,8 +95,6 @@ Global Instance preordered_function_spaces :
 }.
   
 End preordered_functions.
-
-About preordered_function_spaces.
 
 Lemma preorder_props : forall {X : Type} (P Q : X -> Prop) (x : X),
   preorder P Q -> P x -> Q x.
