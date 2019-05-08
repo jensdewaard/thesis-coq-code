@@ -2,14 +2,17 @@ Require Export Coq.Strings.String.
 Require Import Parity.
 Require Import AbstractBool.
 
-Inductive value : Type :=
-  | VNat : nat -> value
-  | VBool : bool -> value.
+Inductive cvalue : Type :=
+  | VNat : nat -> cvalue
+  | VBool : bool -> cvalue.
 
 Inductive avalue : Type :=
   | VParity : parity -> avalue
-  | VAbstrBool : abstr_bool -> avalue
-.
+  | VAbstrBool : abstr_bool -> avalue.
+  
+Inductive value : Type :=
+  | VAbs : avalue -> value
+  | VConc : cvalue -> value.
 
 (* expand on the above *)
 
@@ -50,6 +53,7 @@ Definition plus_op (v1 v2 : value) : option value :=
   |  VNat x, VNat y =>  Some (VNat (plus x y))
   | _, _ => None
   end.
+
 
 (* zoek naar papers over 'auto' in coq, en het maken van proofs
   mogelijk falen *)
