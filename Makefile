@@ -28,6 +28,8 @@ Parity.vo: Parity.v AbstractBool.vo Preorder.vo
 Preorder.vo: Preorder.v
 	$(COQC) $(COQOPT) Preorder.v
 
+SharedInterpreter.vo: SharedInterpreter.v Monad.vo Language.vo
+
 ConcreteInterpreter.vo: ConcreteInterpreter.v Language.vo Maps.vo  Monad.vo SharedInterpreter.vo
 	$(COQC) $(COQOPT) ConcreteInterpreter.v
 

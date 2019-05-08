@@ -16,11 +16,13 @@ Require Import Preorder.
 
 Create HintDb soundness.
 
+Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
+
 Definition sound {A B A' B' : Type} 
   `{Galois B A} `{Galois B' A'}
   (f : B->B') (f' : A->A') :=
   forall b a, gamma a b -> gamma (f' a) (f b).
-  
+
 Lemma bind_state_sound {S S' A A' B B'} 
 `{Galois S S', Galois A A', Galois B B'}
 : 
@@ -29,28 +31,29 @@ sound f f' ->
 sound next next' ->
 sound (bind_state S A B f next) (bind_state S' A' B' f' next').
 Proof.
-(*  intros. simpl. unfold gamma_fun. intros. simpl. unfold sound. intros b a H10.
-  simpl. unfold bind_state. unfold sound in H8. 
-  assert (gamma (f' a) (f b)); auto. 
-  destruct (f' a) eqn:Hf'a; destruct (f b) eqn:Hfb. subst.
-  destruct r, r0.
-  - apply H9. simpl in H11. apply H11. apply H11.
-  - unfold gamma_pairs. split.
-    + simpl. destruct (fst (next' a0 s)); reflexivity.
-    + simpl. 
-  - inversion H11.
-  - simpl.  destruct p. destruct (next a0 s); reflexivity.
-  - reflexivity. 
-Qed.
-*)
+  intros. 
+  unfold bind_state. unfold sound. intros. apply H8 in H10.
+  destruct (f' a) as (r', st'). destruct (f b) as (r, st).
+  simpl in H10. destruct H10. simpl in H10. simpl in H11.
+  
+  destruct r'.
+  - destruct r.
+    + simpl. simpl in H10. pairs; apply H9; auto.
+    + inversion H10.
+    + inversion H10.
+  - pairs. simpl. destruct r; simpl; auto. 
+    destruct (next a0 st). admit.
+  - destruct r.
+    + inversion H10.
+    + inversion H10.
+    + simpl. pairs.
 Admitted.
 
 Hint Resolve bind_state_sound.
 
-
 Tactic Notation "bind" := apply bind_state_sound;auto;try reflexivity.
 
-Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
+
 
 Lemma sound_parity_plus :
   sound plus parity_plus.
@@ -244,29 +247,32 @@ Lemma sound_try_catch : forall c1 c2,
   sound (ceval c2) (ceval_abstract c2) ->
   sound (ceval (CTryCatch c1 c2)) (ceval_abstract (CTryCatch c1 c2)).
 Proof.
-  intros c1 c2 H1 H2 st ast Hstore.  
-  simpl. unfold eval_catch, eval_catch_abstract. 
-  destruct (ceval_abstract c1 ast) eqn:Habs1;
-  destruct (ceval c1 st) eqn:Hconc1. 
-  - (* abstract eval and concrete eval succeed *) 
-    rewrite <- Hconc1, <- Habs1. apply H1. apply Hstore.
-  - (* abstract succeeds and concrete fails, contradiction *)
-    unfold sound in H1. apply H1 in Hstore.
-    rewrite Habs1 in Hstore. rewrite Hconc1 in Hstore. inversion Hstore.
-  - (* abstract fails and concrete succeeds, should contradict?? *)
-    unfold sound in H1. apply H1 in Hstore.
-    simpl. unfold join_state. rewrite Habs1. reflexivity.
-  - (* both fail *)
-    simpl. unfold join_state. rewrite Habs1. simpl.
-    destruct (ceval c2 st); reflexivity.
-Qed.
+  intros c1 c2 H1 H2 st ast Hstore. 
+  unfold sound in H1. apply H1 in Hstore.
+  simpl. unfold eval_catch_abstract, eval_catch.
+  destruct (ceval_abstract c1 ast) eqn:Habs1.
+  destruct (ceval c1 st) eqn:Hconc1.
+  simpl in Hstore. destruct Hstore as [Hres Hstore]. simpl in Hres, Hstore.
+  destruct r.
+  - destruct r0. 
+    + pairs. 
+    + pairs.
+    + inversion Hres.
+  - clear Hres.
+    pairs. destruct r0; simpl; auto.
+    admit.
+  - destruct r0.
+    + inversion Hres.
+    + inversion Hres.
+    + pairs; apply H2; apply Hstore.
+Admitted.
 
 Hint Resolve sound_try_catch.
 
 Lemma sound_fail : 
   sound (ceval CFail) (ceval_abstract CFail).
 Proof.
-  unfold sound. reflexivity.
+  pairs.
 Qed.
 
 Hint Resolve sound_fail.

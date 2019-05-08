@@ -145,17 +145,22 @@ Context {A A' : Type} `{Galois A' A}.
 Definition gamma_result : result A -> result A' -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
                       | returnR _ x, returnR _ y => gamma x y
-                      | _, crashed _ => True
-                      | returnR _ _, failed _ => True
+                      | crashed _ , _ => True
+                      | failed _ , failed _ => True
                       | _, _ => False
                       end.
 
 Lemma gamma_result_monotone :
   monotone gamma_result.
 Proof.
-  unfold monotone. intros a a' Hpred. simpl in *. constructor. intros x Hgamma.
-
-Admitted.
+  unfold monotone. intros a a' Hpred. simpl in *. constructor. 
+  intros x Hgamma.
+  inversion Hpred; subst.
+  - reflexivity.
+  - destruct x; try inversion Hgamma; reflexivity.
+  - destruct x; try inversion Hgamma. simpl in *.
+    eapply widen. apply H2. apply Hgamma.
+Qed.
 
 Global Instance galois_result :
   Galois (result A') (result A) :=
