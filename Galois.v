@@ -8,13 +8,14 @@ Require Import State.
 
 Typeclasses eauto := 10.
 
-Class Galois (A B : Type) `{PreorderedSet A, PreorderedSet B} : Type :=
+Class Galois (A B : Type) `{PreorderedSet B} : Type :=
 {
   gamma : B -> A -> Prop;
   gamma_monotone : monotone gamma;
+
 }.
-Arguments Build_Galois A B {_ _ _ _}.
-Arguments gamma {_ _ _ _ _}.
+Arguments Build_Galois A B {_ _ _}.
+Arguments gamma {_ _ _ _}.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
@@ -39,8 +40,7 @@ Qed.
 
 Section galois_functions.
 Context {A A' B B' : Type} 
-  `{Galois B A, Galois B' A'}
-.
+  `{Galois B A, Galois B' A'}.
 
 Definition gamma_fun (f' : A-> A') (f : B -> B') : 
 Prop :=
@@ -49,10 +49,11 @@ Prop :=
 Lemma gamma_fun_monotone :
   monotone gamma_fun.
 Proof.
-  constructor. 
-  intros. simpl in *. unfold gamma_fun in *. intros. 
-  apply widen with (f:= a a0). destruct H5; apply H5.
-  apply H6. apply H7.
+  constructor.
+  intros x Hgamma. unfold gamma_fun in *. 
+  intros a0 b Hgamma2.
+  apply widen with (f:= a a0). destruct H3; apply H3.
+  apply Hgamma. apply Hgamma2.
 Qed.
 
 Global Instance GFun : 
@@ -79,13 +80,14 @@ Definition gamma_option :
 Lemma gamma_option_monotone  : 
   monotone gamma_option.
 Proof.
-  unfold monotone. intros. simpl in *. constructor. intros.
-  inversion H2; subst.
+  unfold monotone. intros a a' Hpre. simpl in *. constructor. 
+  intros x Hgamma.
+  inversion Hpre; subst.
   - assumption.
   - destruct x; constructor.
   - destruct x.
-    + simpl. eapply widen. apply H4. apply H3.
-    + inversion H3.
+    + simpl. eapply widen. apply H1. apply Hgamma.
+    + inversion Hgamma.
 Qed.
 
 Global Instance galois_option : 
@@ -127,10 +129,10 @@ Lemma gamma_pairs_monotone :
   monotone gamma_pairs.
 Proof.
   unfold monotone. intros [a c] [a' c'].
-  intro. simpl. constructor. intros [b d]. unfold gamma_pairs; simpl.
-  intros [Hab Hac]. inversion H5; subst. split.
-  - eapply widen. apply H9. apply Hab.
-  - eapply widen. apply H11. apply Hac. 
+  intro Hpre. simpl. constructor. intros [b d]. unfold gamma_pairs; simpl.
+  intros [Hab Hac]. inversion Hpre; subst. split.
+  - eapply widen. apply H6. apply Hab.
+  - eapply widen. apply H8. apply Hac. 
 Qed.
 
 Global Instance galois_pairs :
@@ -161,7 +163,7 @@ Proof.
   - reflexivity.
   - destruct x; try inversion Hgamma; reflexivity.
   - destruct x; try inversion Hgamma. simpl in *.
-    eapply widen. apply H2. apply Hgamma.
+    eapply widen. apply H1. apply Hgamma.
 Qed.
 
 Global Instance galois_result :

@@ -34,14 +34,14 @@ sound (bind_state A B f next) (bind_state_abstract A' B' f' next').
 Proof.
   intros. 
   unfold bind_state, bind_state_abstract. unfold sound. 
-  intros. apply H5 in H7.
+  intros. apply H3 in H5.
   destruct (f' a) as (r', st'). destruct (f b) as (r, st).
-  simpl in H7. destruct H7 as [Hres Hstore]. 
+  simpl in H5. destruct H5 as [Hres Hstore]. 
   simpl in Hres. simpl in Hstore.
   
   destruct r'.
   - destruct r.
-    + simpl. simpl in Hres. pairs; apply H6; auto.
+    + simpl. simpl in Hres. pairs; apply H4; auto.
     + inversion Hres.
     + inversion Hres.
   - pairs. simpl. destruct r; simpl; auto. 
