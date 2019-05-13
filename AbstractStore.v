@@ -1,5 +1,5 @@
 Require Import Maps.
-Require Import Parity.
+Require Import Language.Parity.
 Require Import Preorder.
 
 Definition store := total_map nat.

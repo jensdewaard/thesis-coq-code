@@ -1,8 +1,10 @@
 Require Import AbstractBool.
 Require Import AbstractStore.
+Require Import Monad.
 Require Import Parity.
 Require Import Preorder.
-Require Import Monad.
+Require Import Result.
+Require Import State.
 
 Typeclasses eauto := 10.
 

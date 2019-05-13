@@ -3,7 +3,7 @@ Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Arith.Even.
 Require Import Coq.Sets.Partial_Order.
 
-Require Import AbstractBool.
+Require Import Language.AbstractBool.
 Require Import Preorder.
 
 (** * Parity *)
