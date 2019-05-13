@@ -23,37 +23,37 @@ Definition sound {A B A' B' : Type}
   (f : B->B') (f' : A->A') :=
   forall b a, gamma a b -> gamma (f' a) (f b).
 
-Lemma bind_state_sound {S S' A A' B B'} 
-`{Galois S S', Galois A A', Galois B B'}
+Lemma bind_state_sound {A A' B B'} 
+`{Galois A A', Galois B B'}
 : 
 forall next next' f f',
 sound f f' ->
 sound next next' ->
-sound (bind_state S A B f next) (bind_state S' A' B' f' next').
+sound (bind_state A B f next) (bind_state_abstract A' B' f' next').
 Proof.
   intros. 
-  unfold bind_state. unfold sound. intros. apply H8 in H10.
+  unfold bind_state, bind_state_abstract. unfold sound. 
+  intros. apply H5 in H7.
   destruct (f' a) as (r', st'). destruct (f b) as (r, st).
-  simpl in H10. destruct H10. simpl in H10. simpl in H11.
+  simpl in H7. destruct H7 as [Hres Hstore]. 
+  simpl in Hres. simpl in Hstore.
   
   destruct r'.
   - destruct r.
-    + simpl. simpl in H10. pairs; apply H9; auto.
-    + inversion H10.
-    + inversion H10.
+    + simpl. simpl in Hres. pairs; apply H6; auto.
+    + inversion Hres.
+    + inversion Hres.
   - pairs. simpl. destruct r; simpl; auto. 
     destruct (next a0 st). admit.
   - destruct r.
-    + inversion H10.
-    + inversion H10.
+    + inversion Hres.
+    + inversion Hres.
     + simpl. pairs.
 Admitted.
 
 Hint Resolve bind_state_sound.
 
 Tactic Notation "bind" := apply bind_state_sound;auto;try reflexivity.
-
-
 
 Lemma sound_parity_plus :
   sound plus parity_plus.

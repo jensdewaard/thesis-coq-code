@@ -9,9 +9,15 @@ Require Import SharedInterpreter.
 
 Open Scope com_scope.
 
-Definition concrete_aexp := shared_aexp store nat (fun x => x) plus mult.
+Definition concrete_aexp := shared_aexp 
+  nat 
+  (fun x => x) 
+  plus 
+  mult 
+  store
+  get.
 
-Fixpoint eval_bexp (e : bexp) : State store bool :=
+Fixpoint eval_bexp (e : bexp) : State bool :=
   match e with
   | BTrue => returnM true
   | BFalse => returnM false
@@ -32,17 +38,17 @@ Fixpoint eval_bexp (e : bexp) : State store bool :=
       returnM (andb b1' b2')
   end.
 
-Definition eval_if {S A} (b : bool) (st1 st2 : State S A) : State S A :=
+Definition eval_if {A} (b : bool) (st1 st2 : State A) : State A :=
   if b then st1 else st2.
 
-Definition eval_catch {S A} (st1 st2 : State S A) : State S A :=
+Definition eval_catch {A} (st1 st2 : State A) : State A :=
   fun st => match (st1 st) with
   | (crashed _, st') => (crashed A, st')
   | (failed _, st') => (st2 st')
   | x => x
   end.
 
-Fixpoint ceval (c : com) : State store unit :=
+Fixpoint ceval (c : com) : State unit :=
   match c with
   | CSkip => returnM tt
   | c1 ;c; c2 => 

@@ -172,16 +172,16 @@ Global Instance galois_result :
 End galois_result.
 
 Section galois_state.
-Context {S S' A A'} 
-  `{Galois S S', Galois A A'}.
+Context {A A'} 
+  `{Galois A A'}.
 
 Global Instance galois_state :
-  Galois (State S A) (State S' A').
+  Galois (State A) (AbstractState A').
 Proof.
-  intros. unfold State. 
-  assert (Galois (A*S) (A'*S')).
+  intros. unfold State, AbstractState. 
+  assert (Galois (A*store) (A'*abstract_store)).
   { apply galois_pairs. }
-  assert (Galois (option (A*S)) (option (A'*S'))).
+  assert (Galois (option (A*store)) (option (A'*abstract_store))).
   { apply galois_option. }
   apply GFun. 
 Defined.
