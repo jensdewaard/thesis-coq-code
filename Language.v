@@ -48,7 +48,7 @@ Notation "x '::=' a" :=
 Notation "'try' c1 'catch' c2" :=
     (CTryCatch c1 c2) (at level 70) : com_scope.
 
-Definition plus_op (v1 v2 : value) : option value :=
+Definition plus_op (v1 v2 : cvalue) : option cvalue :=
   match v1, v2 with
   |  VNat x, VNat y =>  Some (VNat (plus x y))
   | _, _ => None
