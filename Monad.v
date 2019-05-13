@@ -20,14 +20,14 @@ Require Import FunctionalExtensionality.
 Inductive result (A : Type) : Type :=
   | returnR : A -> result A
   | crashed : result A
-  | failed : result A.
+  | exception : result A.
 
 Section result_preorder.
 Context {A : Type} `{PreorderedSet A}.
 
 Inductive result_le : result A -> result A -> Prop :=
   | result_le_crashed : forall r, result_le r (crashed A)
-  | result_le_failed : result_le (failed A) (failed A)
+  | result_le_exception : result_le (exception A) (exception A)
   | result_le_return : forall a1 a2, 
       preorder a1 a2 -> result_le (returnR A a1) (returnR A a2).
 
@@ -62,7 +62,7 @@ Context {A : Type} `{Joinable A}.
 Definition join_result (r1 r2 : result A) : result A :=
   match r1, r2 with
   | crashed _, _ | _, crashed _ => crashed A
-  | failed _, failed _ => failed A
+  | exception _, exception _ => exception A
   | returnR _ a1, returnR _ a2 => returnR A (join_op a1 a2)
   | _ , _ => crashed A
   end.
@@ -105,7 +105,7 @@ Definition bind_state (A B : Type) (m : State A) (f : A -> State B)
   fun st => match m st with
             | (returnR _ x, st') => f x st'
             | (crashed _, st') => (crashed B, st')
-            | (failed _, st') => (failed B, st')
+            | (exception _, st') => (exception B, st')
             end.
 
 Definition get : State store := fun st => (returnR store st, st).
@@ -114,7 +114,7 @@ Definition put (st' : store) : State unit :=
   fun st => (returnR unit tt, st').
   
 Definition fail {A : Type} : State A :=
-  fun st => (failed A, st).
+  fun st => (exception A, st).
 
 Definition AbstractState (A : Type) :=
   abstract_store -> ((result A) * abstract_store)%type.
@@ -127,7 +127,7 @@ Definition bind_state_abstract (A B : Type)
   fun st => match m st with
             | (returnR _ x, st') => f x st'
             | (crashed _  , st') => (crashed B, st')
-            | (failed _   , st') => (failed B, st') 
+            | (exception _   , st') => (exception B, st') 
             end.
 
 Definition get_abstract : AbstractState abstract_store := 
@@ -137,7 +137,7 @@ Definition put_abstract (st' : abstract_store) : AbstractState unit :=
   fun st => (returnR unit tt, st').
 
 Definition fail_abstract {A : Type} : AbstractState A :=
-  fun st => (failed A, st).
+  fun st => (exception A, st).
 
 Section state_joinable.
 Context {A : Type}  `{Joinable A}.

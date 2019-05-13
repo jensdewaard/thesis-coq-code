@@ -146,7 +146,7 @@ Definition gamma_result : result A -> result A' -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
                       | returnR _ x, returnR _ y => gamma x y
                       | crashed _ , _ => True
-                      | failed _ , failed _ => True
+                      | exception _ , exception _ => True
                       | _, _ => False
                       end.
 
