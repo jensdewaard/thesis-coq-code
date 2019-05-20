@@ -35,22 +35,19 @@ Proof.
   intros. 
   unfold bind_state, bind_state_abstract. unfold sound. 
   intros. apply H3 in H5.
-  destruct (f' a) as (r', st'). destruct (f b) as (r, st).
-  simpl in H5. destruct H5 as [Hres Hstore]. 
-  simpl in Hres. simpl in Hstore.
-  
-  destruct r'.
-  - destruct r.
-    + simpl. simpl in Hres. pairs; apply H4; auto.
-    + inversion Hres.
-    + inversion Hres.
-  - pairs. simpl. destruct r; simpl; auto. 
-    destruct (next a0 st). admit.
-  - destruct r.
-    + inversion Hres.
-    + inversion Hres.
-    + simpl. pairs.
-Admitted.
+  simpl in H5.
+  destruct (f' a).
+  - destruct (f b).
+    + simpl. destruct p. destruct p0. apply H4. 
+      apply H5. apply H5.
+    + inversion H5.
+    + inversion H5.
+  - reflexivity.
+  - destruct (f b).
+    + inversion H5.
+    + inversion H5.
+    + simpl. simpl in H5. apply H5.
+Qed.
 
 Hint Resolve bind_state_sound.
 
@@ -251,29 +248,25 @@ Proof.
   intros c1 c2 H1 H2 st ast Hstore. 
   unfold sound in H1. apply H1 in Hstore.
   simpl. unfold eval_catch_abstract, eval_catch.
-  destruct (ceval_abstract c1 ast) eqn:Habs1.
+  destruct (ceval_abstract c1 ast) eqn:Habs1;
   destruct (ceval c1 st) eqn:Hconc1.
-  simpl in Hstore. destruct Hstore as [Hres Hstore]. simpl in Hres, Hstore.
-  destruct r.
-  - destruct r0. 
-    + pairs. 
-    + pairs.
-    + inversion Hres.
-  - clear Hres.
-    pairs. destruct r0; simpl; auto.
-    admit.
-  - destruct r0.
-    + inversion Hres.
-    + inversion Hres.
-    + pairs; apply H2; apply Hstore.
-Admitted.
+  - apply Hstore.
+  - apply Hstore.
+  - inversion Hstore.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - inversion Hstore.
+  - inversion Hstore.
+  - simpl in *. apply H2. apply Hstore.
+Qed.
 
 Hint Resolve sound_try_catch.
 
 Lemma sound_fail : 
   sound (ceval CFail) (ceval_abstract CFail).
 Proof.
-  pairs.
+  unfold sound. intros b a H. simpl. apply H.
 Qed.
 
 Hint Resolve sound_fail.

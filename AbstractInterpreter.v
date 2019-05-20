@@ -54,8 +54,8 @@ Definition eval_if_abstract {A} `{Joinable A}
 Definition eval_catch_abstract {A} `{Joinable A} 
   (st1 st2 : AbstractState A) : AbstractState A :=
   fun st => match (st1 st) with
-  | (crashed _, st') => (crashed A, st')
-  | (exception _, st') => st2 st'
+  | crashed _ _ => crashed _ _ 
+  | exception _ _ st' => st2 st'
   | x => x
   end.
 

@@ -45,8 +45,8 @@ Definition eval_if {A} (b : bool) (st1 st2 : State A) : State A :=
 
 Definition eval_catch {A} (st1 st2 : State A) : State A :=
   fun st => match (st1 st) with
-  | (crashed _, st') => (crashed A, st')
-  | (exception _, st') => (st2 st')
+  | crashed _ _ => crashed _ _
+  | exception _ _ st' => (st2 st')
   | x => x
   end.
 

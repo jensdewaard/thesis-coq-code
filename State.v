@@ -7,49 +7,49 @@ Require Import Result.
 Require Import Monad.
 
 Definition State (A : Type) := 
-  store -> ((result A) * store)%type.
+  store -> result A store.
 
 Definition return_state (A : Type) (x : A) : State A :=
-  fun st => (returnR A x, st).
+  fun st => returnR A store (x, st).
 
 Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
     : State B :=
   fun st => match m st with
-            | (returnR _ x, st') => f x st'
-            | (crashed _, st') => (crashed B, st')
-            | (exception _, st') => (exception B, st')
+            | returnR _ _ (x, st') => f x st'
+            | crashed _ _ => crashed _ _
+            | exception _ _ st' => exception _ _ st'
             end.
 
-Definition get : State store := fun st => (returnR store st, st).
+Definition get : State store := fun st => returnR store store (st, st).
 
 Definition put (st' : store) : State unit := 
-  fun st => (returnR unit tt, st').
+  fun st => returnR unit store (tt, st').
   
 Definition fail {A : Type} : State A :=
-  fun st => (exception A, st).
+  fun st => exception A store st.
 
 Definition AbstractState (A : Type) :=
-  abstract_store -> ((result A) * abstract_store)%type.
+  abstract_store -> result A abstract_store.
 
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
-  fun st => (returnR A x, st).
+  fun st => returnR A abstract_store (x, st).
 
 Definition bind_state_abstract (A B : Type) 
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
-            | (returnR _ x, st') => f x st'
-            | (crashed _  , st') => (crashed B, st')
-            | (exception _   , st') => (exception B, st') 
+            | returnR _ _ (x, st') => f x st'
+            | crashed _ _ => crashed _ _
+            | exception _ _ st' => exception _ _ st' 
             end.
 
 Definition get_abstract : AbstractState abstract_store := 
-  fun st => (returnR abstract_store st, st).
+  fun st => returnR abstract_store abstract_store (st, st).
 
 Definition put_abstract (st' : abstract_store) : AbstractState unit :=
-  fun st => (returnR unit tt, st').
+  fun st => returnR unit abstract_store (tt, st').
 
 Definition fail_abstract {A : Type} : AbstractState A :=
-  fun st => (exception A, st).
+  fun st => exception A abstract_store st.
 
 Section state_joinable.
 Context {A : Type}  `{Joinable A}.
@@ -62,14 +62,14 @@ Lemma join_state_upperbound_left : forall st st',
   preorder st (join_state st st').
 Proof.
   intros. simpl. constructor. intros. simpl. 
-  unfold join_state. simpl. apply pair_join_upperbound_left.
+  unfold join_state. simpl.  apply join_result_upperbound_left.
 Qed.
 
 Lemma join_state_upperbound_right : forall st st',
   preorder st' (join_state st st').
 Proof.
   intros. simpl. constructor. intros. simpl.
-  unfold join_state. simpl. apply pair_join_upperbound_right.
+  unfold join_state. simpl. apply join_result_upperbound_right.
 Qed.
 
 Global Instance state_joinable : Joinable (State A) := {
@@ -90,14 +90,14 @@ Lemma join_state_abstract_upperbound_left : forall st st',
   preorder st (join_state_abstract st st').
 Proof.
   intros. simpl. constructor. intro x. simpl.
-  unfold join_state_abstract. apply pair_join_upperbound_left.
+  unfold join_state_abstract. apply join_result_upperbound_left.
 Qed.
 
 Lemma join_state_abstract_upperbound_right : forall st st',
   preorder st' (join_state_abstract st st').
 Proof.
   intros. simpl. constructor. intro x. simpl.
-  unfold join_state_abstract. apply pair_join_upperbound_right.
+  unfold join_state_abstract. apply join_result_upperbound_right.
 Qed.
 
 Global Instance abstract_state_joinable : Joinable (AbstractState A) := 

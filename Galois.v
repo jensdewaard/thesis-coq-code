@@ -144,13 +144,13 @@ Global Instance galois_pairs :
 End galois_pairs.
 
 Section galois_result.
-Context {A A' : Type} `{Galois A' A}.
+Context {A A': Type} `{Galois A' A}.
 
-Definition gamma_result : result A -> result A' -> Prop :=
+Definition gamma_result : result A abstract_store -> result A' store -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
-                      | returnR _ x, returnR _ y => gamma x y
-                      | crashed _ , _ => True
-                      | exception _ , exception _ => True
+                      | returnR _ _ x, returnR _ _ y => gamma x y
+                      | crashed _ _ , _ => True
+                      | exception _ _ st, exception _ _ st' => gamma st st'
                       | _, _ => False
                       end.
 
@@ -161,13 +161,14 @@ Proof.
   intros x Hgamma.
   inversion Hpred; subst.
   - reflexivity.
-  - destruct x; try inversion Hgamma; reflexivity.
-  - destruct x; try inversion Hgamma. simpl in *.
+  - destruct x; try inversion Hgamma.
     eapply widen. apply H1. apply Hgamma.
+  - destruct x; try inversion Hgamma. 
+    eapply widen. apply H1. auto.
 Qed.
 
 Global Instance galois_result :
-  Galois (result A') (result A) :=
+  Galois (result A' store) (result A abstract_store) :=
 {
   gamma := gamma_result;
   gamma_monotone := gamma_result_monotone;
