@@ -11,20 +11,20 @@ Definition State (A : Type) :=
   store -> result A store.
 
 Definition return_state (A : Type) (x : A) : State A :=
-  fun st => returnR A store (x, st).
+  fun st => returnR A store x st.
 
 Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
     : State B :=
   fun st => match m st with
-            | returnR _ _ (x, st') => f x st'
+            | returnR _ _ x st' => f x st'
             | crashed _ _ => crashed _ _
             | exception _ _ st' => exception _ _ st'
             end.
 
-Definition get : State store := fun st => returnR store store (st, st).
+Definition get : State store := fun st => returnR store store st st.
 
 Definition put (st' : store) : State unit := 
-  fun st => returnR unit store (tt, st').
+  fun st => returnR unit store tt st'.
   
 Definition fail {A : Type} : State A :=
   fun st => exception A store st.
@@ -33,21 +33,21 @@ Definition AbstractState (A : Type) :=
   abstract_store -> result A abstract_store.
 
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
-  fun st => returnR A abstract_store (x, st).
+  fun st => returnR A abstract_store x st.
 
 Definition bind_state_abstract (A B : Type) 
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
-            | returnR _ _ (x, st') => f x st'
+            | returnR _ _ x st' => f x st'
             | crashed _ _ => crashed _ _
             | exception _ _ st' => exception _ _ st' 
             end.
 
 Definition get_abstract : AbstractState abstract_store := 
-  fun st => returnR abstract_store abstract_store (st, st).
+  fun st => returnR abstract_store abstract_store st st.
 
 Definition put_abstract (st' : abstract_store) : AbstractState unit :=
-  fun st => returnR unit abstract_store (tt, st').
+  fun st => returnR unit abstract_store tt st'.
 
 Definition fail_abstract {A : Type} : AbstractState A :=
   fun st => exception A abstract_store st.

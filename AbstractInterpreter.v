@@ -22,13 +22,13 @@ Open Scope com_scope.
   
 Definition ensure_par (v : avalue) : AbstractState parity :=
   fun st => match v with
-            | VParity x => returnR parity abstract_store (x, st)
+            | VParity x => returnR parity abstract_store x st
             | _ => crashed _ _
             end.
             
 Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
   fun st => match v with
-            | VAbstrBool b => returnR abstr_bool abstract_store (b, st)
+            | VAbstrBool b => returnR abstr_bool abstract_store b st
             | _ => crashed _ _
             end.
             

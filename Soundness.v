@@ -73,7 +73,7 @@ Proof.
   simpl in H5.
   destruct (f' a).
   - destruct (f b).
-    + simpl. destruct p. destruct p0. apply H4. 
+    + simpl. apply H4. 
       apply H5. apply H5.
     + inversion H5.
     + inversion H5.

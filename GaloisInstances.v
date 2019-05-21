@@ -149,7 +149,8 @@ Context {A A': Type} `{Galois A' A}.
 
 Definition gamma_result : result A abstract_store -> result A' store -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
-                      | returnR _ _ x, returnR _ _ y => gamma x y
+                      | returnR _ _ a s, returnR _ _  b t => 
+                          gamma a b /\ gamma s t
                       | crashed _ _ , _ => True
                       | exception _ _ st, exception _ _ st' => gamma st st'
                       | _, _ => False
@@ -164,8 +165,8 @@ Proof.
   - reflexivity.
   - destruct x; try inversion Hgamma.
     eapply widen. apply H1. apply Hgamma.
-  - destruct x; try inversion Hgamma. 
-    eapply widen. apply H1. auto.
+  - destruct x; try inversion Hgamma.
+    split; eapply widen. apply H1. auto. apply H2. auto.
 Qed.
 
 Global Instance galois_result :

@@ -21,13 +21,13 @@ Open Scope com_scope.
   
 Definition ensure_nat (v : cvalue) : State nat :=
   fun st => match v with
-            | VNat x => returnR nat store (x, st)
+            | VNat x => returnR nat store x st
             | _ => crashed _ _
             end.
             
 Definition ensure_bool (v : cvalue) : State bool :=
   fun st => match v with
-            | VBool b => returnR bool store (b, st)
+            | VBool b => returnR bool store b st
             | _ => crashed _ _
             end.
   
