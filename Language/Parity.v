@@ -4,7 +4,6 @@ Require Import Coq.Arith.Even.
 Require Import Coq.Sets.Partial_Order.
 
 Require Import Language.AbstractBool.
-Require Import Preorder.
 
 (** * Parity *)
 
@@ -30,13 +29,6 @@ Lemma parity_le_trans : forall p1 p2 p3,
 destruct p1, p2, p3; intros; try constructor; 
   try inversion H; try inversion H0. Qed.
 
-Instance proset_parity : PreorderedSet parity :=
-{
-  preorder := parity_le;
-  preorder_refl := parity_le_refl;
-  preorder_trans := parity_le_trans;
-}.
-
 (** ** Abstraction and concretizations functions *)
 
 Definition gamma_par (p : parity) : nat -> Prop :=
@@ -54,12 +46,6 @@ Fixpoint extract_par (n : nat) : parity :=
   | S (S n) => extract_par n
   end.
 
-Lemma gamma_par_monotone : forall p1 p2,
-  preorder p1 p2 -> preorder (gamma_par p1) (gamma_par p2).
-Proof.
-  destruct p1, p2; simpl; intros; try constructor; try inversion H;
-    intros; try tauto.
-Qed.
 
 (** ** Operations *)
 

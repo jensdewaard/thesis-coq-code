@@ -11,33 +11,65 @@ Require Import Result.
 
 Open Scope com_scope.
 
-Definition concrete_aexp := shared_aexp 
+(*Definition concrete_aexp := shared_aexp 
   nat 
   (fun x => x) 
   plus 
   mult 
   store
-  get.
-
-Fixpoint eval_bexp (e : bexp) : State bool :=
+  get.*)
+  
+Definition ensure_nat (v : cvalue) : State nat :=
+  fun st => match v with
+            | VNat x => returnR nat store (x, st)
+            | _ => crashed _ _
+            end.
+            
+Definition ensure_bool (v : cvalue) : State bool :=
+  fun st => match v with
+            | VBool b => returnR bool store (b, st)
+            | _ => crashed _ _
+            end.
+  
+Fixpoint eval_expr (e : expr) : State cvalue :=
   match e with
-  | BTrue => returnM true
-  | BFalse => returnM false
-  | BEq a1 a2 =>
-      n1 << (concrete_aexp a1) ;
-      n2 << (concrete_aexp a2) ;
-      returnM (Nat.eqb n1 n2)
-  | BLe a1 a2 =>
-      n1 << (concrete_aexp a1) ;
-      n2 << (concrete_aexp a2) ;
-      returnM (Nat.leb n1 n2)
-  | BNot b => 
-      b' << (eval_bexp b) ;
-      returnM (negb b')
-  | BAnd b1 b2 =>
-      b1' << (eval_bexp b1) ;
-      b2' << (eval_bexp b2) ;
-      returnM (andb b1' b2')
+  | EVal x => returnM x
+  | EVar x => st << get ;
+      returnM (st x)
+  | EPlus e1 e2 => 
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VNat (n1 + n2))
+  | EMult e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VNat (n1 * n2))
+  | EEq e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VBool (Nat.eqb n1 n2))
+  | ELe e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VBool (Nat.leb n1 n2))
+  | ENot e =>
+      v << (eval_expr e) ;
+      b << (ensure_bool v) ;
+      returnM (VBool (negb b))
+  | EAnd e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      b1 << (ensure_bool v1) ;
+      b2 << (ensure_bool v2) ;
+      returnM (VBool (andb b1 b2))
   end.
 
 Definition eval_if {A} (b : bool) (st1 st2 : State A) : State A :=
@@ -56,11 +88,12 @@ Fixpoint ceval (c : com) : State unit :=
   | c1 ;c; c2 => 
       (ceval c1) ;; (ceval c2)
   | x ::= a => 
-      n << (concrete_aexp a) ;
+      n << (eval_expr a) ;
       st << get ;
       put (t_update st x n)
   | CIf b c1 c2 => 
-      b' << (eval_bexp b) ;
+      v << (eval_expr b) ;
+      b' << (ensure_bool v) ;
       eval_if b' (ceval c1) (ceval c2)
   | try c1 catch c2 => eval_catch (ceval c1) (ceval c2)
   | CFail => fail

@@ -1,14 +1,4 @@
-(*
-Inductive result
-  | return
-  | fail
-  | crashd
-in de monad state
 
-fix semantiek van catch mbv bovenstaande
-merge de evaluatie van bools en nats
-abstract en concrete values/monads/state/etc
-  *)
 Class Monad (M : Type -> Type) : Type :=
 {
   returnM : forall A, A -> M A;

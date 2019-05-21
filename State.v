@@ -2,6 +2,7 @@
 
 Require Import AbstractStore.
 Require Import Joinable.
+Require Import Classes.PreorderedSet.
 Require Import Preorder.
 Require Import Result.
 Require Import Monad.
@@ -51,34 +52,6 @@ Definition put_abstract (st' : abstract_store) : AbstractState unit :=
 Definition fail_abstract {A : Type} : AbstractState A :=
   fun st => exception A abstract_store st.
 
-Section state_joinable.
-Context {A : Type}  `{Joinable A}.
-
-Definition join_state
-  (st1 st2 : State A) : State A :=
-  fun st => join_op (st1 st) (st2 st).
-  
-Lemma join_state_upperbound_left : forall st st',
-  preorder st (join_state st st').
-Proof.
-  intros. simpl. constructor. intros. simpl. 
-  unfold join_state. simpl.  apply join_result_upperbound_left.
-Qed.
-
-Lemma join_state_upperbound_right : forall st st',
-  preorder st' (join_state st st').
-Proof.
-  intros. simpl. constructor. intros. simpl.
-  unfold join_state. simpl. apply join_result_upperbound_right.
-Qed.
-
-Global Instance state_joinable : Joinable (State A) := {
-  join_op := join_state;
-  join_upper_bound_left := join_state_upperbound_left;
-  join_upper_bound_right := join_state_upperbound_right;
-}.
-End state_joinable.
-
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.
 
@@ -108,19 +81,6 @@ Global Instance abstract_state_joinable : Joinable (AbstractState A) :=
 }.
 
 End abstract_state_joinable.
-
-Section preordered_state.
-Context {A : Type} `{PreorderedSet A}.
-
-Lemma preorder_state : 
-  PreorderedSet (State A).
-Proof. 
-  intros. unfold State. assert (PreorderedSet (A*store)). 
-  apply preorder_pairs. assert (PreorderedSet (option (A*store))).
-  apply preorder_option.
-  apply preordered_function_spaces. 
-Qed.
-End preordered_state.
 
 Section preordered_abstract_state.
 Context {A : Type} `{PreorderedSet A}.

@@ -1,7 +1,7 @@
 Require Import Statements.
 Require Import Monad.
 
-Fixpoint shared_aexp 
+(*Fixpoint shared_aexp 
   {state_type : Type -> Type} 
   `{Monad state_type}
   (V : Type)
@@ -24,7 +24,7 @@ Fixpoint shared_aexp
       v2 << (shared_aexp V extraction plus_op mult_op store_type getter e2) ;
       returnM (mult_op v1 v2)
   end.
-  
+*)
 (*Fixpoint shared_bexp (S BV NV : Type) 
   (extract_b : bool -> BV)
   (extract_n : nat -> NV)

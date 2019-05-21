@@ -1,21 +1,17 @@
+Require Import Coq.Classes.RelationClasses.
+
 Require Import AbstractBool.
 Require Import AbstractStore.
+Require Import Classes.Galois.
+Require Import Classes.PreorderedSet.
 Require Import Monad.
 Require Import Parity.
 Require Import Preorder.
 Require Import Result.
 Require Import State.
+Require Import Statements.
 
 Typeclasses eauto := 10.
-
-Class Galois (A B : Type) `{PreorderedSet B} : Type :=
-{
-  gamma : B -> A -> Prop;
-  gamma_monotone : monotone gamma;
-
-}.
-Arguments Build_Galois A B {_ _ _}.
-Arguments gamma {_ _ _ _}.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
@@ -34,7 +30,7 @@ Lemma widen {A B : Type} `{Galois B A}:
   preorder f f' -> gamma f b -> gamma f' b.
 Proof.
   intros. apply preorder_props with (P:=(gamma f)).
-  - apply gamma_monotone. assumption.
+  - eapply gamma_monotone. apply H1.
   - assumption.
 Qed.
 
@@ -97,6 +93,44 @@ Global Instance galois_option :
   gamma_monotone := gamma_option_monotone;  
 }.
 End galois_options.
+
+Section galois_values.
+
+Definition gamma_value : avalue -> cvalue -> Prop :=
+  fun av => fun cv => match av, cv with
+                      | VParity p, VNat n => gamma p n
+                      | VAbstrBool ab, VBool b => gamma ab b
+                      | VTop, _ => True
+                      | _, _ => False
+                      end.
+
+Lemma gamma_value_monotone : monotone gamma_value.
+Proof.
+  unfold monotone. intros a a' Hpre.
+  inversion Hpre; subst.
+  - simpl in *. constructor. intros z Hgamma.
+    destruct z. simpl in Hgamma. simpl. 
+    inversion H; subst.
+    + reflexivity.
+    + inversion Hgamma.
+    + apply Hgamma.
+    + inversion Hgamma.
+  - simpl in *. constructor. intros d Hgamma.
+    destruct d. inversion Hgamma.
+    simpl in *. inversion H; subst.
+    + inversion Hgamma.
+    + reflexivity.
+    + apply Hgamma.
+  - constructor. intros. constructor.
+  - constructor. intros. inversion H.
+Qed.
+
+Global Instance galois_values : Galois cvalue avalue := 
+{
+  gamma := gamma_value;
+  gamma_monotone := gamma_value_monotone;
+}.
+End galois_values.
 
 Section galois_store.
 
@@ -209,3 +243,4 @@ Global Instance galois_unit : Galois unit unit :=
   gamma_monotone := gamma_unit_monotone;
 }. 
 End galois_unit.
+

@@ -3,6 +3,7 @@
 Require Import Coq.Classes.RelationClasses.
 
 Require Import Joinable.
+Require Import Classes.PreorderedSet.
 Require Import Preorder.
 
 Inductive result (A S : Type) : Type :=

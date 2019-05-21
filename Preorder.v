@@ -1,66 +1,40 @@
 Require Import Coq.Arith.Arith.
 Require Import Coq.Classes.RelationClasses.
-
-Class PreorderedSet (X : Type) : Type :=
+Require Import AbstractBool.
+Require Import AbstractStore.
+Require Import Parity.
+Require Import Language.Statements.
+Require Import Classes.PreorderedSet.
+  
+Instance proset_parity : PreorderedSet parity :=
 {
-  preorder : X -> X -> Prop;
-  preorder_refl: Reflexive preorder;
-  preorder_trans: Transitive preorder;
-}.
-Arguments Build_PreorderedSet X {_ _ _}.
-
-Definition monotone {A A'} `{PreorderedSet A, PreorderedSet A'} :
-  (A -> A') -> Prop :=
-  fun f => forall (a a': A), preorder a a' -> preorder (f a) (f a').
-
-Instance preorder_nat : PreorderedSet nat := 
-{
-  preorder := Nat.le;
-  preorder_refl := Nat.le_refl;
-  preorder_trans := Nat.le_trans;
+  preorder := parity_le;
+  preorder_refl := parity_le_refl;
+  preorder_trans := parity_le_trans;
 }.
 
-Inductive bool_le : bool -> bool -> Prop :=
-  | bool_le_refl : forall b, bool_le b b.
+Instance preorder_ab : PreorderedSet abstr_bool :=
+{
+  preorder := ab_le;
+  preorder_refl := ab_le_refl;
+  preorder_trans := ab_le_trans;
+}.
 
-Lemma bool_le_trans : Transitive bool_le.
+
+Lemma gamma_bool_monotone : monotone gamma_bool.
 Proof.
-  unfold Transitive. intros. destruct x, y, z; try constructor; tauto.
+  unfold monotone. intros b1 b2 ?.
+  destruct b1, b2; constructor; intros; destruct x; simpl in *; 
+    try inversion H0; try inversion H; try tauto. 
 Qed.
 
-Instance preorder_bool : PreorderedSet bool :=
-{
-  preorder := bool_le;
-  preorder_refl := bool_le_refl;
-  preorder_trans := bool_le_trans;
-}.
-
-Section preordered_sets_le.
-Context {A : Type}.
-
-Inductive preordered_set_le : (A -> Prop) -> (A -> Prop) -> Prop := 
-  | preordered_set_le_allin : forall (set1 set2 : (A -> Prop)),
-      (forall (x : A), set1 x -> set2 x) -> preordered_set_le set1 set2.
-
-Lemma preordered_set_le_refl : forall (a : (A->Prop)),
-  preordered_set_le a a.
+Lemma gamma_par_monotone : forall p1 p2,
+  preorder p1 p2 -> preorder (gamma_par p1) (gamma_par p2).
 Proof.
-  intros. constructor. intros. assumption.
+  destruct p1, p2; simpl; intros; try constructor; try inversion H;
+    intros; try tauto.
 Qed.
 
-Lemma preordered_set_le_trans : forall (x y z : (A->Prop)),
-  preordered_set_le x y -> preordered_set_le y z -> preordered_set_le x z.
-Proof. 
-  intros. constructor. inversion H; inversion H0; subst; auto.
-Qed.
-
-Global Instance types_to_prop : PreorderedSet (A -> Prop) :=
-{
-  preorder := preordered_set_le;
-  preorder_refl := preordered_set_le_refl;
-  preorder_trans := preordered_set_le_trans;
-}.
-End preordered_sets_le.
 
 Section preordered_functions.
 Context {A A' : Type} `{PreorderedSet A'}.
@@ -101,6 +75,7 @@ Lemma preorder_props : forall {X : Type} (P Q : X -> Prop) (x : X),
 Proof. 
   intros. simpl in H. destruct H. apply H. apply H0.
 Qed.
+
 
 Section preordered_options.
 Context {A} `{PreorderedSet A}.
@@ -185,4 +160,46 @@ Instance preorder_unit : PreorderedSet unit :=
   preorder := unit_le;
   preorder_refl := unit_le_refl;
   preorder_trans := unit_le_trans;
+}.
+
+Inductive avalue_le : avalue -> avalue -> Prop :=
+  | avalue_le_par : forall x y, 
+      preorder x y -> avalue_le (VParity x) (VParity y)
+  | avalue_le_bool : forall b c,
+      preorder b c -> avalue_le (VAbstrBool b) (VAbstrBool c)
+  | avalue_le_top : forall v,
+      avalue_le v VTop
+  | avalue_le_bot : forall v,
+      avalue_le VBottom v.
+
+Lemma avalue_le_trans : Transitive avalue_le.
+Proof.
+  unfold Transitive. intros x y z Hxy Hyz.
+  inversion Hxy; subst;
+  inversion Hyz; subst; try constructor.
+  - eapply preorder_trans. apply H. apply H1.
+  - eapply preorder_trans. apply H. apply H1.
+Qed.
+
+Lemma avalue_le_refl : Reflexive avalue_le.
+Proof. 
+  unfold Reflexive. intro x. destruct x.
+  - constructor. apply preorder_refl.
+  - constructor. apply preorder_refl.
+  - constructor.
+  - constructor. 
+Qed.
+
+Global Instance avalue_preorder : PreorderedSet avalue :=
+{
+  preorder := avalue_le;
+  preorder_refl := avalue_le_refl;
+  preorder_trans := avalue_le_trans;
+}.
+
+Instance preordered_abstract_store : PreorderedSet abstract_store
+:= {
+  preorder := pointwise_ordering;
+  preorder_refl := pointwise_ordering_refl;
+  preorder_trans := pointwise_ordering_trans;
 }.

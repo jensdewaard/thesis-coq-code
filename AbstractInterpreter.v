@@ -12,33 +12,71 @@ Require Import State.
 
 Open Scope com_scope.
 
-Definition abstract_aexp := shared_aexp 
+(*Definition abstract_aexp := shared_aexp 
   parity 
   extract_par 
   parity_plus 
   parity_mult
   abstract_store
-  get_abstract.
-
-Fixpoint beval_abstract (b : bexp) : AbstractState abstr_bool :=
-  match b with
-  | BFalse => returnM (ab_false)
-  | BTrue => returnM (ab_true)
-  | BEq e1 e2 => 
-      e1' << (abstract_aexp e1) ;
-      e2' << (abstract_aexp e2) ;
-      returnM (parity_eq e1' e2')
-  | BLe e1 e2=> 
-     e1' << (abstract_aexp e1) ;
-     e2' << (abstract_aexp e2) ;
-     returnM (ab_top)
-  | BNot b => 
-      b' << (beval_abstract b) ;
-      returnM (neg_ab b')
-  | BAnd b1 b2 =>
-      b1' << (beval_abstract b1) ;
-      b2' << (beval_abstract b2) ;
-      returnM (and_ab b1' b2')
+  get_abstract.*)
+  
+Definition ensure_par (v : avalue) : AbstractState parity :=
+  fun st => match v with
+            | VParity x => returnR parity abstract_store (x, st)
+            | _ => crashed _ _
+            end.
+            
+Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
+  fun st => match v with
+            | VAbstrBool b => returnR abstr_bool abstract_store (b, st)
+            | _ => crashed _ _
+            end.
+            
+Definition extract (v : cvalue) : avalue :=
+  match v with
+  | VNat x => VParity (extract_par x)
+  | VBool x => VAbstrBool (extract_bool x)
+  end.
+  
+Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
+  match e with
+  | EVal x => returnM (extract x)
+  | EVar x => st << get_abstract ;
+      returnM (st x)
+  | EPlus e1 e2 => 
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VParity (parity_plus n1 n2))
+  | EMult e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VParity (parity_mult n1 n2))
+  | EEq e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VAbstrBool (parity_eq n1 n2))
+  | ELe e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VAbstrBool (ab_top))
+  | ENot e =>
+      v << (eval_expr_abstract e) ;
+      b << (ensure_abool v) ;
+      returnM (VAbstrBool (neg_ab b))
+  | EAnd e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      b1 << (ensure_abool v1) ;
+      b2 << (ensure_abool v2) ;
+      returnM (VAbstrBool (and_ab b1 b2))
   end.
 
 Definition eval_if_abstract {A} `{Joinable A} 
@@ -65,11 +103,12 @@ Fixpoint ceval_abstract (c : com) : AbstractState unit :=
   | c1 ;c; c2 =>
       (ceval_abstract c1) ;; (ceval_abstract c2)
   | x ::= a => 
-      p << (abstract_aexp a) ;
+      p << (eval_expr_abstract a) ;
       st << get_abstract ;
       put_abstract (t_update st x p)
   | CIf b c1 c2 => 
-      b' << (beval_abstract b) ;
+      v << (eval_expr_abstract b) ;
+      b' << (ensure_abool v) ;
       eval_if_abstract b' (ceval_abstract c1) (ceval_abstract c2)
   | try c1 catch c2 => 
       eval_catch_abstract (ceval_abstract c1) (ceval_abstract c2)

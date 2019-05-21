@@ -1,5 +1,6 @@
 Require Import AbstractStore.
 Require Import Parity.
+Require Import Classes.PreorderedSet.
 Require Import Preorder.
 
 Class Joinable (T : Type) `{PreorderedSet T} : Type :=
@@ -92,14 +93,14 @@ Lemma abstract_store_join_upperbound_left :
   forall s s', preorder s (abstract_store_join s s').
 Proof.
   simpl. unfold abstract_store_join. constructor.
-  intro x. apply parity_join_upperbound_left.
+  intro x. constructor.
 Qed.
 
 Lemma abstract_store_join_upperbound_right : 
   forall s s', preorder s' (abstract_store_join s s').
 Proof.
   simpl. unfold abstract_store_join. constructor.
-  intro x. apply parity_join_upperbound_right.
+  intro x. constructor.
 Qed.
 
 Global Instance abstract_store_joinable : Joinable abstract_store := {
@@ -135,69 +136,3 @@ Global Instance unit_joinable : Joinable unit :=
 }.
 
 End unit_joinable.
-
-Section nat_joinable.
-
-Lemma nat_max_upperbound_left :
-  forall n m, preorder n (Nat.max n m).
-Proof.
-  intros n m. revert n. induction m.
-  - destruct n; constructor.
-  - destruct n. 
-    + constructor. destruct m; auto with arith.
-    + simpl. apply le_n_S. apply IHm.
-Qed.
-
-Lemma nat_max_comm : 
-  forall n m, Nat.max n m = Nat.max m n.
-Proof.
-  intros n. induction n.
-  - destruct m; reflexivity.
-  - destruct m; simpl.
-    + reflexivity.
-    + rewrite IHn. reflexivity.
-Qed.
-    
-Lemma nat_max_upperbound_right :
-  forall n m, preorder m (Nat.max n m).
-Proof.
-  intros n m.
-  rewrite nat_max_comm. apply nat_max_upperbound_left.
-Qed.
-  
-Global Instance nat_joinable : Joinable nat :=
-{
-  join_op := Nat.max;
-  join_upper_bound_left := nat_max_upperbound_left;
-  join_upper_bound_right := nat_max_upperbound_right;
-}.
-
-End nat_joinable.
-
-Section store_joinable.
-
-Definition store_join (st1 st2 : store) : store :=
-  fun x => Nat.max (st1 x) (st2 x).
-
-Lemma store_join_upperbound_left :
-  forall st1 st2, preorder st1 (store_join st1 st2).
-Proof.
-  intros st1 st2. constructor. intro x.
-  simpl.  apply nat_max_upperbound_left.
-Qed.
-
-Lemma store_join_upperbound_right :
-  forall st1 st2, preorder st2 (store_join st1 st2).
-Proof.
-  intros st1 st2. constructor. intro x.
-  simpl. apply nat_max_upperbound_right.
-Qed.
-
-Global Instance store_joinable : Joinable store :=
-{
-  join_op := store_join;
-  join_upper_bound_left := store_join_upperbound_left;
-  join_upper_bound_right := store_join_upperbound_right;
-}.
-
-End store_joinable.
