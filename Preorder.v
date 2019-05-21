@@ -76,43 +76,6 @@ Proof.
   intros. simpl in H. destruct H. apply H. apply H0.
 Qed.
 
-
-Section preordered_options.
-Context {A} `{PreorderedSet A}.
-
-Inductive preordered_option_le :
-  (option A) -> (option A) -> Prop :=
-  | pre_opt_refl : forall o, preordered_option_le o o
-  | pre_opt_none_some : forall (a : A), preordered_option_le (Some a) None
-  | pre_opt_some_some : forall (a a' : A), 
-      preorder a a' -> preordered_option_le (Some a) (Some a').
-
-Lemma preordered_option_le_trans : 
-  forall (a b c : option A),
-  preordered_option_le a b -> preordered_option_le b c -> preordered_option_le
-  a c.
-Proof. 
-  intros. induction H0.
-  - assumption.
-  - inversion H1; subst; constructor.
-  - inversion H1; subst. 
-    + constructor. assumption.
-    + constructor. 
-    + constructor. eapply preorder_trans.
-      * apply H0.
-      * apply H3.
-Qed.
-
-Global Instance preorder_option :
-  PreorderedSet (option A). 
-Proof.
-  intros. esplit with (preorder := preordered_option_le).
-  - (* reflexivity *) unfold Reflexive. apply pre_opt_refl.
-  - (* transitivity *) unfold Transitive. apply preordered_option_le_trans.
-Defined.
-
-End preordered_options.
-
 Section preordered_pairs.
 Context {A B : Type} `{PreorderedSet A, PreorderedSet B}.
 

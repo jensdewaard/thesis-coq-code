@@ -28,36 +28,6 @@ Instance parity_joinable : Joinable parity := {
   join_upper_bound_right := parity_join_upperbound_right;
 }.
 
-Section option_joinable.
-Context {A} `{Joinable A}.
-Definition option_join (o1 o2 : option A) : option A :=
-  match o1, o2 with
-  | Some x, Some y => Some (join_op x y)
-  | _, _ => None
-  end.
-
-Lemma option_join_upperbound_left : forall o o', preorder o (option_join o o').
-Proof.
-  intros. simpl. destruct o, o'; constructor.
-  apply join_upper_bound_left.
-Qed.
-
-Lemma option_join_upperbound_right : 
-  forall o o', preorder o' (option_join o o').
-Proof.
-  intros. simpl. destruct o, o'; constructor.
-  apply join_upper_bound_right.
-Qed.
-
-Global Instance option_joinable : Joinable (option A) := 
-{
-  join_op := option_join;
-  join_upper_bound_left := option_join_upperbound_left;
-  join_upper_bound_right := option_join_upperbound_right;
-}.
-
-End option_joinable.
-
 Section pair_joinable.
 Context {A B} `{Joinable A, Joinable B}.
 

@@ -61,39 +61,6 @@ Global Instance GFun :
 
 End galois_functions.
 
-Section galois_options.
-Context {B A} `{Galois B A}.
-
-Definition gamma_option :
-  option A -> option B -> Prop :=
-  fun oa => fun ob => match oa, ob with
-               | None, None => True
-               | None, Some b => True
-               | Some a, Some b => gamma a b
-               | Some a, None => False
-               end.
-
-Lemma gamma_option_monotone  : 
-  monotone gamma_option.
-Proof.
-  unfold monotone. intros a a' Hpre. simpl in *. constructor. 
-  intros x Hgamma.
-  inversion Hpre; subst.
-  - assumption.
-  - destruct x; constructor.
-  - destruct x.
-    + simpl. eapply widen. apply H1. apply Hgamma.
-    + inversion Hgamma.
-Qed.
-
-Global Instance galois_option : 
-  Galois (option B) (option A) := 
-{
-  gamma := gamma_option;
-  gamma_monotone := gamma_option_monotone;  
-}.
-End galois_options.
-
 Section galois_values.
 
 Definition gamma_value : avalue -> cvalue -> Prop :=
@@ -217,11 +184,6 @@ Context {A A'}
 Global Instance galois_state :
   Galois (State A) (AbstractState A').
 Proof.
-  intros. unfold State, AbstractState. 
-  assert (Galois (A*store) (A'*abstract_store)).
-  { apply galois_pairs. }
-  assert (Galois (option (A*store)) (option (A'*abstract_store))).
-  { apply galois_option. }
   apply GFun. 
 Defined.
 End galois_state.
