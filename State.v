@@ -2,6 +2,7 @@
 
 Require Import AbstractStore.
 Require Import Joinable.
+Require Import Language.Statements.
 Require Import Classes.PreorderedSet.
 Require Import Preorder.
 Require Import Result.
@@ -30,17 +31,19 @@ Definition fail {A : Type} : State A :=
   fun st => exception A store st.
 
 Definition AbstractState (A : Type) :=
-  abstract_store -> result A abstract_store.
+  abstract_store -> abstract_result A abstract_store.
 
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
-  fun st => returnR A abstract_store x st.
+  fun st => returnRA A abstract_store x st.
 
-Definition bind_state_abstract (A B : Type) 
+Definition bind_state_abstract (A B : Type) `{Joinable B}
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
-            | returnR _ _ x st' => f x st'
-            | crashed _ _ => crashed _ _
-            | exception _ _ st' => exception _ _ st' 
+            | returnRA _ _ x st' => f x st'
+            | crashedA _ _ => crashedA _ _
+            | exceptionA _ _ st' => exceptionA _ _ st' 
+            | exceptionOrReturn _ _ a st' => 
+                join_op (exceptionA _ abstract_store st) (f a st')
             end.
 
 Definition get_abstract : AbstractState abstract_store := 
