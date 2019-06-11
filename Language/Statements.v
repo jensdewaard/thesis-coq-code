@@ -41,6 +41,8 @@ Notation "x '::=' a" :=
     (CAss x a) (at level 60) : com_scope.
 Notation "'try' c1 'catch' c2" :=
     (CTryCatch c1 c2) (at level 70) : com_scope.
+Notation "'IF2' b 'THEN' c1 'ELSE' c2" :=
+    (CIf b c1 c2) (at level 70) : com_scope.
 
 
 (* zoek naar papers over 'auto' in coq, en het maken van proofs

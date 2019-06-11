@@ -315,3 +315,35 @@ Theorem sound_interpreter:
 Proof.
   intros. induction c; auto with soundness.
 Qed.
+
+Open Scope com_scope.
+
+Definition program1 := 
+  IF2 (ELe (EVal (VNat 5)) (EVal (VNat 4))) 
+  THEN (CAss "x" (EVal (VBool true))) 
+  ELSE (CAss "x" (EVal (VNat 9))).
+  
+Lemma sound_program1 : 
+  sound (ceval program1) (ceval_abstract program1).
+Proof.
+  unfold sound. simpl. auto.
+Qed.
+
+Definition program2 :=
+  CAss "x" (EVal (VNat 20)) ;c;
+  IF2 (EEq (EVar "x") (EVal (VNat 10)))
+  THEN CFail
+  ELSE (CAss "x" (EVal (VNat 20))).
+
+Lemma sound_program2 :
+  sound (ceval program2) (ceval_abstract program2).
+Proof. unfold sound. simpl. reflexivity.
+Qed.
+
+Definition program3 :=
+  CAss "x" (EEq (EVal (VNat 10)) (EVal ((VBool true)))).
+  
+Lemma sound_program3 :
+  sound (ceval program3) (ceval_abstract program3).
+Proof. unfold sound. simpl. reflexivity. Qed.
+
