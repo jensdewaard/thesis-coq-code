@@ -340,8 +340,25 @@ Lemma sound_program2 :
 Proof. unfold sound. simpl. reflexivity.
 Qed.
 
+Definition program2' :=
+  CAss "x" (EVal (VNat 20)) ;c;
+  IF2 (EEq (EVar "x") (EVal (VNat 9)))
+  THEN CFail
+  ELSE (CAss "x" (EVal (VNat 20))).
+
+Lemma sound_program2' :
+  sound (ceval program2') (ceval_abstract program2').
+Proof. 
+unfold sound. simpl. intros. split.
+  - auto.
+  - unfold gamma_store. intro. simpl. SearchAbout t_update.
+    apply t_update_sound. apply t_update_sound. apply H. 
+    simpl. repeat constructor.
+    simpl. repeat constructor.
+Qed.
+
 Definition program3 :=
-  CAss "x" (EEq (EVal (VNat 10)) (EVal ((VBool true)))).
+  CAss "x" (EPlus (EVal (VNat 10)) (EVal ((VBool true)))).
   
 Lemma sound_program3 :
   sound (ceval program3) (ceval_abstract program3).
