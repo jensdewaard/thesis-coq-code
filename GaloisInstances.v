@@ -147,12 +147,17 @@ End galois_pairs.
 Section galois_result.
 Context {A A': Type} `{Galois A' A}.
 
-Definition gamma_result : result A abstract_store -> result A' store -> Prop :=
+Definition gamma_result : abstract_result A abstract_store -> 
+                          result A' store -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
-                      | returnR _ _ a s, returnR _ _  b t => 
+                      | returnRA _ _ a s, returnR _ _  b t => 
                           gamma a b /\ gamma s t
-                      | crashed _ _ , _ => True
-                      | exception _ _ st, exception _ _ st' => gamma st st'
+                      | crashedA _ _ , _ => True
+                      | exceptionA _ _ st, exception _ _ st' => gamma st st'
+                      | exceptionOrReturn _ _ x st, exception _ _ st' =>
+                          gamma st st'
+                      | exceptionOrReturn _ _ x st, returnR _ _ x' st' =>
+                          gamma st st' /\ gamma x x'
                       | _, _ => False
                       end.
 
@@ -167,10 +172,18 @@ Proof.
     eapply widen. apply H1. apply Hgamma.
   - destruct x; try inversion Hgamma.
     split; eapply widen. apply H1. auto. apply H2. auto.
+  - destruct x; try inversion Hgamma.
+    eapply widen. apply H1. apply Hgamma.
+  - destruct x; try inversion Hgamma.
+    split; eapply widen. apply H1. apply H4. apply H2. apply H3.
+  - destruct x; try inversion Hgamma.
+    + split. eapply widen. apply H2. apply H3.
+      eapply widen. apply H1. apply H4.
+    + eapply widen. apply H2. apply Hgamma.
 Qed.
 
 Global Instance galois_result :
-  Galois (result A' store) (result A abstract_store) :=
+  Galois (result A' store) (abstract_result A abstract_store) :=
 {
   gamma := gamma_result;
   gamma_monotone := gamma_result_monotone;

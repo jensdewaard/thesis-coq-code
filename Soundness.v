@@ -71,7 +71,7 @@ Proof.
   unfold bind_state, bind_state_abstract. unfold sound. 
   intros. apply H3 in H5.
   simpl in H5.
-  destruct (f' a).
+  destruct (f' a) eqn:Hfa.
   - destruct (f b).
     + simpl. apply H4. 
       apply H5. apply H5.
@@ -82,7 +82,13 @@ Proof.
     + inversion H5.
     + inversion H5.
     + simpl. simpl in H5. apply H5.
-Qed.
+  - destruct (f b) eqn:Hfb. unfold sound in H4. simpl in H5. destruct H5.
+    apply H4 in H6. simpl in H6. unfold gamma_fun in H6.
+    apply H6 in H5. destruct (next' a0 a1).
+    + admit.
+    + admit.
+    + admit.
+Admitted.
 
 Hint Resolve bind_state_sound.
 
@@ -290,6 +296,13 @@ Proof.
   - inversion Hstore.
   - inversion Hstore.
   - simpl in *. apply H2. apply Hstore.
+  - apply Hstore.
+  - inversion Hstore.
+  - simpl. simpl in Hstore. destruct (ceval c2 s).
+    + admit.
+    + simpl in *.
+    
+      reflexivity.
 Qed.
 
 Hint Resolve sound_try_catch.

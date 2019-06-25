@@ -36,24 +36,31 @@ Definition AbstractState (A : Type) :=
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
   fun st => returnRA A abstract_store x st.
 
-Definition bind_state_abstract (A B : Type) `{Joinable B}
+Definition bind_state_abstract (A B : Type)
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
             | returnRA _ _ x st' => f x st'
             | crashedA _ _ => crashedA _ _
             | exceptionA _ _ st' => exceptionA _ _ st' 
-            | exceptionOrReturn _ _ a st' => 
-                join_op (exceptionA _ abstract_store st) (f a st')
+            | exceptionOrReturn _ _ x st' => match (f x st') with
+                                             | returnRA _ _ x' st'' => 
+                                                  exceptionOrReturn _ _ x' st''
+                                             | crashedA _ _ => crashedA _ _
+                                             | exceptionA _ _ st'' =>
+                                                  exceptionA _ _ (join_op st' st'')
+                                             | exceptionOrReturn _ _ x' st'' =>
+                                                  exceptionOrReturn _ _ x' (join_op st' st'')
+                                             end
             end.
 
 Definition get_abstract : AbstractState abstract_store := 
-  fun st => returnR abstract_store abstract_store st st.
+  fun st => returnRA abstract_store abstract_store st st.
 
 Definition put_abstract (st' : abstract_store) : AbstractState unit :=
-  fun st => returnR unit abstract_store tt st'.
+  fun st => returnRA unit abstract_store tt st'.
 
 Definition fail_abstract {A : Type} : AbstractState A :=
-  fun st => exception A abstract_store st.
+  fun st => exceptionA A abstract_store st.
 
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.

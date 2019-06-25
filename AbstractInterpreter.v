@@ -22,14 +22,14 @@ Open Scope com_scope.
   
 Definition ensure_par (v : avalue) : AbstractState parity :=
   fun st => match v with
-            | VParity x => returnR parity abstract_store x st
-            | _ => crashed _ _
+            | VParity x => returnRA parity abstract_store x st
+            | _ => crashedA _ _
             end.
             
 Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
   fun st => match v with
-            | VAbstrBool b => returnR abstr_bool abstract_store b st
-            | _ => crashed _ _
+            | VAbstrBool b => returnRA abstr_bool abstract_store b st
+            | _ => crashedA _ _
             end.
             
 Definition extract (v : cvalue) : avalue :=
@@ -92,8 +92,8 @@ Definition eval_if_abstract {A} `{Joinable A}
 Definition eval_catch_abstract {A} `{Joinable A} 
   (st1 st2 : AbstractState A) : AbstractState A :=
   fun st => match (st1 st) with
-  | crashed _ _ => crashed _ _ 
-  | exception _ _ st' => st2 st'
+  | crashedA _ _ => crashedA _ _ 
+  | exceptionA _ _ st' => st2 st'
   | x => x
   end.
 
