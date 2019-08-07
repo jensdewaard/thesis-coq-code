@@ -1,3 +1,5 @@
 doc/
 .coqdeps.d
 tags
+Makefile.coq
+Makefile.coq.conf
