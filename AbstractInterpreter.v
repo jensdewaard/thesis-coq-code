@@ -1,14 +1,17 @@
-Require Import AbstractStore.
-Require Import AbstractBool.
+Require Import Types.AbstractStore.
+Require Import Types.AbstractBool.
 Require Import ConcreteInterpreter.
-Require Import Statements.
+Require Import Language.Statements.
 Require Import Joinable.
 Require Import Maps.
 Require Import Monad.
-Require Import Parity.
-Require Import Result.
+Require Import Types.Parity.
+Require Import Types.Result.
 Require Import SharedInterpreter.
 Require Import State.
+Require Import Instances.Galois.Parity.
+Require Import Instances.Preorder.Unit.
+Require Import Instances.Joinable.Unit.
 
 Open Scope com_scope.
 

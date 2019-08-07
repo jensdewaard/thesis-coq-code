@@ -1,13 +1,13 @@
 Require Import Coq.Arith.Arith.
 Require Import Utf8.
 
-Require Import AbstractStore.
-Require Import Statements.
+Require Import Types.AbstractStore.
+Require Import Language.Statements.
 Require Import Maps.
 Require Import Monad.
 Require Import State.
 Require Import SharedInterpreter.
-Require Import Result.
+Require Import Types.Result.
 
 Open Scope com_scope.
 

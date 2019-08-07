@@ -1,12 +1,13 @@
 (* State and AbstractStates *)
 
-Require Import AbstractStore.
+Require Import Classes.PreorderedSet.
 Require Import Joinable.
 Require Import Language.Statements.
-Require Import Classes.PreorderedSet.
-Require Import Preorder.
-Require Import Result.
 Require Import Monad.
+Require Import Types.Result.
+Require Import Types.AbstractStore.
+
+Require Import Instances.Joinable.AbstractStore.
 
 Definition State (A : Type) := store -> result A store.
 
@@ -113,16 +114,6 @@ Global Instance abstract_state_joinable : Joinable (AbstractState A) :=
 
 End abstract_state_joinable.
 
-Section preordered_abstract_state.
-Context {A : Type} `{PreorderedSet A}.
-
-Lemma preorder_abstract_state : PreorderedSet (AbstractState A).
-Proof.
-  intros. 
-  apply preordered_function_spaces.
-Qed.
-
-End preordered_abstract_state.
 
 Instance state_monad : Monad (State) := {
   returnM := (return_state);

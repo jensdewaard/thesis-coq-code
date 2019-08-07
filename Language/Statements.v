@@ -1,6 +1,6 @@
 Require Export Coq.Strings.String.
-Require Import Parity.
-Require Import AbstractBool.
+Require Import Types.Parity.
+Require Import Types.AbstractBool.
 
 Inductive cvalue : Type :=
   | VNat : nat -> cvalue

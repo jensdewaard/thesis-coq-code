@@ -2,20 +2,26 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Arith.Even.
 
-Require Import AbstractBool.
-Require Import AbstractStore.
 Require Import AbstractInterpreter.
+Require Import Classes.Galois.
+Require Import Classes.Joinable.
+Require Import Classes.PreorderedSet.
 Require Import ConcreteInterpreter.
-Require Import PreorderedSet.
-Require Import Galois.
-Require Import GaloisInstances.
-Require Import Joinable.
-Require Import Statements.
+Require Import Instances.Galois.AbstractState.
+Require Import Instances.Galois.AbstractStore.
+Require Import Instances.Galois.Functions.
+Require Import Instances.Galois.Pairs.
+Require Import Instances.Galois.Parity.
+Require Import Instances.Galois.Result.
+Require Import Instances.Galois.Unit.
+Require Import Instances.Galois.Values.
+Require Import Language.Statements.
 Require Import Maps.
 Require Import Monad.
-Require Import Parity.
-Require Import Preorder.
 Require Import State.
+Require Import Types.AbstractBool.
+Require Import Types.AbstractStore.
+Require Import Types.Parity.
 
 Create HintDb soundness.
 
@@ -159,6 +165,7 @@ Proof.
 Qed.
 Hint Extern 5 => apply gamma_extract_n_n.
 
+
 Lemma ensure_par_sound : 
   sound ensure_nat ensure_par.
 Proof.
@@ -301,14 +308,14 @@ Proof.
   - simpl. simpl in Hstore. destruct (ceval c2 s).
     + admit.
     + simpl in *.
-    
-      reflexivity.
-Qed.
+      admit.
+    + admit.
+Admitted.
 
 Hint Resolve sound_try_catch.
 
 Lemma sound_fail : 
-  sound (ceval CFail) (ceval_abstract CFail).
+  sound (ceval CThrow) (ceval_abstract CThrow).
 Proof.
   unfold sound. intros b a H. simpl. apply H.
 Qed.
@@ -345,18 +352,20 @@ Qed.
 Definition program2 :=
   CAss "x" (EVal (VNat 20)) ;c;
   IF2 (EEq (EVar "x") (EVal (VNat 10)))
-  THEN CFail
+  THEN CThrow
   ELSE (CAss "x" (EVal (VNat 20))).
 
 Lemma sound_program2 :
   sound (ceval program2) (ceval_abstract program2).
-Proof. unfold sound. simpl. reflexivity.
+Proof. 
+  unfold sound. intros. simpl. 
+  auto.
 Qed.
 
 Definition program2' :=
   CAss "x" (EVal (VNat 20)) ;c;
   IF2 (EEq (EVar "x") (EVal (VNat 9)))
-  THEN CFail
+  THEN CThrow
   ELSE (CAss "x" (EVal (VNat 20))).
 
 Lemma sound_program2' :

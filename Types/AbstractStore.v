@@ -1,7 +1,6 @@
 Require Import Maps.
-Require Import Language.Parity.
+Require Import Types.Parity.
 Require Import Language.Statements.
-Require Import Classes.Galois.
 
 Definition store := total_map cvalue.
 Definition abstract_store := total_map avalue.

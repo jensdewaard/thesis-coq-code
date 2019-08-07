@@ -1,4 +1,5 @@
 Require Import PreorderedSet.
+Require Import Instances.Preorder.Sets.
 
 Class Galois (A B : Type) 
 `{PreorderedSet B} : Type :=
@@ -9,3 +10,15 @@ Class Galois (A B : Type)
 }.
 Arguments Build_Galois A B {_ _ _}.
 Arguments gamma {_ _ _ _}.
+
+Lemma widen {A B : Type} `{Galois B A}:
+  forall (f f' : A) (b : B),
+  preorder f f' -> gamma f b -> gamma f' b.
+Proof.
+  intros.
+  pose proof gamma_monotone.
+  unfold monotone in H3. apply H3 in H1.
+  simpl in H1. 
+  destruct H1. apply H1. apply H2.
+Qed.
+
