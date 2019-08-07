@@ -105,11 +105,11 @@ End preordered_abstract_state.
 
 Instance state_monad : Monad (State) := {
   returnM := (return_state);
-  bind := (bind_state);
+  bindM := (bind_state);
 }.
 
 Instance abstract_state_monad : Monad (AbstractState) := {
   returnM := return_state_abstract;
-  bind := bind_state_abstract;
+  bindM := bind_state_abstract;
 }.
 
