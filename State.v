@@ -8,8 +8,7 @@ Require Import Preorder.
 Require Import Result.
 Require Import Monad.
 
-Definition State (A : Type) := 
-  store -> result A store.
+Definition State (A : Type) := store -> result A store.
 
 Definition return_state (A : Type) (x : A) : State A :=
   fun st => returnR A store x st.
@@ -36,21 +35,43 @@ Definition AbstractState (A : Type) :=
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
   fun st => returnRA A abstract_store x st.
 
+Definition result_doorgeven (A B : Type) (f : A -> AbstractState B)
+  (x : A) (st : abstract_store)
+  : abstract_result B abstract_store :=
+  match (f x st) with 
+  | returnRA _ _ x' st' => exceptionOrReturn _ _ x' st'
+  | crashedA _ _ => crashedA _ _
+  | exceptionA _ _ st' => exceptionA _ _ (join_op st st')
+  | exceptionOrReturn _ _ x' st' => exceptionOrReturn _ _ x' (join_op st st')
+  end.
+
+Lemma result_doorgeven_widens_store_exception : forall A B f x st st',
+  result_doorgeven A B f x st = exceptionA B abstract_store st' ->
+  preorder st st'.
+Proof. 
+  intros. unfold result_doorgeven in H. destruct (f x st); inversion H.
+  apply abstract_store_join_upperbound_left.
+Qed.
+
+Lemma result_doorgeven_output : forall (A B : Type) 
+  (f : A -> AbstractState B) 
+  (x : A) (st st' : abstract_store) 
+  (x' : B) ,
+  result_doorgeven A B f x st <> 
+  returnRA B abstract_store x' st'. 
+Proof.
+  intros. unfold result_doorgeven. destruct (f x st); unfold not; intro;
+  inversion H.
+Qed.
+
+
 Definition bind_state_abstract (A B : Type)
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
             | returnRA _ _ x st' => f x st'
             | crashedA _ _ => crashedA _ _
             | exceptionA _ _ st' => exceptionA _ _ st' 
-            | exceptionOrReturn _ _ x st' => match (f x st') with
-                                             | returnRA _ _ x' st'' => 
-                                                  exceptionOrReturn _ _ x' st''
-                                             | crashedA _ _ => crashedA _ _
-                                             | exceptionA _ _ st'' =>
-                                                  exceptionA _ _ (join_op st' st'')
-                                             | exceptionOrReturn _ _ x' st'' =>
-                                                  exceptionOrReturn _ _ x' (join_op st' st'')
-                                             end
+            | exceptionOrReturn _ _ x st' => result_doorgeven _ _ f x st'
             end.
 
 Definition get_abstract : AbstractState abstract_store := 
