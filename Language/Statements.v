@@ -30,7 +30,7 @@ Inductive com : Type :=
   | CAss : string -> expr -> com
   | CIf  : expr -> com -> com -> com
   | CTryCatch : com -> com -> com
-  | CFail : com.
+  | CThrow : com.
 
 Bind Scope com_scope with com.
 Notation "'SKIP'" :=
