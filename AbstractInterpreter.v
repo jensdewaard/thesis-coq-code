@@ -97,7 +97,9 @@ Definition eval_catch_abstract {A} `{Joinable A}
   fun st => match (st1 st) with
   | crashedA _ _ => crashedA _ _ 
   | exceptionA _ _ st' => st2 st'
-  | x => x
+  | exceptionOrReturn _ _ x st' => 
+      join_op (exceptionOrReturn _ _ x st') (st2 st')
+  | returnRA _ _ x st' => returnRA _ _ x st'
   end.
 
 Fixpoint ceval_abstract (c : com) : AbstractState unit :=

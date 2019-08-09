@@ -79,22 +79,57 @@ Proof.
   simpl in H5.
   destruct (f' a) eqn:Hfa.
   - destruct (f b).
-    + simpl. apply H4. 
+    + (* both return a value *)
+      simpl. apply H4. 
       apply H5. apply H5.
-    + inversion H5.
-    + inversion H5.
+    + (* concrete crashes *) inversion H5.
+    + (* concrete throws exception *) inversion H5.
   - reflexivity.
   - destruct (f b).
     + inversion H5.
     + inversion H5.
     + simpl. simpl in H5. apply H5.
-  - destruct (f b) eqn:Hfb. unfold sound in H4. simpl in H5. destruct H5.
-    apply H4 in H6. simpl in H6. unfold gamma_fun in H6.
-    apply H6 in H5. destruct (next' a0 a1).
-    + admit.
-    + admit.
-    + admit.
-Admitted.
+  - unfold sound in H4. destruct (f b) eqn:Hfb.
+    + unfold result_doorgeven. 
+      destruct (next' a0 a1) eqn:Hnext1.
+      * simpl. destruct (next a2 s) eqn:Hnext2. 
+        { split. auto. simpl in H5. destruct H5.
+          eapply H4 in H5. rewrite Hnext1 in H5. 
+          rewrite Hnext2 in H5. simpl in H5. destruct H5.
+          apply H5. auto. }
+        { destruct H5. eapply H4 in H5. rewrite Hnext1 in H5. 
+          rewrite Hnext2 in H5. inversion H5. auto. }
+        { auto. }
+      * reflexivity.
+      * simpl. destruct (next a2 s) eqn:Hnext2.
+        { destruct H5. eapply H4 in H5. rewrite Hnext1 in H5.
+          rewrite Hnext2 in H5. inversion H5. auto. }
+        { destruct H5. eapply H4 in H5. rewrite Hnext1 in H5. 
+          rewrite Hnext2 in H5. inversion H5. auto. }
+        { auto. }
+      * simpl. destruct (next a2 s) eqn:Hnext2. 
+        { split. auto. destruct H5. eapply H4 in H5. rewrite Hnext1 in H5.
+          rewrite Hnext2 in H5. destruct H5. auto. auto. }
+        { destruct H5. eapply H4 in H5. rewrite Hnext1 in H5. rewrite Hnext2 in
+          H5. inversion H5. auto. }
+        { auto. }
+    + inversion H5. 
+    + simpl in *. 
+      destruct result_doorgeven eqn:Hdoor. 
+      * (* doorgeven gives result, impossible *)
+        pose proof result_doorgeven_output.
+        unfold not in H6. exfalso. eapply H6. apply Hdoor. 
+      * (* doorgeven crashes *)
+        reflexivity. 
+      * (* doorgeven gives certain exception *)
+        simpl. unfold gamma_store. intro. unfold gamma_store in H5. 
+        apply result_doorgeven_widens_store_exception in Hdoor. 
+        inversion Hdoor. eapply widen. apply H6. apply H5.
+      * (* doorgeven gives either exception or return *)
+        simpl. unfold gamma_store. intro. unfold gamma_store in H5.
+        apply result_doorgeven_widens_store_exception_or_result in Hdoor.
+        eapply widen. inversion Hdoor. apply H6. apply H5. 
+Qed.
 
 Hint Resolve bind_state_sound.
 
@@ -303,14 +338,14 @@ Proof.
   - inversion Hstore.
   - inversion Hstore.
   - simpl in *. apply H2. apply Hstore.
-  - apply Hstore.
+  - simpl. destruct (ceval_abstract c2 a); auto.
   - inversion Hstore.
-  - simpl. simpl in Hstore. destruct (ceval c2 s).
-    + admit.
-    + simpl in *.
-      admit.
-    + admit.
-Admitted.
+  - simpl. simpl in Hstore. 
+    destruct (ceval_abstract c2 a) eqn:Habs2; auto.
+    simpl. destruct (ceval c2 s) eqn:Hconc2; auto. 
+    apply H2 in Hstore. rewrite Habs2 in Hstore. 
+    rewrite Hconc2 in Hstore. inversion Hstore.
+Qed.
 
 Hint Resolve sound_try_catch.
 

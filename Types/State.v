@@ -1,11 +1,12 @@
 (* State and AbstractStates *)
 
 Require Import Classes.PreorderedSet.
+Require Import Instances.Joinable.Result.
 Require Import Joinable.
 Require Import Language.Statements.
 Require Import Monad.
-Require Import Types.Result.
 Require Import Types.AbstractStore.
+Require Import Types.Result.
 
 Require Import Instances.Joinable.AbstractStore.
 
@@ -40,7 +41,7 @@ Definition result_doorgeven (A B : Type) (f : A -> AbstractState B)
   (x : A) (st : abstract_store)
   : abstract_result B abstract_store :=
   match (f x st) with 
-  | returnRA _ _ x' st' => exceptionOrReturn _ _ x' st'
+  | returnRA _ _ x' st' => exceptionOrReturn _ _ x' (join_op st st')
   | crashedA _ _ => crashedA _ _
   | exceptionA _ _ st' => exceptionA _ _ (join_op st st')
   | exceptionOrReturn _ _ x' st' => exceptionOrReturn _ _ x' (join_op st st')
@@ -53,6 +54,16 @@ Proof.
   intros. unfold result_doorgeven in H. destruct (f x st); inversion H.
   apply abstract_store_join_upperbound_left.
 Qed.
+
+Lemma result_doorgeven_widens_store_exception_or_result : 
+  forall A B f x x' st st',
+  result_doorgeven A B f x st = exceptionOrReturn B abstract_store x' st'
+  -> preorder st st'.
+Proof. 
+  intros. unfold result_doorgeven in H. destruct (f x st); inversion H;
+  apply abstract_store_join_upperbound_left.
+Qed.
+
 
 Lemma result_doorgeven_output : forall (A B : Type) 
   (f : A -> AbstractState B) 

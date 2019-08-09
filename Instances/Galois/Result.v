@@ -1,8 +1,9 @@
 Require Import Classes.Galois.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Galois.AbstractStore.
-Require Import Types.Result.
+Require Import Instances.Joinable.Result.
 Require Import Types.AbstractStore.
+Require Import Types.Result.
 
 Section galois_result.
 Context {A A': Type} `{Galois A' A}.

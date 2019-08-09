@@ -18,6 +18,8 @@ Instances/Preorder/AbstractStore.v
 Instances/Joinable/AbstractStore.v
 Instances/Joinable/Unit.v
 Types/Result.v
+Instances/Preorder/Result.v
+Instances/Joinable/Result.v
 Types/State.v
 Instances/Preorder/AbstractState.v
 Classes/Galois.v

@@ -4,8 +4,6 @@ Require Import Instances.Galois.Values.
 Require Import Instances.Preorder.AbstractStore.
 Require Import Types.AbstractStore.
 
-Section galois_store.
-
 Definition gamma_store : abstract_store -> store -> Prop :=
   fun st' => fun st => forall x, gamma (st' x) (st x).
 
@@ -20,6 +18,3 @@ Global Instance galois_store : Galois store abstract_store :=
   gamma := gamma_store;
   gamma_monotone := gamma_store_monotone;
 }.
-
-End galois_store.
-
