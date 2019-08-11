@@ -15,5 +15,7 @@ Global Instance nat_numerical : Numerical nat :=
   ensure_numerical := ensure_nat;
   plus_op := plus;
   mult_op := mult;
+  eq_op := Nat.eqb;
+  le_op := Nat.leb;
 }.
 

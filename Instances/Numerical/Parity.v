@@ -16,5 +16,7 @@ Global Instance parity_numerical : Numerical parity :=
   ensure_numerical := ensure_par;
   plus_op := parity_plus;
   mult_op := parity_mult;
+  eq_op := parity_eq;
+  le_op := parity_leb;
 }.
 

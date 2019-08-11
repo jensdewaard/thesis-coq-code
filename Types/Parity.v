@@ -77,4 +77,11 @@ Definition parity_eq (p1 p2 : parity) : abstr_bool :=
   | _, _ => ab_top
   end.
 
-
+Definition parity_leb (p1 p2 : parity) : abstr_bool :=
+  match p1, p2 with
+  | par_bottom, _ => ab_true
+  | _, par_top    => ab_true
+  | par_even, par_odd | par_odd, par_even => ab_top
+  | par_even, par_even | par_odd, par_odd => ab_top
+  | par_top, _ | _, par_bottom => ab_false
+  end.
