@@ -8,6 +8,7 @@ Require Import Monad.
 Require Import State.
 Require Import SharedInterpreter.
 Require Import Types.Result.
+Require Import Instances.Numerical.Nat.
 
 Open Scope com_scope.
 
@@ -19,12 +20,6 @@ Open Scope com_scope.
   store
   get.*)
   
-Definition ensure_nat (v : cvalue) : State nat :=
-  fun st => match v with
-            | VNat x => returnR nat store x st
-            | _ => crashed _ _
-            end.
-            
 Definition ensure_bool (v : cvalue) : State bool :=
   fun st => match v with
             | VBool b => returnR bool store b st
@@ -39,15 +34,15 @@ Fixpoint eval_expr (e : expr) : State cvalue :=
   | EPlus e1 e2 => 
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;
-      n1 << (ensure_nat v1) ;
-      n2 << (ensure_nat v2) ;
-      returnM (VNat (n1 + n2))
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
+      returnM (VNat (Numerical.plus_op n1 n2))
   | EMult e1 e2 =>
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;
       n1 << (ensure_nat v1) ;
       n2 << (ensure_nat v2) ;
-      returnM (VNat (n1 * n2))
+      returnM (VNat (Numerical.mult_op n1 n2))
   | EEq e1 e2 =>
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;

@@ -12,6 +12,7 @@ Require Import State.
 Require Import Instances.Galois.Parity.
 Require Import Instances.Preorder.Unit.
 Require Import Instances.Joinable.Unit.
+Require Import Instances.Numerical.Parity.
 
 Open Scope com_scope.
 
@@ -22,13 +23,9 @@ Open Scope com_scope.
   parity_mult
   abstract_store
   get_abstract.*)
+
   
-Definition ensure_par (v : avalue) : AbstractState parity :=
-  fun st => match v with
-            | VParity x => returnRA parity abstract_store x st
-            | _ => crashedA _ _
-            end.
-            
+
 Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
   fun st => match v with
             | VAbstrBool b => returnRA abstr_bool abstract_store b st
@@ -41,6 +38,8 @@ Definition extract (v : cvalue) : avalue :=
   | VBool x => VAbstrBool (extract_bool x)
   end.
   
+Print parity_numerical.
+
 Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
   match e with
   | EVal x => returnM (extract x)
@@ -49,20 +48,20 @@ Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
   | EPlus e1 e2 => 
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (ensure_par v1) ;
-      n2 << (ensure_par v2) ;
-      returnM (VParity (parity_plus n1 n2))
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
+      returnM (VParity (Numerical.plus_op n1 n2))
   | EMult e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (ensure_par v1) ;
-      n2 << (ensure_par v2) ;
-      returnM (VParity (parity_mult n1 n2))
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
+      returnM (VParity (Numerical.mult_op n1 n2))
   | EEq e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (ensure_par v1) ;
-      n2 << (ensure_par v2) ;
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
       returnM (VAbstrBool (parity_eq n1 n2))
   | ELe e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
