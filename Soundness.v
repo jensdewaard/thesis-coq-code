@@ -24,6 +24,8 @@ Require Import Types.AbstractStore.
 Require Import Types.Parity.
 Require Import Instances.Numerical.Parity.
 Require Import Instances.Numerical.Nat.
+Require Import Instances.BoolType.Boolean.
+Require Import Instances.BoolType.AbstractBoolean.
 
 Create HintDb soundness.
 

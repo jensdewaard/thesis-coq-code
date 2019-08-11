@@ -1,6 +1,3 @@
-Require Import Language.Statements.
-Require Import Types.State.
-
 Class Numerical {T  : Type} 
   {state : (Type -> Type)} 
   {boolType : Type}

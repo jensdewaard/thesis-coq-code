@@ -9,6 +9,7 @@ Require Import State.
 Require Import SharedInterpreter.
 Require Import Types.Result.
 Require Import Instances.Numerical.Nat.
+Require Import Instances.BoolType.Boolean.
 
 Open Scope com_scope.
 
@@ -19,12 +20,6 @@ Open Scope com_scope.
   mult 
   store
   get.*)
-  
-Definition ensure_bool (v : cvalue) : State bool :=
-  fun st => match v with
-            | VBool b => returnR bool store b st
-            | _ => crashed _ _
-            end.
   
 Fixpoint eval_expr (e : expr) : State cvalue :=
   match e with
@@ -57,14 +52,14 @@ Fixpoint eval_expr (e : expr) : State cvalue :=
       returnM (VBool (Numerical.le_op n1 n2))
   | ENot e =>
       v << (eval_expr e) ;
-      b << (ensure_bool v) ;
-      returnM (VBool (negb b))
+      b << (BoolType.ensure_boolean v) ;
+      returnM (VBool (BoolType.neg_op b))
   | EAnd e1 e2 =>
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;
-      b1 << (ensure_bool v1) ;
-      b2 << (ensure_bool v2) ;
-      returnM (VBool (andb b1 b2))
+      b1 << (BoolType.ensure_boolean v1) ;
+      b2 << (BoolType.ensure_boolean v2) ;
+      returnM (VBool (BoolType.and_op b1 b2))
   end.
 
 Definition eval_if {A} (b : bool) (st1 st2 : State A) : State A :=

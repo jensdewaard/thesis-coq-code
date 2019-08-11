@@ -13,6 +13,7 @@ Require Import Instances.Galois.Parity.
 Require Import Instances.Preorder.Unit.
 Require Import Instances.Joinable.Unit.
 Require Import Instances.Numerical.Parity.
+Require Import Instances.BoolType.AbstractBoolean.
 
 Open Scope com_scope.
 
@@ -25,13 +26,6 @@ Open Scope com_scope.
   get_abstract.*)
 
   
-
-Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
-  fun st => match v with
-            | VAbstrBool b => returnRA abstr_bool abstract_store b st
-            | _ => crashedA _ _
-            end.
-            
 Definition extract (v : cvalue) : avalue :=
   match v with
   | VNat x => VParity (extract_par x)
@@ -69,14 +63,14 @@ Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
       returnM (VAbstrBool (Numerical.le_op n1 n2))
   | ENot e =>
       v << (eval_expr_abstract e) ;
-      b << (ensure_abool v) ;
-      returnM (VAbstrBool (neg_ab b))
+      b << (BoolType.ensure_boolean v) ;
+      returnM (VAbstrBool (BoolType.neg_op b))
   | EAnd e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      b1 << (ensure_abool v1) ;
-      b2 << (ensure_abool v2) ;
-      returnM (VAbstrBool (and_ab b1 b2))
+      b1 << (BoolType.ensure_boolean v1) ;
+      b2 << (BoolType.ensure_boolean v2) ;
+      returnM (VAbstrBool (BoolType.and_op b1 b2))
   end.
 
 Definition eval_if_abstract {A} `{Joinable A} 

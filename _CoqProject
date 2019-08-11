@@ -3,6 +3,8 @@ Maps.v
 Classes/PreorderedSet.v
 Classes/Monad.v
 Classes/Joinable.v
+Classes/Numerical.v
+Classes/BoolType.v
 Types/AbstractBool.v
 Types/Parity.v
 Language/Statements.v
@@ -21,9 +23,10 @@ Types/Result.v
 Instances/Preorder/Result.v
 Instances/Joinable/Result.v
 Types/State.v
-Classes/Numerical.v
 Instances/Numerical/Parity.v
 Instances/Numerical/Nat.v
+Instances/BoolType/Boolean.v
+Instances/BoolType/AbstractBoolean.v
 Instances/Preorder/AbstractState.v
 Classes/Galois.v
 Instances/Galois/Parity.v
