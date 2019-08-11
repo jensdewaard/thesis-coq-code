@@ -38,8 +38,6 @@ Definition extract (v : cvalue) : avalue :=
   | VBool x => VAbstrBool (extract_bool x)
   end.
   
-Print parity_numerical.
-
 Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
   match e with
   | EVal x => returnM (extract x)
@@ -62,13 +60,13 @@ Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
       v2 << (eval_expr_abstract e2) ;
       n1 << (Numerical.ensure_numerical v1) ;
       n2 << (Numerical.ensure_numerical v2) ;
-      returnM (VAbstrBool (parity_eq n1 n2))
+      returnM (VAbstrBool (Numerical.eq_op n1 n2))
   | ELe e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (ensure_par v1) ;
-      n2 << (ensure_par v2) ;
-      returnM (VAbstrBool (ab_top))
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
+      returnM (VAbstrBool (Numerical.le_op n1 n2))
   | ENot e =>
       v << (eval_expr_abstract e) ;
       b << (ensure_abool v) ;

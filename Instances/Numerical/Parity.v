@@ -1,5 +1,6 @@
 Require Import Classes.Numerical.
 Require Import Types.Parity.
+Require Import Types.AbstractBool.
 Require Import Language.Statements.
 Require Import Types.State.
 Require Import Types.Result.
@@ -17,6 +18,6 @@ Global Instance parity_numerical : Numerical parity :=
   plus_op := parity_plus;
   mult_op := parity_mult;
   eq_op := parity_eq;
-  le_op := parity_leb;
+  le_op := fun p1 => fun p2 => ab_top;
 }.
 

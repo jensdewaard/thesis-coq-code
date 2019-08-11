@@ -40,21 +40,21 @@ Fixpoint eval_expr (e : expr) : State cvalue :=
   | EMult e1 e2 =>
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;
-      n1 << (ensure_nat v1) ;
-      n2 << (ensure_nat v2) ;
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
       returnM (VNat (Numerical.mult_op n1 n2))
   | EEq e1 e2 =>
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;
-      n1 << (ensure_nat v1) ;
-      n2 << (ensure_nat v2) ;
-      returnM (VBool (Nat.eqb n1 n2))
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
+      returnM (VBool (Numerical.eq_op n1 n2))
   | ELe e1 e2 =>
       v1 << (eval_expr e1) ;
       v2 << (eval_expr e2) ;
-      n1 << (ensure_nat v1) ;
-      n2 << (ensure_nat v2) ;
-      returnM (VBool (Nat.leb n1 n2))
+      n1 << (Numerical.ensure_numerical v1) ;
+      n2 << (Numerical.ensure_numerical v2) ;
+      returnM (VBool (Numerical.le_op n1 n2))
   | ENot e =>
       v << (eval_expr e) ;
       b << (ensure_bool v) ;
