@@ -1,5 +1,5 @@
 -R . Thesis 
-Maps.v
+Types/Maps.v
 Classes/PreorderedSet.v
 Classes/Monad.v
 Classes/Joinable.v

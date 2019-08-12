@@ -5,8 +5,11 @@ Require Import Coq.Arith.Even.
 Require Import AbstractInterpreter.
 Require Import Classes.Galois.
 Require Import Classes.Joinable.
+Require Import Classes.Monad.
 Require Import Classes.PreorderedSet.
 Require Import ConcreteInterpreter.
+Require Import Instances.BoolType.AbstractBoolean.
+Require Import Instances.BoolType.Boolean.
 Require Import Instances.Galois.AbstractState.
 Require Import Instances.Galois.AbstractStore.
 Require Import Instances.Galois.Functions.
@@ -15,17 +18,14 @@ Require Import Instances.Galois.Parity.
 Require Import Instances.Galois.Result.
 Require Import Instances.Galois.Unit.
 Require Import Instances.Galois.Values.
+Require Import Instances.Numerical.Nat.
+Require Import Instances.Numerical.Parity.
 Require Import Language.Statements.
-Require Import Maps.
-Require Import Monad.
-Require Import State.
 Require Import Types.AbstractBool.
 Require Import Types.AbstractStore.
+Require Import Types.Maps.
 Require Import Types.Parity.
-Require Import Instances.Numerical.Parity.
-Require Import Instances.Numerical.Nat.
-Require Import Instances.BoolType.Boolean.
-Require Import Instances.BoolType.AbstractBoolean.
+Require Import Types.State.
 
 Create HintDb soundness.
 
@@ -412,7 +412,7 @@ Lemma sound_program2' :
 Proof. 
 unfold sound. simpl. intros. split.
   - auto.
-  - unfold gamma_store. intro. simpl. SearchAbout t_update.
+  - unfold gamma_store. intro. simpl. 
     apply t_update_sound. apply t_update_sound. apply H. 
     simpl. repeat constructor.
     simpl. repeat constructor.

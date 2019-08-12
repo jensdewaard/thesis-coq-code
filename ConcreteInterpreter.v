@@ -1,15 +1,15 @@
 Require Import Coq.Arith.Arith.
 Require Import Utf8.
 
-Require Import Types.AbstractStore.
-Require Import Language.Statements.
-Require Import Maps.
-Require Import Monad.
-Require Import State.
-Require Import SharedInterpreter.
-Require Import Types.Result.
-Require Import Instances.Numerical.Nat.
+Require Import Classes.Monad.
 Require Import Instances.BoolType.Boolean.
+Require Import Instances.Numerical.Nat.
+Require Import Language.Statements.
+Require Import SharedInterpreter.
+Require Import Types.AbstractStore.
+Require Import Types.Maps.
+Require Import Types.Result.
+Require Import Types.State.
 
 Open Scope com_scope.
 

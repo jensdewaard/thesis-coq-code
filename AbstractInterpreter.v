@@ -1,19 +1,19 @@
-Require Import Types.AbstractStore.
-Require Import Types.AbstractBool.
+Require Import Classes.Monad.
 Require Import ConcreteInterpreter.
-Require Import Language.Statements.
-Require Import Joinable.
-Require Import Maps.
-Require Import Monad.
-Require Import Types.Parity.
-Require Import Types.Result.
-Require Import SharedInterpreter.
-Require Import State.
+Require Import Instances.BoolType.AbstractBoolean.
 Require Import Instances.Galois.Parity.
-Require Import Instances.Preorder.Unit.
 Require Import Instances.Joinable.Unit.
 Require Import Instances.Numerical.Parity.
-Require Import Instances.BoolType.AbstractBoolean.
+Require Import Instances.Preorder.Unit.
+Require Import Joinable.
+Require Import Language.Statements.
+Require Import SharedInterpreter.
+Require Import Types.AbstractBool.
+Require Import Types.AbstractStore.
+Require Import Types.Maps.
+Require Import Types.Parity.
+Require Import Types.Result.
+Require Import Types.State.
 
 Open Scope com_scope.
 

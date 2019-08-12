@@ -1,4 +1,4 @@
-Require Import Maps.
+Require Import Types.Maps.
 Require Import Types.Parity.
 Require Import Language.Statements.
 
