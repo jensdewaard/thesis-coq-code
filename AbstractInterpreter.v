@@ -1,3 +1,5 @@
+Require Import Classes.BoolType.
+Require Import Classes.Numerical.
 Require Import Classes.Monad.
 Require Import ConcreteInterpreter.
 Require Import Instances.BoolType.AbstractBoolean.
@@ -40,37 +42,37 @@ Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
   | EPlus e1 e2 => 
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (Numerical.ensure_numerical v1) ;
-      n2 << (Numerical.ensure_numerical v2) ;
-      returnM (VParity (Numerical.plus_op n1 n2))
+      n1 << (ensure_numerical v1) ;
+      n2 << (ensure_numerical v2) ;
+      returnM (VParity (plus_op n1 n2))
   | EMult e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (Numerical.ensure_numerical v1) ;
+      n1 << (ensure_numerical v1) ;
       n2 << (Numerical.ensure_numerical v2) ;
-      returnM (VParity (Numerical.mult_op n1 n2))
+      returnM (VParity (mult_op n1 n2))
   | EEq e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (Numerical.ensure_numerical v1) ;
-      n2 << (Numerical.ensure_numerical v2) ;
-      returnM (VAbstrBool (Numerical.eq_op n1 n2))
+      n1 << (ensure_numerical v1) ;
+      n2 << (ensure_numerical v2) ;
+      returnM (VAbstrBool (eq_op n1 n2))
   | ELe e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      n1 << (Numerical.ensure_numerical v1) ;
-      n2 << (Numerical.ensure_numerical v2) ;
-      returnM (VAbstrBool (Numerical.le_op n1 n2))
+      n1 << (ensure_numerical v1) ;
+      n2 << (ensure_numerical v2) ;
+      returnM (VAbstrBool (le_op n1 n2))
   | ENot e =>
       v << (eval_expr_abstract e) ;
-      b << (BoolType.ensure_boolean v) ;
-      returnM (VAbstrBool (BoolType.neg_op b))
+      b << (ensure_boolean v) ;
+      returnM (VAbstrBool (neg_op b))
   | EAnd e1 e2 =>
       v1 << (eval_expr_abstract e1) ;
       v2 << (eval_expr_abstract e2) ;
-      b1 << (BoolType.ensure_boolean v1) ;
-      b2 << (BoolType.ensure_boolean v2) ;
-      returnM (VAbstrBool (BoolType.and_op b1 b2))
+      b1 << (ensure_boolean v1) ;
+      b2 << (ensure_boolean v2) ;
+      returnM (VAbstrBool (and_op b1 b2))
   end.
 
 Definition eval_if_abstract {A} `{Joinable A} 
@@ -104,7 +106,7 @@ Fixpoint ceval_abstract (c : com) : AbstractState unit :=
       put_abstract (t_update st x p)
   | CIf b c1 c2 => 
       v << (eval_expr_abstract b) ;
-      b' << (ensure_abool v) ;
+      b' << (ensure_boolean v) ;
       eval_if_abstract b' (ceval_abstract c1) (ceval_abstract c2)
   | try c1 catch c2 => 
       eval_catch_abstract (ceval_abstract c1) (ceval_abstract c2)
