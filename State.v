@@ -44,7 +44,7 @@ Definition bind_state_abstract (A B : Type)
             | exceptionA _ _ st' => exceptionA _ _ st' 
             | exceptionOrReturn _ _ x st' => match (f x st') with
                                              | returnRA _ _ x' st'' => 
-                                                  exceptionOrReturn _ _ x' (join_op st' st'')
+                                                  exceptionOrReturn _ _ x' st''
                                              | crashedA _ _ => crashedA _ _
                                              | exceptionA _ _ st'' =>
                                                   exceptionA _ _ (join_op st' st'')
