@@ -11,3 +11,6 @@ Class Numerical {T  : Type}
   le_op   : N -> N -> boolType;
 }.
 
+Arguments Numerical {_ _ _} N.
+Arguments Build_Numerical {_ _ _} N {_ _ _ _ _}.
+
