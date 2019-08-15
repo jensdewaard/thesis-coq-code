@@ -1,16 +1,24 @@
-Class Numerical {T  : Type} 
-  {state : (Type -> Type)} 
-  {boolType : Type}
-  (N : Type) 
-  : Type :=
+
+Class Numerical {valType : Type} {M : Type -> Type} 
+  {boolType : Type} (natType : Type) : Type :=
 {
-  ensure_numerical : T -> state N;
-  plus_op : N -> N -> N;
-  mult_op : N -> N -> N;
-  eq_op   : N -> N -> boolType;
-  le_op   : N -> N -> boolType;
+  ensure_numerical : valType -> M natType;
+  plus_op : natType -> natType -> natType;
+  mult_op : natType -> natType -> natType;
+  eq_op   : natType -> natType -> boolType;
+  le_op   : natType -> natType -> boolType;
 }.
 
-Arguments Numerical {_ _ _} N.
-Arguments Build_Numerical {_ _ _} N {_ _ _ _ _}.
+(* Sven's version, for reference:
+Class Numerical {valType : Type} {M : Type -> Type} : Type :=
+{
+  plus_op : valType -> valType -> M valType;
+  mult_op : valType -> valType -> M valType;
+  eq_op   : valType -> valType -> M valType;
+  le_op   : valType -> valType -> M valType;
+}.
+*)
+
+Arguments Numerical {_ _ _} natType.
+Arguments Build_Numerical {_ _ _} natType {_ _ _ _ _}.
 
