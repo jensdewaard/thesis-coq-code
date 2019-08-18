@@ -5,7 +5,7 @@ Require Import Instances.Joinable.Result.
 Require Import Joinable.
 Require Import Language.Statements.
 Require Import Monad.
-Require Import Types.AbstractStore.
+Require Import Types.Stores.
 Require Import Types.Result.
 
 Require Import Instances.Joinable.AbstractStore.
@@ -24,12 +24,11 @@ Definition bind_state (A B : Type) (m : State A) (f : A -> State B)
             end.
 
 Definition get : State store := fun st => returnR store store st st.
+Check get.
 
 Definition put (st' : store) : State unit := 
   fun st => returnR unit store tt st'.
   
-Definition fail {A : Type} : State A :=
-  fun st => exception A store st.
 
 Definition AbstractState (A : Type) :=
   abstract_store -> abstract_result A abstract_store.
@@ -86,14 +85,6 @@ Definition bind_state_abstract (A B : Type)
             | exceptionOrReturn _ _ x st' => result_doorgeven _ _ f x st'
             end.
 
-Definition get_abstract : AbstractState abstract_store := 
-  fun st => returnRA abstract_store abstract_store st st.
-
-Definition put_abstract (st' : abstract_store) : AbstractState unit :=
-  fun st => returnRA unit abstract_store tt st'.
-
-Definition fail_abstract {A : Type} : AbstractState A :=
-  fun st => exceptionA A abstract_store st.
 
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.

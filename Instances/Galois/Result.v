@@ -2,7 +2,7 @@ Require Import Classes.Galois.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Galois.AbstractStore.
 Require Import Instances.Joinable.Result.
-Require Import Types.AbstractStore.
+Require Import Types.Stores.
 Require Import Types.Result.
 
 Section galois_result.

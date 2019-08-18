@@ -4,6 +4,7 @@ Require Import Coq.Arith.Even.
 Require Import Classes.Galois.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Preorder.Parity.
+Require Import Instances.IsNat.Parity.
 Require Import Types.Parity.
 
 Definition gamma_par (p : parity) : nat -> Prop :=
@@ -27,12 +28,6 @@ Instance galois_parity_nat : Galois nat parity :=
   gamma_monotone := gamma_par_monotone;
 }.
 
-Fixpoint extract_par (n : nat) : parity :=
-  match n with 
-  | 0 => par_even
-  | S 0 => par_odd
-  | S (S n) => extract_par n
-end.
 
 Lemma extract_S_n : forall n,
   extract_par (S n) = parity_plus (extract_par n) par_odd.

@@ -4,12 +4,14 @@ Require Import Coq.Arith.Even.
 
 Require Import AbstractInterpreter.
 Require Import Classes.Galois.
+Require Import Classes.IsBool.
+Require Import Classes.IsNat.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
 Require Import Classes.PreorderedSet.
 Require Import ConcreteInterpreter.
-Require Import Instances.BoolType.AbstractBoolean.
-Require Import Instances.BoolType.Boolean.
+Require Import Instances.Except.AbstractException.
+Require Import Instances.Except.ConcreteException.
 Require Import Instances.Galois.AbstractState.
 Require Import Instances.Galois.AbstractStore.
 Require Import Instances.Galois.Functions.
@@ -18,14 +20,20 @@ Require Import Instances.Galois.Parity.
 Require Import Instances.Galois.Result.
 Require Import Instances.Galois.Unit.
 Require Import Instances.Galois.Values.
-Require Import Instances.Numerical.Nat.
-Require Import Instances.Numerical.Parity.
+Require Import Instances.IsBool.AbstractBoolean.
+Require Import Instances.IsBool.Boolean.
+Require Import Instances.IsNat.Nat.
+Require Import Instances.IsNat.Parity.
+Require Import Instances.Joinable.AbstractStore.
+Require Import Instances.Store.AbstractStore.
+Require Import Instances.Store.ConcreteStore.
 Require Import Language.Statements.
+Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
-Require Import Types.AbstractStore.
 Require Import Types.Maps.
 Require Import Types.Parity.
 Require Import Types.State.
+Require Import Types.Stores.
 
 Create HintDb soundness.
 
@@ -194,17 +202,6 @@ Proof.
 Qed.
 Hint Extern 5 => apply sound_ab_neg.
 
-Lemma gamma_extract_n_n : forall v,
-  gamma (extract v) v.
-Proof.
-  destruct v.
-  - simpl. apply gamma_par_extract_n_n.
-  - simpl. destruct b; simpl. reflexivity.
-    unfold not. intros contra. inversion contra.
-Qed.
-Hint Extern 5 => apply gamma_extract_n_n.
-
-
 Lemma ensure_par_sound : 
   sound ensure_nat ensure_par.
 Proof.
@@ -222,18 +219,33 @@ Proof.
   destruct c, b; try inversion Hgamma; pairs.
 Qed.
 Hint Extern 5 => apply ensure_abool_sound.
-  
+
+Set Debug Typeclasses.
+
+Lemma sound_eval_eplus : forall a1 a2,
+  sound (eval_expr a1) (eval_expr_abstract a1) ->
+  sound (eval_expr a2) (eval_expr_abstract a2) ->
+  sound (eval_expr (EPlus a1 a2)) (eval_expr_abstract (EPlus a1 a2)).
+Proof. 
+  intros. unfold sound. intros. simpl. bind. unfold eval_expr,
+  eval_expr_abstract in H. unfold sound in H. simpl in H. apply H. 
+
 Hint Unfold gamma_fun.
 Hint Unfold gamma_store.
+Hint Unfold shared_eval_expr.
 Theorem eval_expr_sound :
   forall a, sound (eval_expr a) (eval_expr_abstract a).
 Proof.
-  intros.
-  unfold sound. simpl.
-  induction a.
-  - (* ENum *) simpl. pairs. 
-  - (* EVar *) simpl. pairs. unfold gamma_store in H. apply H.
-  - (* EPlus *) simpl in *. intros st ast H. bind. 
+  intros. induction a. 
+  - (* ENum *) simpl. unfold sound. intros. unfold gamma_result. 
+    unfold extract_build_val.
+    destruct c; simpl. split. apply gamma_par_extract_n_n. apply H.
+    destruct b0; simpl; auto. 
+  - (* EVar *) simpl. pairs. 
+  - (* EPlus *) simpl in *. intros st ast H. bind. unfold sound.
+    apply IHa1. 
+    unfold shared_eval_expr.
+    simpl. 
     unfold sound. intros n p Hgamma. simpl. unfold gamma_fun. 
     intros ast' st'. intros Hstore. simpl. bind.
     unfold sound. intros n' p' Hgamma'. simpl. unfold gamma_fun.

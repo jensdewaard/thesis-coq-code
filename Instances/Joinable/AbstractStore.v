@@ -2,7 +2,7 @@ Require Import Classes.Joinable.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Preorder.AbstractStore.
 Require Import Language.Statements.
-Require Import Types.AbstractStore.
+Require Import Types.Stores.
 
 Definition abstract_store_join
   (ast1 ast2 : abstract_store) : abstract_store :=

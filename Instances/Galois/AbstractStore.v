@@ -2,7 +2,7 @@ Require Import Classes.Galois.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Galois.Values.
 Require Import Instances.Preorder.AbstractStore.
-Require Import Types.AbstractStore.
+Require Import Types.Stores.
 
 Definition gamma_store : abstract_store -> store -> Prop :=
   fun st' => fun st => forall x, gamma (st' x) (st x).

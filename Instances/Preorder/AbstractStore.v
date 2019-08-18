@@ -1,7 +1,7 @@
 Require Import Classes.PreorderedSet.
-Require Import Types.AbstractStore.
 Require Import Instances.Preorder.Functions.
 Require Import Instances.Preorder.Values.
+Require Import Types.Stores.
 
 Instance preordered_abstract_store : PreorderedSet abstract_store
 := {
