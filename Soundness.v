@@ -81,9 +81,10 @@ Lemma bind_state_sound {A A' B B'}
 `{Galois A A', Galois B B'}
 : 
 forall next next' f f',
-sound f f' ->
-sound next next' ->
-sound (bind_state A B f next) (bind_state_abstract A' B' f' next').
+gamma f' f ->
+gamma next' next ->
+gamma (bind_state_abstract A' B' f' next') (bind_state A B f next).
+(*
 Proof.
   intros. 
   unfold bind_state, bind_state_abstract. unfold sound. 
@@ -141,7 +142,7 @@ Proof.
         simpl. unfold gamma_store. intro. unfold gamma_store in H5.
         apply result_doorgeven_widens_store_exception_or_result in Hdoor.
         eapply widen. inversion Hdoor. apply H6. apply H5. 
-Qed.
+Qed. *) Admitted.
 
 Hint Resolve bind_state_sound.
 
@@ -203,12 +204,12 @@ Qed.
 Hint Extern 5 => apply sound_ab_neg.
 
 Lemma ensure_par_sound : 
-  sound ensure_nat ensure_par.
-Proof.
+  gamma ensure_par ensure_nat.
+Proof. (*
   unfold sound. intros b a Hgamma.
   simpl. unfold gamma_fun. intros ast st Hstore. simpl.
   destruct a, b; try inversion Hgamma; pairs.
-Qed.
+Qed. *) Admitted.
 Hint Extern 5 => apply ensure_par_sound.
 
 Lemma ensure_abool_sound :
@@ -220,29 +221,47 @@ Proof.
 Qed.
 Hint Extern 5 => apply ensure_abool_sound.
 
-Set Debug Typeclasses.
+Lemma pplusM_sound : gamma pplusM plusM.
+Proof.
+  intros p1 i1 ? p2 i2 ?.
+Admitted.
 
-Lemma sound_eval_eplus : forall a1 a2,
-  sound (eval_expr a1) (eval_expr_abstract a1) ->
-  sound (eval_expr a2) (eval_expr_abstract a2) ->
-  sound (eval_expr (EPlus a1 a2)) (eval_expr_abstract (EPlus a1 a2)).
-Proof. 
-  intros. unfold sound. intros. simpl. bind. unfold eval_expr,
-  eval_expr_abstract in H. unfold sound in H. simpl in H. apply H. 
+Set Debug Typeclasses.
 
 Hint Unfold gamma_fun.
 Hint Unfold gamma_store.
 Hint Unfold shared_eval_expr.
 Theorem eval_expr_sound :
-  forall a, sound (eval_expr a) (eval_expr_abstract a).
+  forall a, gamma (eval_expr_abstract a) (eval_expr a).
 Proof.
-  intros. induction a. 
-  - (* ENum *) simpl. unfold sound. intros. unfold gamma_result. 
+  intros. unfold eval_expr, eval_expr_abstract. induction a.
+  - (* (* ENum *) simpl. unfold sound. intros. unfold gamma_result. 
     unfold extract_build_val.
     destruct c; simpl. split. apply gamma_par_extract_n_n. apply H.
-    destruct b0; simpl; auto. 
+    destruct b0; simpl; auto. *) admit.
   - (* EVar *) simpl. pairs. 
-  - (* EPlus *) simpl in *. intros st ast H. bind. unfold sound.
+  - (* EPlus *) simpl in *. apply bind_state_sound; [assumption|].
+    intros v1 av1 Hav1.
+    apply bind_state_sound; [assumption|].
+    intros v2 av2 Hav2.
+    apply bind_state_sound; [apply ensure_par_sound; assumption|].
+    intros n1 p1 Hp1.
+    apply bind_state_sound; [apply ensure_par_sound; assumption|].
+    intros n2 p2 Hp2.
+    apply bind_state_sound; [apply pplusM_sound; assumption|].
+    intros n p Hp.
+
+
+ [assumption|].
+Check bind_state_sound.
+SearchAbout sound.
+    intros v.
+    apply bind_state_sound.
+    
+unfold eval_expr, eval_expr_abstract in IHa1.
+   Print eval_expr_abstract. 
+
+ intros st ast H. bind. unfold sound.
     apply IHa1. 
     unfold shared_eval_expr.
     simpl. 

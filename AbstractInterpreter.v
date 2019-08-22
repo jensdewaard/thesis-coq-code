@@ -21,9 +21,9 @@ Require Import Types.Stores.
 
 Open Scope com_scope.
   
-Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
+Definition eval_expr_abstract (e : expr) : AbstractState avalue :=
   shared_eval_expr e.
   
 
-Fixpoint ceval_abstract (c : com) : AbstractState unit :=
+Definition ceval_abstract (c : com) : AbstractState unit :=
   shared_ceval c.

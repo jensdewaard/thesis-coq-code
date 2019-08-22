@@ -25,8 +25,8 @@ Open Scope com_scope.
   store
   get.*)
   
-Fixpoint eval_expr (e : expr) : State cvalue :=
+Definition eval_expr (e : expr) : State cvalue :=
   shared_eval_expr e.
 
-Fixpoint ceval (c : com) : State unit :=
+Definition ceval (c : com) : State unit :=
   shared_ceval c.
