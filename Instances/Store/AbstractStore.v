@@ -21,7 +21,7 @@ Definition abstract_store_get (x : string) :
 Definition abstract_store_put 
   (x : string) (v : avalue) : 
   AbstractState unit :=
-  fun st => returnRA unit abstract_store tt st.
+  fun st => returnRA unit abstract_store tt (t_update st x v).
 
 Instance store_abstract : Store AbstractState avalue := {
   get := abstract_store_get;

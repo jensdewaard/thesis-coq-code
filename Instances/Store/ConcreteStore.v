@@ -9,7 +9,7 @@ Definition store_get (x : string) : State cvalue := fun st =>
   returnR cvalue store (st x) st.
 
 Definition store_put (x : string) (v : cvalue) : State unit := 
-  fun st => returnR unit store tt st.
+  fun st => returnR unit store tt (t_update st x v).
 
 Check store_put.
 Check put.
