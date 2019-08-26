@@ -216,8 +216,9 @@ Lemma extract_bool_sound : forall ast st x,
   gamma ast st ->
   gamma (extract_ab x ast) (extract_boolean x st).
 Proof.
-
-Admitted.
+  intros ast st b H.
+  destruct b; auto.
+Qed.
 Hint Extern 5 => apply extract_bool_sound.
 
 Hint Unfold gamma_fun.
