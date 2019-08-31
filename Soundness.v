@@ -40,37 +40,28 @@ Create HintDb soundness.
 Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
 Hint Extern 4 => pairs.
 
+Arguments gamma : simpl never.
+Arguments join_op : simpl never.
   
 Definition sound_store (ast : abstract_store) (st : store) : Prop := 
   forall x, gamma (ast x) (st x).
 Hint Unfold sound_store.
+
+Lemma return_state_sound {A B : Type} `{Galois A B} :
+  gamma (return_state_abstract B) (return_state A).
+Proof. 
+  intros ???. unfold gamma. simpl.
+  intros ???. unfold gamma. simpl. auto.
+Qed.
 
 Lemma t_update_sound : forall (ast : abstract_store) (st : store) x p n,
   gamma ast st ->
   gamma p n ->
   gamma (t_update ast x p) (t_update st x n).
 Proof. 
-  intros. simpl. unfold gamma_store, t_update.
+  intros. unfold t_update.
   intro x'.
-  destruct (beq_string x x'). 
-  - assumption.
-  - apply H.
-Qed.
-
-Lemma abstract_store_join_sound_left : forall ast1 ast2 st,
-  gamma ast1 st ->
-  gamma (abstract_store_join ast1 ast2) st.
-Proof. 
-  intros. unfold abstract_store_join. 
-  constructor.
-Qed.
-
-Corollary abstract_store_join_sound_right : forall ast1 ast2 st,
-  gamma ast2 st ->
-  gamma (abstract_store_join ast1 ast2) st.
-Proof.
-  intros. unfold abstract_store_join. 
-  constructor.
+  destruct (beq_string x x'); auto.
 Qed.
 
 Lemma bind_state_sound {A A' B B'} 
@@ -88,15 +79,14 @@ Proof.
   destruct (f' ast) eqn:Hfa.
   - destruct (f st).
     + (* both return a value *)
-      simpl. apply H4. 
-      apply Hstore. apply Hstore.
+      apply H4; apply Hstore.
     + (* concrete crashes *) inversion Hstore.
     + (* concrete throws exception *) inversion Hstore.
   - reflexivity.
   - destruct (f st).
     + inversion Hstore.
     + inversion Hstore.
-    + simpl. simpl in Hstore. apply Hstore.
+    + apply Hstore.
   - destruct (f st) eqn:Hfb.
     + unfold result_doorgeven. 
       destruct (next' a a0) eqn:Hnext1.
@@ -115,26 +105,24 @@ Proof.
         { destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5. 
           rewrite Hnext2 in H5. inversion H5. auto. }
         { auto. }
-      * simpl. destruct (next a1 s) eqn:Hnext2. 
+      * destruct (next a1 s) eqn:Hnext2. 
         { split. auto. destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5.
           rewrite Hnext2 in H5. destruct H5. auto. auto. }
         { destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5. rewrite Hnext2 in
           H5. inversion H5. auto. }
         { auto. }
     + inversion Hstore. 
-    + simpl in *. 
-      destruct result_doorgeven eqn:Hdoor. 
+    + destruct result_doorgeven eqn:Hdoor. 
       * (* doorgeven gives result, impossible *)
         pose proof result_doorgeven_output.
         unfold not in H5. exfalso. eapply H5. apply Hdoor. 
       * (* doorgeven crashes *)
         reflexivity. 
       * (* doorgeven gives certain exception *)
-        simpl. unfold gamma_store. intro. unfold gamma_store in Hstore. 
-        apply result_doorgeven_widens_store_exception in Hdoor. 
+        intro. apply result_doorgeven_widens_store_exception in Hdoor. 
         inversion Hdoor. eapply widen. apply H5. apply Hstore.
       * (* doorgeven gives either exception or return *)
-        simpl. unfold gamma_store. intro. unfold gamma_store in Hstore.
+        intro. 
         apply result_doorgeven_widens_store_exception_or_result in Hdoor.
         eapply widen. inversion Hdoor. apply H5. apply Hstore. 
 Qed. 
@@ -146,7 +134,7 @@ Hint Extern 4 => bind.
 
 Lemma sound_parity_plus :
   gamma parity_plus plus.
-Proof. intros ? ? ? ? ? ?.
+Proof. intros ? ? ? ? ? ?. unfold gamma.
   destruct a, a0; simpl in *; try tauto;
   auto using even_even_plus, odd_plus_r, odd_plus_l, odd_even_plus.
 Qed.
@@ -154,15 +142,15 @@ Hint Extern 5 => apply sound_parity_plus.
 
 Lemma sound_parity_mult :
   gamma parity_mult mult.
-Proof. intros ? ? ? ? ? ?.
+Proof. intros ? ? ? ? ? ?. unfold gamma.
   destruct a, a0; simpl in *; try tauto; 
   auto using even_mult_l, even_mult_r, odd_mult.
 Qed.
 Hint Extern 5 => apply sound_parity_mult.
 
 Lemma sound_parity_eq :
-  gamma parity_eq Nat.eqb.
-Proof. intros ? ? ? ? ? ?.
+  gamma parity_eq Nat.eqb. 
+Proof. intros ? ? ? ? ? ?. unfold gamma.
   destruct a, a0; simpl in *; try tauto; unfold not; intros.
   - apply Bool.Is_true_eq_true in H1. apply Nat.eqb_eq in H1. subst.
     eauto using not_even_and_odd. 
@@ -173,36 +161,36 @@ Hint Extern 5 => apply sound_parity_eq.
 
 Lemma sound_ab_and :
   gamma and_ab andb.
-Proof. intros ? ? ? ? ? ?.
-  destruct b, b0, a, a0; simpl in *; tauto.
+Proof. intros ? ? ? ? ? ?. unfold gamma.
+  destruct b, b0, a, a0; simpl in *; auto.
 Qed.
 Hint Extern 5 => apply sound_ab_and.
 
 Lemma sound_ab_or :
   gamma or_ab orb.
-Proof. intros ? ? ? ? ? ?.
-  destruct b, b0, a, a0; simpl in *; tauto.
+Proof. intros ? ? ? ? ? ?. unfold gamma.
+  destruct b, b0, a, a0; simpl in *; auto.
 Qed.
 Hint Extern 5 => apply sound_ab_or.
 
 Lemma sound_ab_neg :
   gamma neg_ab negb.
-Proof. intros ? ? ?.
-  destruct b, a; simpl in *; tauto.
+Proof. intros ? ? ?. unfold gamma.
+  destruct b, a; simpl in *; auto.
 Qed.
 Hint Extern 5 => apply sound_ab_neg.
 
 Lemma ensure_par_sound : 
   gamma ensure_par ensure_nat.
 Proof. intros ? ? ? ? ? ?.
-  simpl. destruct a, b; simpl; tauto. 
+  simpl. destruct a, b; simpl; auto. 
 Qed. 
 Hint Extern 5 => apply ensure_par_sound.
 
 Lemma ensure_abool_sound :
   gamma ensure_abool ensure_bool.
 Proof. intros ? ? ? ? ? ?. 
-  simpl. destruct a, b; simpl; tauto.
+  simpl. destruct a, b; simpl; auto.
 Qed.
 Hint Extern 5 => apply ensure_abool_sound.
 
@@ -216,8 +204,9 @@ Lemma extract_bool_sound : forall ast st x,
   gamma ast st ->
   gamma (extract_ab x ast) (extract_boolean x st).
 Proof.
-  intros ast st b H.
-  destruct b; auto.
+  intros ast st b H. unfold gamma. simpl. 
+  destruct b; unfold gamma; auto. simpl; unfold gamma; simpl.
+  auto. 
 Qed.
 Hint Extern 5 => apply extract_bool_sound.
 
@@ -258,114 +247,84 @@ Proof.
 Qed.
 Hint Resolve eval_expr_sound.
 
-Lemma sound_seq : forall c1 c2,
-  gamma (ceval_abstract c1) (ceval c1) ->
-  gamma (ceval_abstract c2) (ceval c2) ->
-  gamma (ceval_abstract (c1 ;c; c2)) (ceval (c1 ;c; c2)).
-Proof.
-  intros c1 c2 H1 H2. bind. 
-  intros ??????. auto. 
-Qed.
-Hint Resolve sound_seq.
-
-Lemma sound_assignment : forall x a,
-  gamma  (ceval_abstract (CAss x a)) (ceval (CAss x a)).
+Lemma sound_store_put : forall s,
+  gamma (abstract_store_put s) (store_put s).
 Proof. 
-  intros. bind. 
-  intros ???. simpl. intros ???. simpl. split; auto.
-  unfold t_update. apply t_update_sound; auto.
+  intros ???? ???. unfold abstract_store_put, store_put. unfold gamma.
+  simpl. split. constructor. apply t_update_sound; auto.
 Qed.
-Hint Resolve sound_assignment.
-  
-Lemma sound_if : forall b c1 c2,
-  gamma (ceval_abstract c1) (ceval c1) ->
-  gamma (ceval_abstract c2) (ceval c2) ->
-  gamma (ceval_abstract (CIf b c1 c2)) (ceval (CIf b c1 c2)).
-Proof. 
-  intros e c1 c2 H1 H2 cv av Hgamma.  simpl. 
-  unfold ceval_abstract, ceval.
-  simpl. bind. intros ??????. bind. intros ??????. 
-  unfold eval_if_abstract, eval_if. destruct a1.
-  - (* ab_true *) destruct b1.  apply H1. assumption. 
-    inversion H3.
-  - (* ab_false *) destruct b1. 
-    + (* true, contradiction *) simpl in *. unfold not in H3. 
-      exfalso. apply H3. reflexivity.
-    + (* false *) apply H2. assumption.
-  - (* ab_top *) destruct b1. 
-    + (* true *)
-      assert (preorder (ceval_abstract c1) (join_op (ceval_abstract c1)
-      (ceval_abstract c2))).
-      apply join_upper_bound_left.
-      inversion H5; subst. unfold ceval_abstract in H6. 
-      eapply widen. apply H6. auto.
-    + (* false *) 
-      assert (preorder (ceval_abstract c2) (join_op (ceval_abstract c1) (ceval_abstract c2))).
-      apply join_upper_bound_right.
-      inversion H5; subst. unfold ceval_abstract in H6.
-      eapply widen. apply H6. auto.
-  - (* ab_bottom *) inversion H3.
-Qed.
-Hint Resolve sound_if.
 
-Lemma sound_try_catch : forall c1 c2,
-  gamma (ceval_abstract c1) (ceval c1) ->
-  gamma (ceval_abstract c2) (ceval c2) ->
-  gamma (ceval_abstract (CTryCatch c1 c2)) (ceval (CTryCatch c1 c2)).
+Lemma sound_if_op : forall a b s1 s1' s2 s2',
+  gamma a b ->
+  gamma s1' s1 ->
+  gamma s2' s2 ->
+  gamma (eval_if_abstract a s1' s2')
+  (eval_if b s1 s2).
 Proof.
-  intros c1 c2 H1 H2 ast st Hstore. 
-  pose proof Hstore.
-  apply H1 in H.
-  destruct (ceval_abstract c1) eqn:Habs1; 
-  destruct (ceval c1) eqn:Hconc1.
-  - eapply abs_trycatch_return in Habs1; rewrite Habs1. 
-    eapply trycatch_return in Hconc1; rewrite Hconc1.
-    apply H1. apply Hstore.
-  - inversion H.
-  - inversion H.
-  - eapply abs_trycatch_crash in Habs1; rewrite Habs1. reflexivity.
-  - eapply abs_trycatch_crash in Habs1; rewrite Habs1. reflexivity.
-  - eapply abs_trycatch_crash in Habs1; rewrite Habs1. reflexivity.
-  - inversion H.
-  - inversion H.
-  - eapply abs_trycatch_exception in Habs1; rewrite Habs1. 
-    eapply trycatch_exception in Hconc1; rewrite Hconc1. apply H2. apply H.
-  - eapply abs_trycatch_exceptreturn in Habs1; rewrite Habs1. 
-    pose proof Hconc1.
-    eapply trycatch_return in Hconc1; rewrite Hconc1. 
-    simpl. destruct (shared_ceval c2); auto. simpl. 
-    rewrite H0. auto.
-  - inversion H.
-  - simpl in H. 
-    eapply abs_trycatch_exceptreturn in Habs1; rewrite Habs1. simpl.
-    destruct (shared_ceval c2) eqn:Habs2; auto. simpl.
-    eapply trycatch_exception in Hconc1; rewrite Hconc1. 
-    destruct (ceval c2 s) eqn:Hconc2; auto. 
-    apply H2 in Hstore. simpl in *. apply H2 in H.
-    rewrite Hconc2 in H. 
-    unfold ceval_abstract in H. rewrite Habs2 in H.
-    inversion H.
+  intros ?????????.
+  destruct b; simpl. 
+  - (* true *)
+    destruct a; simpl. 
+    + assumption.
+    + unfold gamma in H; simpl in H. tauto.
+    + eapply widen. apply join_upper_bound_left. assumption.
+    + unfold gamma in H; simpl in H. tauto.
+  - destruct a; simpl.
+    + unfold gamma in H; simpl in H; tauto.
+    + assumption.
+    + eapply widen. apply join_upper_bound_right. assumption.
+    + unfold gamma in H; simpl in H; tauto.
 Qed.
-Hint Resolve sound_try_catch.
+
+Lemma sound_eval_catch : forall s1' s1 s2' s2,
+  gamma s1' s1 ->
+  gamma s2' s2 ->
+  gamma (eval_catch_abstract s1' s2') (eval_catch s1 s2).
+Proof.
+  intros ?????????. 
+  unfold gamma in H, H0; simpl in H, H0; unfold gamma_fun in H, H0.
+  unfold eval_catch_abstract, eval_catch.
+  pose proof H1; apply H in H1.
+  destruct (s1' a).
+  - destruct (s1 b). 
+    + apply H1.
+    + apply H1.
+    + inversion H1.
+  - reflexivity.
+  - destruct (s1 b).  
+    + inversion H1.
+    + inversion H1.
+    + apply H0. apply H1.
+  - destruct (s1 b).
+    + eapply widen. apply join_upper_bound_left.
+      apply H1.
+    + inversion H1.
+    + unfold gamma in H1; simpl in H1.
+      eapply widen. apply join_upper_bound_right. unfold gamma; simpl.
+      pose proof H1. apply H0 in H1.  apply H1.
+Qed.
 
 Lemma sound_fail : 
-  gamma (ceval_abstract CThrow) (ceval CThrow).
+  gamma fail_abstract fail.
 Proof.
-  intros b a H. simpl. apply H.
+  unfold fail_abstract, fail. intros ???. auto.
 Qed.
-Hint Resolve sound_fail.
-
-Lemma sound_skip :
-  gamma (ceval_abstract SKIP) (ceval SKIP).
-Proof.
-  simpl. split; auto. 
-Qed.
-Hint Resolve sound_skip.
 
 Theorem sound_interpreter:
   forall c, gamma (ceval_abstract c) (ceval c).
 Proof.
-  intros. induction c; auto with soundness.
+  intros. unfold ceval_abstract, ceval. induction c.
+  - (* SKIP *)
+    simpl. apply return_state_sound. constructor.
+  - (* SEQ *)
+    simpl. bind. intros ???. apply IHc2.
+  - (* Assignment *)
+    simpl. bind. intros ???. apply sound_store_put. assumption.
+  - (* CIf *)
+    simpl. bind. intros ???. bind. intros ???. apply sound_if_op; assumption.
+  - (* TryCatch *)
+    simpl. apply sound_eval_catch; assumption.
+  - simpl. apply sound_fail.
 Qed.
 
 Open Scope com_scope.
@@ -402,12 +361,12 @@ Definition program2' :=
 Lemma sound_program2' :
   gamma (ceval_abstract program2') (ceval program2').
 Proof. 
-simpl. intros. split.
+  split.
   - auto.
   - intro. simpl. 
     apply t_update_sound. apply t_update_sound. apply H. 
-    simpl. repeat constructor.
-    simpl. repeat constructor.
+    repeat constructor.
+    repeat constructor.
 Qed.
 
 Definition program3 :=
