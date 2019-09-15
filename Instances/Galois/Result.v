@@ -11,13 +11,13 @@ Context {A A': Type} `{Galois A' A}.
 Definition gamma_result : abstract_result A abstract_store -> 
                           result A' store -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
-                      | returnRA _ _ a s, returnR _ _  b t => 
+                      | returnRA a s, returnR b t => 
                           gamma a b /\ gamma s t
-                      | crashedA _ _ , _ => True
-                      | exceptionA _ _ st, exception _ _ st' => gamma st st'
-                      | exceptionOrReturn _ _ x st, exception _ _ st' =>
+                      | crashedA , _ => True
+                      | exceptionA st, exception st' => gamma st st'
+                      | exceptionOrReturn x st, exception st' =>
                           gamma st st'
-                      | exceptionOrReturn _ _ x st, returnR _ _ x' st' =>
+                      | exceptionOrReturn x st, returnR x' st' =>
                           gamma st st' /\ gamma x x'
                       | _, _ => False
                       end.

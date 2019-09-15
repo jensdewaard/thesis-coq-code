@@ -8,15 +8,15 @@ Require Import Types.State.
 Definition eval_catch_abstract {A} `{Joinable A} 
   (st1 st2 : AbstractState A) : AbstractState A :=
   fun st => match (st1 st) with
-  | crashedA _ _ => crashedA _ _ 
-  | exceptionA _ _ st' => st2 st'
-  | exceptionOrReturn _ _ x st' => 
-      join_op (exceptionOrReturn _ _ x st') (st2 st')
-  | returnRA _ _ x st' => returnRA _ _ x st'
+  | crashedA => crashedA 
+  | exceptionA st' => st2 st'
+  | exceptionOrReturn x st' => 
+      join_op (exceptionOrReturn x st') (st2 st')
+  | returnRA x st' => returnRA x st'
   end.
 
 Definition fail_abstract {A : Type} : AbstractState A :=
-  fun st => exceptionA A abstract_store st.
+  fun st => exceptionA st.
 
 Instance except_abstract : Except AbstractState := 
 {

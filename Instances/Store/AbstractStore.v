@@ -16,12 +16,12 @@ Definition abstract_store_join
 
 Definition abstract_store_get (x : string) : 
   AbstractState avalue := 
-  fun st => returnRA avalue abstract_store (st x) st.
+  fun st => returnRA (st x) st.
 
 Definition abstract_store_put 
   (x : string) (v : avalue) : 
   AbstractState unit :=
-  fun st => returnRA unit abstract_store tt (t_update st x v).
+  fun st => returnRA tt (t_update st x v).
 
 Instance store_abstract : Store AbstractState avalue := {
   get := abstract_store_get;

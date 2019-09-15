@@ -9,8 +9,8 @@ Require Import Types.Stores.
 
 Definition ensure_par (v : avalue) : AbstractState parity :=
   fun st => match v with
-            | VParity x => returnRA parity abstract_store x st
-            | _ => crashedA _ _
+            | VParity x => returnRA x st
+            | _ => crashedA 
             end.
 
 Fixpoint extract_par (n : nat) : parity :=

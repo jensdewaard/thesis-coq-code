@@ -30,7 +30,7 @@ Definition ceval_abstract (c : com) : AbstractState unit :=
 
 
 Lemma abs_trycatch_return : forall c1 c2 ast u a,
-  ceval_abstract c1 ast = Result.returnRA unit abstract_store u a ->
+  ceval_abstract c1 ast = returnRA u a ->
   ceval_abstract (try c1 catch c2) ast = ceval_abstract c1 ast.
 Proof.
   intros c1 c2 ast u a Hceval. 
@@ -41,8 +41,8 @@ Qed.
 
 
 Lemma abs_trycatch_crash : forall c1 c2 ast,
-  ceval_abstract c1 ast = Result.crashedA unit abstract_store ->
-  ceval_abstract (try c1 catch c2) ast = Result.crashedA unit abstract_store.
+  ceval_abstract c1 ast = crashedA ->
+  ceval_abstract (try c1 catch c2) ast = crashedA.
 Proof.
   intros c1 c2 ast Hceval. 
   unfold ceval_abstract in *. simpl in *.
@@ -51,7 +51,7 @@ Proof.
 Qed.
 
 Lemma abs_trycatch_exception : forall c1 c2 ast ast',
-  ceval_abstract c1 ast = Result.exceptionA unit abstract_store ast' ->
+  ceval_abstract c1 ast = exceptionA ast' ->
   ceval_abstract (try c1 catch c2) ast = ceval_abstract c2 ast'.
 Proof. 
   intros c1 c2 ast ast' Hceval. unfold ceval_abstract in *. simpl in *.
@@ -59,9 +59,9 @@ Proof.
 Qed.
 
 Lemma abs_trycatch_exceptreturn : forall c1 c2 u ast ast',
-  ceval_abstract c1 ast = Result.exceptionOrReturn unit abstract_store u ast' ->
+  ceval_abstract c1 ast = exceptionOrReturn u ast' ->
   ceval_abstract (try c1 catch c2) ast = 
-    join_op (exceptionOrReturn unit abstract_store tt ast')
+    join_op (exceptionOrReturn tt ast')
             (shared_ceval c2 ast').
 Proof. 
   intros c1 c2 u ast ast' Hceval. unfold ceval_abstract in *. simpl in *.

@@ -8,14 +8,14 @@ Context {A S : Type} `{Joinable A, Joinable S}.
 
 Definition join_result (r1 r2 : abstract_result A S) : abstract_result A S :=
   match r1, r2 with
-  | crashedA _ _, _ | _, crashedA _ _ => crashedA A S
-  | exceptionA _ _ s1, exceptionA _ _ s2 => exceptionA A S (join_op s1 s2)
-  | returnRA _ _ a1 s1, returnRA _ _ a2 s2 => returnRA A S (join_op a1 a2) (join_op s1 s2)
-  | exceptionA _ _ s1, returnRA _ _ a2 s2 => exceptionOrReturn A S a2 (join_op s1 s2)
-  | returnRA _ _ a1 s1, exceptionA _ _ s2 => exceptionOrReturn A S a1 (join_op s1 s2)
-  | exceptionOrReturn _ _ a1 s1, exceptionOrReturn _ _ a2 s2 =>
-      exceptionOrReturn A S (join_op a1 a2) (join_op s1 s2)
-  | _ , _ => crashedA A S
+  | crashedA , _ | _, crashedA => crashedA 
+  | exceptionA s1, exceptionA s2 => exceptionA (join_op s1 s2)
+  | returnRA a1 s1, returnRA a2 s2 => returnRA (join_op a1 a2) (join_op s1 s2)
+  | exceptionA s1, returnRA a2 s2 => exceptionOrReturn a2 (join_op s1 s2)
+  | returnRA a1 s1, exceptionA s2 => exceptionOrReturn a1 (join_op s1 s2)
+  | exceptionOrReturn a1 s1, exceptionOrReturn a2 s2 =>
+      exceptionOrReturn (join_op a1 a2) (join_op s1 s2)
+  | _ , _ => crashedA 
   end.
 
 Lemma join_result_upperbound_left :

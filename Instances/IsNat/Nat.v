@@ -7,8 +7,8 @@ Require Import Types.Result.
 
 Definition ensure_nat (v : cvalue) : State nat :=
   fun st => match v with
-            | VNat x => returnR nat store x st
-            | _ => crashed _ _
+            | VNat x => returnR x st
+            | _ => crashed 
             end.
 
 Definition plusM (n m : nat) : State nat := returnM (plus n m).

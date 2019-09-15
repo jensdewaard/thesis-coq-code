@@ -11,8 +11,8 @@ Require Import Types.Stores.
 
 Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
   fun st => match v with
-            | VAbstrBool b => returnRA abstr_bool abstract_store b st
-            | _ => crashedA _ _
+            | VAbstrBool b => returnRA b st
+            | _ => crashedA
             end.
 
 Definition and_abM (b c : abstr_bool) := returnM (and_ab b c).
@@ -28,11 +28,14 @@ Definition eval_if_abstract {A} `{Joinable A}
   | ab_bottom => fail_abstract
   end.
 
-Definition extract_ab (b : bool) : AbstractState abstr_bool := 
+Definition extract_ab (b : bool) : abstr_bool := 
   match b with
-  | true => returnM ab_true
-  | false => returnM ab_false
+  | true => ab_true
+  | false => ab_false
   end.
+
+Definition extract_abM (b : bool) : AbstractState abstr_bool :=
+  returnM (extract_ab b).
 
 Definition build_abool (b : abstr_bool) : AbstractState avalue :=
   returnM (VAbstrBool b).
@@ -40,7 +43,7 @@ Definition build_abool (b : abstr_bool) : AbstractState avalue :=
 Instance abstract_boolean_type : IsBool AbstractState avalue abstr_bool :=
 {
   ensure_bool := ensure_abool;
-  extract_bool := extract_ab;
+  extract_bool := extract_abM;
   build_bool := build_abool;
   and_op := and_abM;
   neg_op := neg_abM;

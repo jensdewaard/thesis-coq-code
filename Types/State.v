@@ -13,41 +13,41 @@ Require Import Instances.Joinable.AbstractStore.
 Definition State (A : Type) := store -> result A store.
 
 Definition return_state (A : Type) (x : A) : State A :=
-  fun st => returnR A store x st.
+  fun st => returnR x st.
 
 Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
     : State B :=
   fun st => match m st with
-            | returnR _ _ x st' => f x st'
-            | crashed _ _ => crashed _ _
-            | exception _ _ st' => exception _ _ st'
+            | returnR x st' => f x st'
+            | crashed => crashed 
+            | exception st' => exception st'
             end.
 
-Definition get : State store := fun st => returnR store store st st.
+Definition get : State store := fun st => returnR st st.
 Check get.
 
 Definition put (st' : store) : State unit := 
-  fun st => returnR unit store tt st'.
+  fun st => returnR tt st'.
   
 
 Definition AbstractState (A : Type) :=
   abstract_store -> abstract_result A abstract_store.
 
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
-  fun st => returnRA A abstract_store x st.
+  fun st => returnRA x st.
 
 Definition result_doorgeven (A B : Type) (f : A -> AbstractState B)
   (x : A) (st : abstract_store)
   : abstract_result B abstract_store :=
   match (f x st) with 
-  | returnRA _ _ x' st' => exceptionOrReturn _ _ x' (join_op st st')
-  | crashedA _ _ => crashedA _ _
-  | exceptionA _ _ st' => exceptionA _ _ (join_op st st')
-  | exceptionOrReturn _ _ x' st' => exceptionOrReturn _ _ x' (join_op st st')
+  | returnRA x' st' => exceptionOrReturn x' (join_op st st')
+  | crashedA => crashedA 
+  | exceptionA st' => exceptionA (join_op st st')
+  | exceptionOrReturn x' st' => exceptionOrReturn x' (join_op st st')
   end.
 
 Lemma result_doorgeven_widens_store_exception : forall A B f x st st',
-  result_doorgeven A B f x st = exceptionA B abstract_store st' ->
+  result_doorgeven A B f x st = exceptionA st' ->
   preorder st st'.
 Proof. 
   intros. unfold result_doorgeven in H. destruct (f x st); inversion H.
@@ -56,7 +56,7 @@ Qed.
 
 Lemma result_doorgeven_widens_store_exception_or_result : 
   forall A B f x x' st st',
-  result_doorgeven A B f x st = exceptionOrReturn B abstract_store x' st'
+  result_doorgeven A B f x st = exceptionOrReturn x' st'
   -> preorder st st'.
 Proof. 
   intros. unfold result_doorgeven in H. destruct (f x st); inversion H;
@@ -69,7 +69,7 @@ Lemma result_doorgeven_output : forall (A B : Type)
   (x : A) (st st' : abstract_store) 
   (x' : B) ,
   result_doorgeven A B f x st <> 
-  returnRA B abstract_store x' st'. 
+  returnRA x' st'. 
 Proof.
   intros. unfold result_doorgeven. destruct (f x st); unfold not; intro;
   inversion H.
@@ -79,10 +79,10 @@ Qed.
 Definition bind_state_abstract (A B : Type)
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
-            | returnRA _ _ x st' => f x st'
-            | crashedA _ _ => crashedA _ _
-            | exceptionA _ _ st' => exceptionA _ _ st' 
-            | exceptionOrReturn _ _ x st' => result_doorgeven _ _ f x st'
+            | returnRA x st' => f x st'
+            | crashedA => crashedA 
+            | exceptionA st' => exceptionA st' 
+            | exceptionOrReturn x st' => result_doorgeven _ _ f x st'
             end.
 
 

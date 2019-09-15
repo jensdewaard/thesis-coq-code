@@ -32,7 +32,7 @@ Definition ceval (c : com) : State unit :=
   shared_ceval c.
 
 Lemma trycatch_return : forall c1 c2 st u st',
-  ceval c1 st = Result.returnR unit store u st' ->
+  ceval c1 st = Result.returnR u st' ->
   ceval (try c1 catch c2) st = ceval c1 st.
 Proof.
   intros c1 c2 st u st' Hceval. 
@@ -42,7 +42,7 @@ Proof.
 Qed.
 
 Lemma trycatch_exception : forall c1 c2 st st',
-  ceval c1 st = Result.exception unit store st' ->
+  ceval c1 st = Result.exception st' ->
   ceval (try c1 catch c2) st = ceval c2 st'.
 Proof.
   intros c1 c2 st st' Hceval. 
