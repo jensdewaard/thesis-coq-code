@@ -37,9 +37,6 @@ Require Import Types.Stores.
 
 Create HintDb soundness.
 
-Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
-(* Hint Extern 4 => pairs. *)
-
 Arguments gamma : simpl never.
 Arguments join_op : simpl never.
   
@@ -97,26 +94,27 @@ Proof.
     + unfold result_doorgeven. 
       destruct (next' a a0) eqn:Hnext1.
       * simpl. destruct (next a1 s) eqn:Hnext2. 
-        { split. pairs. simpl in Hstore. destruct Hstore.
+        { constructor. constructor. destruct Hstore.
           eapply H4 in H5. rewrite Hnext1 in H5. 
-          rewrite Hnext2 in H5. simpl in H5. destruct H5.
+          rewrite Hnext2 in H5. destruct H5.
           apply H5. auto. }
         { destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5. 
           rewrite Hnext2 in H5. inversion H5. auto. }
-        { pairs. }
+        { constructor. }
       * reflexivity.
       * simpl. destruct (next a1 s) eqn:Hnext2.
         { destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5.
           rewrite Hnext2 in H5. inversion H5. auto. }
         { destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5. 
           rewrite Hnext2 in H5. inversion H5. auto. }
-        { pairs. }
+        { constructor. }
       * destruct (next a1 s) eqn:Hnext2. 
-        { split. pairs. destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5.
-          rewrite Hnext2 in H5. destruct H5. auto. auto. }
+        { constructor. constructor. destruct Hstore. 
+          eapply H4 in H5. rewrite Hnext1 in H5.
+          rewrite Hnext2 in H5. destruct H5. assumption. assumption. }
         { destruct Hstore. eapply H4 in H5. rewrite Hnext1 in H5. 
           rewrite Hnext2 in H5. inversion H5. auto. }
-        { pairs. }
+        { constructor. }
     + inversion Hstore. 
     + destruct result_doorgeven eqn:Hdoor. 
       * (* doorgeven gives result, impossible *)
@@ -225,7 +223,8 @@ Lemma pplusM_sound : forall a b p1 p2 i1 i2,
   gamma a b ->
   gamma (pplusM p1 p2 a) (plusM i1 i2 b).
 Proof.
-  intros p1 i1 ? p2 i2 ? ? ? ?. pairs.  apply sound_parity_plus; auto.
+  intros p1 i1 ? p2 i2 ? ? ? ?. constructor. 
+  apply sound_parity_plus; assumption. assumption.
 Qed.
 Hint Resolve pplusM_sound : soundness.
 
@@ -235,7 +234,8 @@ Lemma pmultM_sound : forall a b p1 p2 i1 i2,
   gamma a b ->
   gamma (pmultM p1 p2 a) (multM i1 i2 b).
 Proof.
-  intros p1 i1 ? p2 i2 ? ? ? ?. pairs. apply sound_parity_mult; auto.
+  intros p1 i1 ? p2 i2 ? ? ? ?. constructor. 
+  apply sound_parity_mult; assumption. assumption.
 Qed.
 Hint Resolve pmultM_sound : soundness.
 
@@ -245,7 +245,8 @@ Lemma peqM_sound : forall a b p1 p2 i1 i2,
   gamma a b ->
   gamma (peqM p1 p2 a) (eqbM i1 i2 b). 
 Proof.
-  intros p1 i1 ? p2 i2 ? ? ? ?. pairs. apply sound_parity_eq; auto.
+  intros p1 i1 ? p2 i2 ? ? ? ?. constructor. 
+  apply sound_parity_eq; assumption. assumption.
 Qed.
 Hint Resolve peqM_sound : soundness.
 
@@ -255,7 +256,7 @@ Lemma pleM_sound :  forall a b p1 p2 i1 i2,
   gamma a b ->
   gamma (pleM p1 p2 a) (lebM i1 i2 b).
 Proof.
-  intros ?????????. pairs.
+  intros ?????????. constructor. reflexivity. assumption.
 Qed.
 Hint Resolve pleM_sound : soundness.
 
@@ -264,7 +265,7 @@ Lemma neg_abM_sound:  forall a b p i,
   gamma a b ->
   gamma (neg_abM p a) (negbM i b).
 Proof.
-  intros ??????. pairs. apply neg_ab_sound. apply H.
+  intros ??????. constructor. apply neg_ab_sound. assumption. assumption.
 Qed.
 Hint Resolve neg_abM_sound : soundness.
 
@@ -274,7 +275,7 @@ Lemma and_abM_sound : forall a b p1 p2 i1 i2,
   gamma a b ->
   gamma (and_abM p1 p2 a) (andbM i1 i2 b).
 Proof.
-  intros ?????????. split; try apply and_ab_sound; auto. 
+  intros ?????????. constructor. apply and_ab_sound; assumption. assumption.
 Qed.
 Hint Resolve and_abM_sound : soundness.
 
@@ -290,8 +291,8 @@ Lemma extract_abM_sound: forall b,
   gamma (extract_abM b) (return_state bool b).
 Proof. 
   intros. unfold gamma in *; simpl in *. destruct b; auto. intros ???. 
-  split; auto. pairs. intros ???. unfold gamma in *; simpl in *. split.
-  unfold gamma in *; simpl in *. unfold not. intro. assumption. assumption.
+  split; auto. constructor. intros ???. constructor. unfold gamma; simpl.
+  unfold not. intro. assumption. assumption.
 Qed.
 Hint Resolve extract_abM_sound : soundness.
 
@@ -309,10 +310,6 @@ Proof.
 Qed.
 Hint Resolve build_boolean_sound : soundness.
 
-(* Hint Extern 1 (gamma ?A ?C) => simpl : soundness. *)
-(* Hint Extern 2 (?L /\ ?R) => split : soundness. *)
-
-Arguments gamma : simpl never.
 Lemma store_get_sound : forall s,
   gamma (abstract_store_get s) (store_get s).
 Proof.
@@ -321,8 +318,6 @@ Proof.
 Qed.
 Hint Resolve store_get_sound : soundness.
 
-Hint Unfold gamma_fun : soundness.
-Hint Unfold gamma_store : soundness.
 Hint Extern 1 (gamma (shared_eval_expr ?A) (shared_eval_expr ?B)) =>
   unfold shared_eval_expr  : soundness.
 Tactic Notation "solve_binds" := apply bind_state_sound;
