@@ -40,7 +40,7 @@ Create HintDb soundness.
 Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivity.
 (* Hint Extern 4 => pairs. *)
 
-(* Arguments gamma : simpl never. *)
+Arguments gamma : simpl never.
 Arguments join_op : simpl never.
   
 Definition sound_store (ast : abstract_store) (st : store) : Prop := 
@@ -184,7 +184,7 @@ Qed.
 
 Lemma sound_ab_neg :
   gamma neg_ab negb.
-Proof. intros ? ? ?. unfold gamma.
+Proof. intros ? ? ?. unfold gamma in *; simpl in *.
   destruct b, a; simpl in *; auto.
 Qed.
 (* Hint Extern 5 => apply sound_ab_neg. *)
@@ -193,8 +193,8 @@ Lemma ensure_par_sound : forall p n ast st,
   gamma p n ->
   gamma ast st ->
   gamma (ensure_par p ast) (ensure_nat n st).
-Proof. intros ??????.
-  simpl. destruct p, n; simpl; auto. 
+Proof. intros ??????. unfold gamma in *; simpl in *.
+  destruct p, n; simpl; auto. 
 Defined. 
 Hint Resolve ensure_par_sound : soundness.
 
@@ -203,7 +203,7 @@ Lemma ensure_abool_sound : forall ab b ast st,
   gamma ast st ->
   gamma (ensure_abool ab ast) (ensure_bool b st).
 Proof. intros ? ? ? ? ? ?. 
-  simpl. destruct ab, b; simpl; auto.
+  unfold gamma in *; simpl in *. destruct ab, b; simpl; auto.
 Qed.
 Hint Resolve ensure_abool_sound : soundness.
 
@@ -293,8 +293,9 @@ Hint Resolve extract_bool_sound : soundness.
 Lemma extract_abM_sound: forall b,
   gamma (extract_abM b) (return_state bool b).
 Proof. 
-  intros. destruct b; auto. intros ???. unfold gamma; simpl.
-  split; auto. pairs. simpl. unfold not. intro. assumption.
+  intros. unfold gamma in *; simpl in *. destruct b; auto. intros ???. 
+  split; auto. pairs. intros ???. unfold gamma in *; simpl in *. split.
+  unfold gamma in *; simpl in *. unfold not. intro. assumption. assumption.
 Qed.
 Hint Resolve extract_abM_sound : soundness.
 
