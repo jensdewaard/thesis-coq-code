@@ -43,10 +43,6 @@ Tactic Notation "pairs" := unfold gamma_pairs; simpl; split;auto; try reflexivit
 Arguments gamma : simpl never.
 Arguments join_op : simpl never.
   
-Definition sound_store (ast : abstract_store) (st : store) : Prop := 
-  forall x, gamma (ast x) (st x).
-Hint Unfold sound_store.
-
 Lemma return_state_sound {A B : Type} `{Galois A B} :
   gamma (return_state_abstract B) (return_state A).
 Proof. 
