@@ -86,11 +86,9 @@ Hint Resolve extract_par_sound : soundness.
 
 (* Monadic versions of parity operations *)
 
-Lemma ensure_par_sound : forall p n ast st,
-  gamma p n ->
-  gamma ast st ->
-  gamma (ensure_par p ast) (ensure_nat n st).
-Proof. intros ??????. unfold gamma in *; simpl in *.
+Lemma ensure_par_sound : 
+  gamma ensure_par ensure_nat.
+Proof. intros p n ????. unfold gamma in *; simpl in *.
   destruct p, n; simpl; auto. 
 Defined. 
 Hint Resolve ensure_par_sound : soundness.
@@ -103,44 +101,32 @@ Proof.
 Qed.
 Hint Resolve extract_parM_sound : soundness.
 
-Lemma pplusM_sound : forall a b p1 p2 i1 i2,
-  gamma p1 i1 ->
-  gamma p2 i2 ->
-  gamma a b ->
-  gamma (pplusM p1 p2 a) (plusM i1 i2 b).
+Lemma pplusM_sound : 
+  gamma pplusM plusM.
 Proof.
   intros p1 i1 ? p2 i2 ? ? ? ?. constructor. 
   apply parity_plus_sound; assumption. assumption.
 Qed.
 Hint Resolve pplusM_sound : soundness.
 
-Lemma pmultM_sound : forall a b p1 p2 i1 i2,
-  gamma p1 i1 ->
-  gamma p2 i2 ->
-  gamma a b ->
-  gamma (pmultM p1 p2 a) (multM i1 i2 b).
+Lemma pmultM_sound :
+  gamma pmultM multM.
 Proof.
   intros p1 i1 ? p2 i2 ? ? ? ?. constructor. 
   apply parity_mult_sound; assumption. assumption.
 Qed.
 Hint Resolve pmultM_sound : soundness.
 
-Lemma peqM_sound : forall a b p1 p2 i1 i2,
-  gamma p1 i1 ->
-  gamma p2 i2 ->
-  gamma a b ->
-  gamma (peqM p1 p2 a) (eqbM i1 i2 b). 
+Lemma peqM_sound :
+  gamma peqM eqbM.
 Proof.
   intros p1 i1 ? p2 i2 ? ? ? ?. constructor. 
   apply parity_eq_sound; assumption. assumption.
 Qed.
 Hint Resolve peqM_sound : soundness.
 
-Lemma pleM_sound :  forall a b p1 p2 i1 i2,
-  gamma p1 i1 ->
-  gamma p2 i2 ->
-  gamma a b ->
-  gamma (pleM p1 p2 a) (lebM i1 i2 b).
+Lemma pleM_sound :
+  gamma pleM lebM.
 Proof.
   intros ?????????. constructor. reflexivity. assumption.
 Qed.
@@ -185,29 +171,22 @@ Hint Resolve extract_bool_sound : soundness.
 
 (* Monadic operations on abstract booleans *)
 
-Lemma ensure_abool_sound : forall ab b ast st,
-  gamma ab b ->
-  gamma ast st ->
-  gamma (ensure_abool ab ast) (ensure_bool b st).
-Proof. intros ? ? ? ? ? ?. 
+Lemma ensure_abool_sound :
+  gamma ensure_abool ensure_bool.
+Proof. intros ab b ? ? ? ?. 
   unfold gamma in *; simpl in *. destruct ab, b; simpl; auto.
 Qed.
 Hint Resolve ensure_abool_sound : soundness.
 
-Lemma neg_abM_sound:  forall a b p i,
-  gamma p i ->
-  gamma a b ->
-  gamma (neg_abM p a) (negbM i b).
+Lemma neg_abM_sound :
+  gamma neg_abM negbM.
 Proof.
   intros ??????. constructor. apply neg_ab_sound. assumption. assumption.
 Qed.
 Hint Resolve neg_abM_sound : soundness.
 
-Lemma and_abM_sound : forall a b p1 p2 i1 i2,
-  gamma p1 i1 ->
-  gamma p2 i2 ->
-  gamma a b ->
-  gamma (and_abM p1 p2 a) (andbM i1 i2 b).
+Lemma and_abM_sound :
+  gamma and_abM andbM.
 Proof.
   intros ?????????. constructor. apply and_ab_sound; assumption. assumption.
 Qed.
@@ -229,6 +208,15 @@ Proof.
 Qed.
 Hint Resolve build_boolean_sound : soundness.
 
+(* Soundness of applied functions *)
+
+Lemma functions_sound {A A' B B'} `{Galois A A', Galois B B'}
+  (f : A -> B) (f' : A' -> B') x x' :
+  gamma f' f -> gamma x' x ->
+  gamma (f' x') (f x).
+Proof. intros Hf ?. apply Hf. assumption. Qed.
+Hint Resolve functions_sound : soundness.
+
 (* Soundness of operations on stores *)
 
 Lemma store_get_sound : forall s,
@@ -248,9 +236,8 @@ Proof.
   destruct (beq_string x x'); auto.
 Qed.
 
-Lemma store_put_sound : forall s a b,
-  gamma a b ->
-  gamma (abstract_store_put s a) (store_put s b).
+Lemma store_put_sound : forall s,
+  gamma (abstract_store_put s) (store_put s).
 Proof. 
   intros ???? ???. unfold abstract_store_put, store_put. unfold gamma.
   simpl. split. constructor. apply t_update_sound; auto.
@@ -265,15 +252,6 @@ Proof.
   intros ???. constructor; auto. 
 Qed.
 Hint Resolve return_state_sound : soundness.
-
-Corollary return_state_sound' {A B : Type} 
-  `{Galois A B} : forall a b,
-  gamma b a ->
-  gamma (return_state_abstract B b) (return_state A a).
-Proof.
-  intros. apply return_state_sound. apply H1.
-Qed.
-Hint Resolve return_state_sound' : soundness.
 
 Lemma bind_state_sound {A A' B B'} 
 `{Galois A A', Galois B B'}
@@ -340,29 +318,36 @@ Proof.
 Qed. 
 Hint Resolve bind_state_sound : soundness.
 
+Lemma bind_state_sound_fun {A A' B B'} `{Galois A A', Galois B B'} : 
+  forall next next' f f',
+  gamma f' f ->
+  (forall x x', gamma x' x -> gamma (next' x') (next x)) ->
+  gamma (bind_state_abstract A' B' f' next') (bind_state A B f next).
+Proof. 
+  intros. apply bind_state_sound. assumption. 
+  assert ((forall x x', gamma x' x -> gamma (next' x') (next x)) -> gamma next'
+  next). 
+  { intros Hnext ???. apply Hnext. assumption. }
+  apply H5. assumption.
+Qed.
+Hint Resolve bind_state_sound_fun : soundness.
+
 (* Soundness of interpreters *)
 
-Hint Extern 1 (gamma (shared_eval_expr ?A) (shared_eval_expr ?B)) =>
-  unfold shared_eval_expr  : soundness.
-Tactic Notation "solve_binds" := apply bind_state_sound;
-  try intros ???.
+Lemma extract_build_val_sound : forall v,
+  gamma (extract_build_val (M:=AbstractState) v) (extract_build_val v).
+Proof.
+  destruct v; simpl; eauto with soundness.
+Qed.
+Hint Resolve extract_build_val_sound : soundness.
 
 Theorem eval_expr_sound : forall a,
-  gamma (eval_expr_abstract a) (eval_expr a).
+  gamma (shared_eval_expr (M:=AbstractState) a) (shared_eval_expr a).
 Proof.
-  intros. unfold eval_expr_abstract, eval_expr. induction a; 
-  repeat solve_binds; auto with soundness. 
-  - destruct c; split; auto with soundness. 
+  intros. induction a; simpl;
+  eauto 30 with soundness. 
 Qed.
 Hint Resolve eval_expr_sound : soundness.
-
-Corollary eval_expr_sound' : forall a ast st,
-  gamma ast st ->
-  gamma (eval_expr_abstract a ast) (eval_expr a st).
-Proof.
-  apply eval_expr_sound.
-Qed.
-Hint Resolve eval_expr_sound' : soundness.
 
 Lemma sound_if_op : forall a b s1 s1' s2 s2',
   gamma a b ->
@@ -422,13 +407,10 @@ Proof.
   unfold fail_abstract, fail. intros ???. auto.
 Qed.
 Hint Resolve sound_fail : soundness.
-Hint Constructors unit.
-
 
 Theorem sound_interpreter:
-  forall c, gamma (ceval_abstract c) (ceval c).
+  forall c, gamma (shared_ceval (M:=AbstractState) c) (shared_ceval c).
 Proof.
-  intros. unfold ceval_abstract, ceval. 
-  induction c; simpl; repeat solve_binds; auto with soundness.
+  induction c; simpl; eauto 30 with soundness.
 Qed.
 
