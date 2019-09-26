@@ -36,53 +36,23 @@ Definition AbstractState (A : Type) :=
 Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
   fun st => returnRA x st.
 
-Definition result_doorgeven (A B : Type) (f : A -> AbstractState B)
-  (x : A) (st : abstract_store)
-  : abstract_result B abstract_store :=
-  match (f x st) with 
-  | returnRA x' st' => exceptionOrReturn x' (join_op st st')
-  | crashedA => crashedA 
-  | exceptionA st' => exceptionA (join_op st st')
-  | exceptionOrReturn x' st' => exceptionOrReturn x' (join_op st st')
-  end.
-
-Lemma result_doorgeven_widens_store_exception : forall A B f x st st',
-  result_doorgeven A B f x st = exceptionA st' ->
-  preorder st st'.
-Proof. 
-  intros. unfold result_doorgeven in H. destruct (f x st); inversion H.
-  apply abstract_store_join_upperbound_left.
-Qed.
-
-Lemma result_doorgeven_widens_store_exception_or_result : 
-  forall A B f x x' st st',
-  result_doorgeven A B f x st = exceptionOrReturn x' st'
-  -> preorder st st'.
-Proof. 
-  intros. unfold result_doorgeven in H. destruct (f x st); inversion H;
-  apply abstract_store_join_upperbound_left.
-Qed.
-
-
-Lemma result_doorgeven_output : forall (A B : Type) 
-  (f : A -> AbstractState B) 
-  (x : A) (st st' : abstract_store) 
-  (x' : B) ,
-  result_doorgeven A B f x st <> 
-  returnRA x' st'. 
-Proof.
-  intros. unfold result_doorgeven. destruct (f x st); unfold not; intro;
-  inversion H.
-Qed.
-
-
 Definition bind_state_abstract (A B : Type)
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
             | returnRA x st' => f x st'
             | crashedA => crashedA 
             | exceptionA st' => exceptionA st' 
-            | exceptionOrReturn x st' => result_doorgeven _ _ f x st'
+            | exceptionOrReturn x st' => match (f x st') with 
+                                         | returnRA x' st'' => 
+                                             exceptionOrReturn x' 
+                                                              (join_op st' st'')
+                                         | crashedA => crashedA 
+                                         | exceptionA st'' => 
+                                             exceptionA (join_op st' st'')
+                                         | exceptionOrReturn x' st'' => 
+                                             exceptionOrReturn x' 
+                                                (join_op st' st'')
+                                         end
             end.
 
 Section abstract_state_joinable.

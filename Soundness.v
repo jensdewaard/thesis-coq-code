@@ -375,8 +375,7 @@ Proof.
     + inversion Hstore.
     + apply Hstore.
   - destruct (f st) eqn:Hfb.
-    + unfold result_doorgeven. 
-      destruct (next' a a0) eqn:Hnext1.
+    + destruct (next' a a0) eqn:Hnext1.
       * simpl. destruct (next a1 s) eqn:Hnext2. 
         { constructor. constructor. destruct Hstore.
           eapply H4 in H5. rewrite Hnext1 in H5. 
@@ -400,19 +399,7 @@ Proof.
           rewrite Hnext2 in H5. inversion H5. auto. }
         { constructor. }
     + inversion Hstore. 
-    + destruct result_doorgeven eqn:Hdoor. 
-      * (* doorgeven gives result, impossible *)
-        pose proof result_doorgeven_output.
-        unfold not in H5. exfalso. eapply H5. apply Hdoor. 
-      * (* doorgeven crashes *)
-        reflexivity. 
-      * (* doorgeven gives certain exception *)
-        intro. apply result_doorgeven_widens_store_exception in Hdoor. 
-        inversion Hdoor. eapply widen. apply H5. apply Hstore.
-      * (* doorgeven gives either exception or return *)
-        intro. 
-        apply result_doorgeven_widens_store_exception_or_result in Hdoor.
-        eapply widen. inversion Hdoor. apply H5. apply Hstore. 
+    + destruct (next' a a0) eqn:Hnext; constructor.
 Qed. 
 Hint Resolve bind_state_sound : soundness.
 
