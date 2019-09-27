@@ -5,8 +5,8 @@ Require Import Types.Stores.
 Require Import Types.Result.
 Require Import Types.State.
 
-Definition eval_catch_abstract {A} `{Joinable A} 
-  (st1 st2 : AbstractState A) : AbstractState A :=
+Definition eval_catch_abstract 
+  (st1 st2 : AbstractState unit) : AbstractState unit :=
   fun st => match (st1 st) with
   | crashedA => crashedA 
   | exceptionA st' => st2 st'
@@ -15,7 +15,7 @@ Definition eval_catch_abstract {A} `{Joinable A}
   | returnRA x st' => returnRA x st'
   end.
 
-Definition fail_abstract {A : Type} : AbstractState A :=
+Definition fail_abstract : AbstractState unit :=
   fun st => exceptionA st.
 
 Instance except_abstract : Except AbstractState := 

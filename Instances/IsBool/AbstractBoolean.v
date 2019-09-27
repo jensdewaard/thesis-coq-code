@@ -18,9 +18,8 @@ Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
 Definition and_abM (b c : abstr_bool) := returnM (and_ab b c).
 Definition neg_abM (b : abstr_bool) := returnM (neg_ab b).
 
-Definition eval_if_abstract {A} `{Joinable A} 
-  (b : abstr_bool) (st1 st2 : AbstractState A) 
-  : AbstractState A :=
+Definition eval_if_abstract (b : abstr_bool) (st1 st2 : AbstractState unit) 
+  : AbstractState unit := 
   match b with
   | ab_true   => st1
   | ab_false  => st2
