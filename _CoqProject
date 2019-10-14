@@ -9,6 +9,7 @@ Classes/Store.v
 Classes/Except.v
 Types/AbstractBool.v
 Types/Parity.v
+Types/Interval.v
 Language/Statements.v
 Types/Stores.v
 Instances/Preorder/AbstractBoolean.v
