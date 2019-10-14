@@ -3,7 +3,7 @@ Require Import Classes.IsNat.
 Require Import Classes.Monad.
 Require Import ConcreteInterpreter.
 Require Import Instances.Except.AbstractException.
-Require Import Instances.Galois.Parity.
+Require Import Instances.Galois.
 Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsNat.Parity.
 Require Import Instances.Joinable.Unit.

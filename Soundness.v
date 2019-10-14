@@ -1,7 +1,3 @@
-Require Import Coq.Arith.Arith.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Arith.Even.
-
 Require Import AbstractInterpreter.
 Require Import Classes.Galois.
 Require Import Classes.IsBool.
@@ -10,16 +6,12 @@ Require Import Classes.Joinable.
 Require Import Classes.Monad.
 Require Import Classes.PreorderedSet.
 Require Import ConcreteInterpreter.
+Require Import Coq.Arith.Arith.
+Require Import Coq.Arith.Even.
+Require Import Coq.Arith.PeanoNat.
 Require Import Instances.Except.AbstractException.
 Require Import Instances.Except.ConcreteException.
-Require Import Instances.Galois.AbstractState.
-Require Import Instances.Galois.AbstractStore.
-Require Import Instances.Galois.Functions.
-Require Import Instances.Galois.Pairs.
-Require Import Instances.Galois.Parity.
-Require Import Instances.Galois.Result.
-Require Import Instances.Galois.Unit.
-Require Import Instances.Galois.Values.
+Require Import Instances.Galois.
 Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsBool.Boolean.
 Require Import Instances.IsNat.Nat.

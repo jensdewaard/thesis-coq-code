@@ -37,15 +37,7 @@ Instances/IsNat/Interval.v
 Instances/IsBool/Boolean.v
 Instances/IsBool/AbstractBoolean.v
 Classes/Galois.v
-Instances/Galois/Parity.v
-Instances/Galois/AbstractBoolean.v
-Instances/Galois/Functions.v
-Instances/Galois/Values.v
-Instances/Galois/AbstractStore.v
-Instances/Galois/Pairs.v
-Instances/Galois/Result.v
-Instances/Galois/AbstractState.v
-Instances/Galois/Unit.v
+Instances/Galois.v
 Instances/Except/AbstractException.v
 Instances/Except/ConcreteException.v
 SharedInterpreter.v
