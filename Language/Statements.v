@@ -1,6 +1,7 @@
 Require Export Coq.Strings.String.
-Require Import Types.Parity.
 Require Import Types.AbstractBool.
+Require Import Types.Interval.
+Require Import Types.Parity.
 
 Inductive cvalue : Type :=
   | VNat : nat -> cvalue
@@ -9,6 +10,7 @@ Inductive cvalue : Type :=
 Inductive avalue : Type :=
   | VParity : parity -> avalue
   | VAbstrBool : abstr_bool -> avalue
+  | VInterval : interval -> avalue
   | VTop : avalue
   | VBottom : avalue.
 

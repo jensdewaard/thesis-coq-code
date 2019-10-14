@@ -32,6 +32,9 @@ Proof.
     + inversion Hgamma.
     + reflexivity.
     + apply Hgamma.
+  - simpl in *. constructor. intros k Hgamma.
+    destruct k. inversion Hgamma.
+    inversion Hgamma.
   - constructor. intros. constructor.
   - constructor. intros. inversion H.
 Qed.
