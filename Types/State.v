@@ -3,6 +3,7 @@
 Require Import Classes.Joinable.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
+Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Monad.
 Require Import Types.Result.
@@ -12,6 +13,7 @@ Definition State (A : Type) := store -> result A store.
 
 Definition return_state (A : Type) (x : A) : State A :=
   fun st => returnR x st.
+
 
 Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
     : State B :=
@@ -84,6 +86,16 @@ Definition bind_state_abstract (A B : Type)
             end.
 
 
+Section preordered_abstract_state.
+Context {A : Type} `{PreorderedSet A}.
+
+Lemma preorder_abstract_state : PreorderedSet (AbstractState A).
+Proof.
+  intros. 
+  apply preordered_function_spaces.
+Qed.
+
+End preordered_abstract_state.
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.
 

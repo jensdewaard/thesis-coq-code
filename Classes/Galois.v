@@ -1,5 +1,5 @@
 Require Import PreorderedSet.
-Require Import Instances.Preorder.Sets.
+Require Import Instances.Preorder.
 
 Class Galois (A B : Type) 
 `{PreorderedSet B} : Type :=

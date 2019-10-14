@@ -5,13 +5,7 @@ Require Import Coq.Arith.Even.
 Require Import Coq.Bool.Bool.
 Require Import Instances.IsNat.Parity.
 Require Import Instances.Joinable.
-Require Import Instances.Preorder.AbstractBoolean.
-Require Import Instances.Preorder.AbstractStore.
-Require Import Instances.Preorder.Functions.
-Require Import Instances.Preorder.Pairs.
-Require Import Instances.Preorder.Parity.
-Require Import Instances.Preorder.Unit.
-Require Import Instances.Preorder.Values.
+Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Parity.

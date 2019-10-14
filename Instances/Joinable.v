@@ -1,9 +1,7 @@
 Require Import Classes.Joinable.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Instances.Preorder.AbstractStore.
-Require Import Instances.Preorder.Result.
-Require Import Instances.Preorder.Unit.
+Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Types.Result.
 Require Import Types.Stores.

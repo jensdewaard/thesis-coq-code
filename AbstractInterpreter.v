@@ -8,7 +8,7 @@ Require Import Instances.Galois.
 Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsNat.Parity.
 Require Import Instances.Joinable.
-Require Import Instances.Preorder.Unit.
+Require Import Instances.Preorder.
 Require Import Instances.Store.AbstractStore.
 Require Import Language.Statements.
 Require Import SharedInterpreter.
