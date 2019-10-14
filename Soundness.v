@@ -341,35 +341,30 @@ Proof.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 
-Lemma sound_if_op : forall a b s1 s1' s2 s2',
-  gamma a b ->
-  gamma s1' s1 ->
-  gamma s2' s2 ->
-  gamma (eval_if_abstract a s1' s2')
-  (eval_if b s1 s2).
+Lemma sound_if_op : 
+  gamma (eval_if_abstract)
+  (eval_if).
 Proof.
-  intros ?????????.
+  intros ????????????. 
   destruct b; simpl. 
   - (* true *)
     destruct a; simpl. 
-    + assumption.
+    + apply H0. apply H2.
     + unfold gamma in H; simpl in H. tauto.
-    + eapply widen. apply join_upper_bound_left. assumption.
+    + eapply widen. apply join_upper_bound_left. apply H0. apply H2.
     + unfold gamma in H; simpl in H. tauto.
   - destruct a; simpl.
     + unfold gamma in H; simpl in H; tauto.
-    + assumption.
-    + eapply widen. apply join_upper_bound_right. assumption.
+    + apply H1. apply H2.
+    + eapply widen. apply join_upper_bound_right. apply H1. apply H2.
     + unfold gamma in H; simpl in H; tauto.
 Qed.
 Hint Resolve sound_if_op : soundness.
 
-Lemma sound_eval_catch : forall s1' s1 s2' s2,
-  gamma s1' s1 ->
-  gamma s2' s2 ->
-  gamma (eval_catch_abstract s1' s2') (eval_catch s1 s2).
+Lemma sound_eval_catch :
+  gamma (eval_catch_abstract) (eval_catch).
 Proof.
-  intros ?????????. 
+  intros s1' s1 H s2' s2. intros H0 a b H1. 
   unfold gamma in H, H0; simpl in H, H0; unfold gamma_fun in H, H0.
   unfold eval_catch_abstract, eval_catch.
   pose proof H1; apply H in H1.
