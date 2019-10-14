@@ -12,6 +12,7 @@ Types/Parity.v
 Types/Interval.v
 Language/Statements.v
 Types/Stores.v
+Instances/Preorder/Nat.v
 Instances/Preorder/AbstractBoolean.v
 Instances/Preorder/Functions.v
 Instances/Preorder/Pairs.v
