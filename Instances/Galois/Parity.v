@@ -120,17 +120,11 @@ Qed.
 Lemma gamma_par_extract_n_n : forall n,
   gamma_par (extract_par n) n.
 Proof.
-  intros. destruct (extract_par n) eqn:H.
-  - induction n.
-    + simpl. constructor.
-    + simpl. apply extract_pareven_even in H. assumption.
-  - induction n.
-    + simpl. inversion H.
-    + simpl. apply extract_parodd_odd in H.
-      assumption.
-  - simpl. constructor.
-  - pose proof never_extract_parbottom as H1.
-    unfold not in H1. exfalso.
-    apply H1. exists n. assumption.
+  intros. pose proof even_or_odd as Hpar. 
+  destruct Hpar with (n:=n) as [Heven | Hodd].
+  - pose proof Heven.
+    apply even_extract_pareven in Heven. rewrite Heven.
+    apply H.
+  - pose proof Hodd. apply odd_extract_parodd in Hodd.
+    rewrite Hodd. apply H.
 Qed.
-
