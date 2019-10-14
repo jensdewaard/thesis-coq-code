@@ -38,7 +38,7 @@ Definition pleM (n m : parity) : AbstractState abstr_bool :=
 Definition build_parity (p : parity) : AbstractState avalue :=
   returnM (VParity p).
 
-Global Instance parity_numerical : 
+Global Instance isnat_parity : 
   IsNat AbstractState avalue abstr_bool parity :=
 {
   ensure_nat := ensure_par;

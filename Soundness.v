@@ -409,7 +409,11 @@ Qed.
 Hint Resolve sound_fail : soundness.
 
 Theorem sound_interpreter:
-  forall c, gamma (shared_ceval (M:=AbstractState) c) (shared_ceval c).
+  forall c, gamma (shared_ceval 
+                    (M:=AbstractState) 
+                    (A:=isnat_parity)
+                    c) 
+                  (shared_ceval c).
 Proof.
   induction c; simpl; eauto 30 with soundness.
 Qed.
