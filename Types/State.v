@@ -85,17 +85,6 @@ Definition bind_state_abstract (A B : Type)
             | exceptionOrReturn x st' => result_doorgeven _ _ f x st'
             end.
 
-
-Section preordered_abstract_state.
-Context {A : Type} `{PreorderedSet A}.
-
-Lemma preorder_abstract_state : PreorderedSet (AbstractState A).
-Proof.
-  intros. 
-  apply preordered_function_spaces.
-Qed.
-
-End preordered_abstract_state.
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.
 
