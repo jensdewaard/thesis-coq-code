@@ -33,6 +33,7 @@ Instances/Store/ConcreteStore.v
 Instances/Store/AbstractStore.v
 Instances/IsNat/Parity.v
 Instances/IsNat/Nat.v
+Instances/IsNat/Interval.v
 Instances/IsBool/Boolean.v
 Instances/IsBool/AbstractBoolean.v
 Classes/Galois.v
