@@ -1,15 +1,15 @@
 Require Import Classes.IsBool.
 Require Import Classes.IsNat.
+Require Import Classes.Joinable.
 Require Import Classes.Monad.
 Require Import ConcreteInterpreter.
 Require Import Instances.Except.AbstractException.
 Require Import Instances.Galois.
 Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsNat.Parity.
-Require Import Instances.Joinable.Unit.
+Require Import Instances.Joinable.
 Require Import Instances.Preorder.Unit.
 Require Import Instances.Store.AbstractStore.
-Require Import Joinable.
 Require Import Language.Statements.
 Require Import SharedInterpreter.
 Require Import Types.AbstractBool.

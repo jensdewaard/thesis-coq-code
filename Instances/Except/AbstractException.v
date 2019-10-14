@@ -1,6 +1,6 @@
 Require Import Classes.Except.
 Require Import Classes.Joinable.
-Require Import Instances.Joinable.Unit.
+Require Import Instances.Joinable.
 Require Import Types.Stores.
 Require Import Types.Result.
 Require Import Types.State.

@@ -1,14 +1,12 @@
 (* State and AbstractStates *)
 
+Require Import Classes.Joinable.
 Require Import Classes.PreorderedSet.
-Require Import Instances.Joinable.Result.
-Require Import Joinable.
+Require Import Instances.Joinable.
 Require Import Language.Statements.
 Require Import Monad.
-Require Import Types.Stores.
 Require Import Types.Result.
-
-Require Import Instances.Joinable.AbstractStore.
+Require Import Types.Stores.
 
 Definition State (A : Type) := store -> result A store.
 

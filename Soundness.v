@@ -16,7 +16,7 @@ Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsBool.Boolean.
 Require Import Instances.IsNat.Nat.
 Require Import Instances.IsNat.Parity.
-Require Import Instances.Joinable.AbstractStore.
+Require Import Instances.Joinable.
 Require Import Instances.Store.AbstractStore.
 Require Import Instances.Store.ConcreteStore.
 Require Import Language.Statements.

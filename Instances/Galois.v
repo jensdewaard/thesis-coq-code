@@ -4,7 +4,7 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.Even.
 Require Import Coq.Bool.Bool.
 Require Import Instances.IsNat.Parity.
-Require Import Instances.Joinable.Result.
+Require Import Instances.Joinable.
 Require Import Instances.Preorder.AbstractBoolean.
 Require Import Instances.Preorder.AbstractStore.
 Require Import Instances.Preorder.Functions.

@@ -12,6 +12,7 @@ Types/Parity.v
 Types/Interval.v
 Language/Statements.v
 Types/Stores.v
+Types/Result.v
 Instances/Preorder/Nat.v
 Instances/Preorder/AbstractBoolean.v
 Instances/Preorder/Functions.v
@@ -22,11 +23,8 @@ Instances/Preorder/Unit.v
 Instances/Preorder/Values.v
 Instances/Preorder/Sets.v
 Instances/Preorder/AbstractStore.v
-Instances/Joinable/AbstractStore.v
-Instances/Joinable/Unit.v
-Types/Result.v
 Instances/Preorder/Result.v
-Instances/Joinable/Result.v
+Instances/Joinable.v
 Types/State.v
 Instances/Preorder/AbstractState.v
 Instances/Store/ConcreteStore.v
