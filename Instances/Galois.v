@@ -9,6 +9,7 @@ Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Parity.
+Require Import Types.Interval.
 Require Import Types.Result.
 Require Import Types.State.
 Require Import Types.Stores.
@@ -79,6 +80,24 @@ Proof.
     rewrite Hodd. apply H.
 Qed.
 
+Definition gamma_interval  (i : interval) (n : nat) : Prop :=
+  (preorder (min i) n) /\ (preorder n (max i)).
+
+Lemma gamma_interval_monotone : monotone gamma_interval.
+Proof. 
+  intros i i' Hi. simpl in Hi. inversion Hi; subst.
+  constructor.  intros n Hn.
+  destruct Hn as [Hn _]. destruct i as [l1 u1].
+  destruct i' as [l2 u2]. simpl in *. 
+  unfold gamma_interval. split.
+Admitted.
+
+Instance  galois_interval : Galois nat interval :=
+{
+  gamma := gamma_interval;
+  gamma_monotone := gamma_interval_monotone;
+}.
+
 Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
   match ab with
   | ab_true   => Is_true b
@@ -99,6 +118,11 @@ Instance galois_boolean : Galois bool abstr_bool :=
   gamma := gamma_bool;
   gamma_monotone := gamma_bool_monotone;
 }.
+
+Lemma gamma_false : gamma ab_false false.
+Proof.
+  unfold gamma; simpl. unfold not. intro. apply H.
+Qed.
 
 Section galois_functions.
 Context {A A' B B' : Type} 
@@ -132,6 +156,7 @@ Section galois_values.
 Definition gamma_value : avalue -> cvalue -> Prop :=
   fun av => fun cv => match av, cv with
                       | VParity p, VNat n => gamma p n
+                      | VInterval i, VNat n => gamma i n
                       | VAbstrBool ab, VBool b => gamma ab b
                       | VTop, _ => True
                       | _, _ => False
@@ -140,25 +165,9 @@ Definition gamma_value : avalue -> cvalue -> Prop :=
 Lemma gamma_value_monotone : monotone gamma_value.
 Proof.
   unfold monotone. intros a a' Hpre.
-  inversion Hpre; subst.
-  - simpl in *. constructor. intros z Hgamma.
-    destruct z. simpl in Hgamma. simpl. 
-    inversion H; subst.
-    + reflexivity.
-    + inversion Hgamma.
-    + apply Hgamma.
-    + inversion Hgamma.
-  - simpl in *. constructor. intros d Hgamma.
-    destruct d. inversion Hgamma.
-    simpl in *. inversion H; subst.
-    + inversion Hgamma.
-    + reflexivity.
-    + apply Hgamma.
-  - simpl in *. constructor. intros k Hgamma.
-    destruct k. inversion Hgamma.
-    inversion Hgamma.
-  - constructor. intros. constructor.
-  - constructor. intros. inversion H.
+  inversion Hpre; subst; constructor; intros z Hgamma; try reflexivity;
+  destruct z; try inversion Hgamma; unfold gamma_value; 
+  unfold gamma_value in H; eapply widen; try apply H;try apply Hgamma.
 Qed.
 
 Global Instance galois_values : Galois cvalue avalue := 

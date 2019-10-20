@@ -16,6 +16,7 @@ Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsBool.Boolean.
 Require Import Instances.IsNat.Nat.
 Require Import Instances.IsNat.Parity.
+Require Import Instances.IsNat.Interval.
 Require Import Instances.Joinable.
 Require Import Instances.Store.AbstractStore.
 Require Import Instances.Store.ConcreteStore.
@@ -47,7 +48,6 @@ Proof. intros ? ? ? ? ? ?. unfold gamma; simpl.
   destruct a, a0; simpl in *; try tauto;
   auto using even_even_plus, odd_plus_r, odd_plus_l, odd_even_plus.
 Qed.
-Hint Resolve parity_plus_sound : soundness.
 
 Lemma parity_mult_sound :
   gamma parity_mult mult.
@@ -55,7 +55,6 @@ Proof. intros ? ? ? ? ? ?. unfold gamma.
   destruct a, a0; simpl in *; try tauto; 
   auto using even_mult_l, even_mult_r, odd_mult.
 Qed.
-Hint Resolve parity_mult_sound : soundness.
 
 Lemma parity_eq_sound :
   gamma parity_eq Nat.eqb. 
@@ -66,7 +65,6 @@ Proof. intros ? ? ? ? ? ?. unfold gamma.
   - apply Bool.Is_true_eq_true in H1. apply Nat.eqb_eq in H1. subst.
     eauto using not_even_and_odd.
 Qed.
-Hint Resolve parity_eq_sound : soundness.
 
 Lemma extract_par_sound : forall n,
   gamma (VParity (extract_par n)) (VNat n).
@@ -74,7 +72,6 @@ Proof.
   apply gamma_par_extract_n_n.
 Qed.
 Hint Resolve gamma_par_extract_n_n : soundness.
-Hint Resolve extract_par_sound : soundness.
 
 (* Monadic versions of parity operations *)
 
@@ -131,6 +128,99 @@ Proof.
 Qed.
 Hint Resolve build_parity_sound : soundness.
 
+Lemma iplus_sound : gamma Interval.iplus plus.
+Proof.
+  intros i n Hn j m Hm. destruct Hn as [Hin Hni].
+  destruct Hm as [Hjm Hmj]. simpl in *. constructor. 
+  - rewrite Interval.interval_min_plus. simpl.
+    apply Coq.Arith.Plus.plus_le_compat; assumption.
+  - rewrite Interval.interval_max_plus. simpl.
+    apply Coq.Arith.Plus.plus_le_compat; assumption.
+Qed.
+
+(* Soundness of operations on intervals *)
+Lemma iplusM_sound :
+  gamma iplusM plusM.
+Proof.
+  intros ??????. split. 
+  - apply iplus_sound; assumption. 
+  - assumption.
+Qed.
+Hint Resolve iplusM_sound : soundness.
+
+Lemma imult_sound : gamma Interval.imult mult.
+Proof.
+  constructor. 
+  - rewrite Interval.interval_min_mult. simpl.
+    apply Coq.Arith.Mult.mult_le_compat. apply H. apply H0.
+  - rewrite Interval.interval_max_mult. simpl.
+    apply Coq.Arith.Mult.mult_le_compat. apply H. apply H0.
+Qed.
+
+Lemma imultM_sound :
+  gamma imultM multM.
+Proof.
+  constructor. apply imult_sound. assumption. assumption. assumption.
+Qed.
+Hint Resolve imultM_sound.
+
+Lemma ileqb_sound :
+  gamma ileM lebM.
+Proof.
+  constructor. unfold Interval.ileqb. 
+  destruct a, a0.  destruct H, H0. simpl in *.
+  destruct (Interval.max (n, n0) <? Interval.min (n1, n2)) eqn:Hint.
+  - rewrite Nat.ltb_lt in Hint. 
+    assert (b <=b0).
+    eapply le_trans. apply H2.
+    apply lt_n_Sm_le. 
+    eapply lt_trans. apply Hint.
+    apply le_lt_n_Sm. apply H0.
+    apply Nat.leb_le in H4. rewrite H4. constructor.
+  - apply Nat.ltb_nlt in Hint.
+    destruct (Interval.max (n1, n2) <? Interval.min (n, n0)) eqn:Hint2.
+    apply Nat.ltb_lt in Hint2.
+    + assert (b <=? b0 = false).
+      apply leb_correct_conv.
+      apply le_lt_n_Sm in H3.
+      eapply le_trans. apply H3.
+      apply lt_n_Sm_le. apply lt_n_S. eapply le_trans. apply Hint2.
+      apply H. rewrite H4. apply gamma_false.
+    + constructor.
+  - assumption.
+Qed.
+Hint Resolve ileqb_sound : soundness.
+
+Lemma ieqM_sound : gamma ieqM eqbM.
+Proof.
+  constructor. unfold Interval.ieqb. 
+Admitted.
+Hint Resolve ieqM_sound : soundness.
+
+Lemma build_interval_sound :
+  gamma build_interval build_natural.
+Proof.
+  constructor. apply H. apply H0.
+Qed.
+Hint Resolve build_interval_sound : soundness.
+
+Lemma extract_interval_sound : forall n,
+  gamma (extract_interval n) (return_state nat n).
+Proof.
+  intros n. constructor. constructor. rewrite Interval.interval_min_refl.
+  apply preorder_refl. rewrite Interval.interval_max_refl. apply preorder_refl.
+  apply H.
+Qed.
+Hint Resolve extract_interval_sound : soundness.
+
+Lemma ensure_interval_sound : gamma ensure_interval ensure_nat.
+Proof.
+  intros ??????. unfold ensure_interval, ensure_nat.
+  destruct a, b; simpl; try constructor; try apply H; try assumption; 
+  try inversion H.
+Qed.
+Hint Resolve ensure_interval_sound : soundness.
+
 (* Soundness of operations on booleans *)
 
 Lemma ab_and_sound :
@@ -151,7 +241,7 @@ Lemma ab_neg_sound :
 Proof. intros ? ? ?. unfold gamma in *; simpl in *.
   destruct b, a; simpl in *; auto.
 Qed.
-Hint Resolve ab_neg_sound.
+Hint Resolve ab_neg_sound : soundness.
 
 Lemma extract_bool_sound : forall x,
   gamma (VAbstrBool (extract_ab x)) (VBool x).
@@ -327,14 +417,16 @@ Hint Resolve bind_state_sound_fun : soundness.
 (* Soundness of interpreters *)
 
 Lemma extract_build_val_sound : forall v,
-  gamma (extract_build_val (M:=AbstractState) v) (extract_build_val v).
+  gamma (extract_build_val (M:=AbstractState) (A:=isnat_parity) v) 
+        (extract_build_val v).
 Proof.
   destruct v; simpl; eauto with soundness.
 Qed.
 Hint Resolve extract_build_val_sound : soundness.
 
 Theorem eval_expr_sound : forall a,
-  gamma (shared_eval_expr (M:=AbstractState) a) (shared_eval_expr a).
+  gamma (shared_eval_expr (M:=AbstractState) (A:=isnat_parity) a) 
+        (shared_eval_expr a).
 Proof.
   intros. induction a; simpl;
   eauto 30 with soundness. 
