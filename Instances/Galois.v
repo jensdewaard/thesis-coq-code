@@ -85,12 +85,11 @@ Definition gamma_interval  (i : interval) (n : nat) : Prop :=
 
 Lemma gamma_interval_monotone : monotone gamma_interval.
 Proof. 
-  intros i i' Hi. simpl in Hi. inversion Hi; subst.
-  constructor.  intros n Hn.
-  destruct Hn as [Hn _]. destruct i as [l1 u1].
-  destruct i' as [l2 u2]. simpl in *. 
-  unfold gamma_interval. split.
-Admitted.
+  intros i i' Hi. constructor. intros n Hn. destruct Hn, Hi.
+  constructor.
+  - eapply preorder_trans. apply H1. apply H.
+  - eapply preorder_trans. apply H0. apply H2.
+Qed.
 
 Instance  galois_interval : Galois nat interval :=
 {

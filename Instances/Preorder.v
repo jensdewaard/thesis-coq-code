@@ -104,29 +104,21 @@ Global Instance preorder_pairs :
 End preordered_pairs.
 
 Inductive interval_le : interval -> interval -> Prop :=
-  | interval_le_compl : forall i i', preorder (max i) (min i') -> 
-                            interval_le i i'
-  | interval_le_same : forall i i', (min i) = (min i') -> (max i) = (max i') ->
-      interval_le i i'.
+  | interval_le_shorter : forall i i', 
+      preorder (min i') (min i) -> preorder (max i) (max i') -> interval_le i i'.
 
 Lemma interval_le_refl : Reflexive interval_le.
 Proof.
   unfold Reflexive. intro x. destruct x as [n m].
-  apply interval_le_same; unfold max, min; reflexivity.
+  constructor; apply preorder_refl.
 Qed.
 
 Lemma interval_le_trans : Transitive interval_le.
 Proof.
   unfold Transitive. intros i j k Hij Hjk. inversion Hij; subst; clear Hij;
-  inversion Hjk; subst; clear Hjk.
-  - constructor.  eapply preorder_trans. apply H. 
-    eapply preorder_trans with (max j). apply interval_increasing.
-    apply H0.
-  - constructor. eapply preorder_trans. apply H. 
-    rewrite H0. apply preorder_refl.
-  - constructor. rewrite H0. apply H1.
-  - apply interval_le_same. rewrite H, H1. reflexivity.
-    rewrite H0, H2. reflexivity.
+  inversion Hjk; subst; clear Hjk. constructor.
+  - eapply preorder_trans. apply H1. apply H.
+  - eapply preorder_trans. apply H0. apply H2.
 Qed.
 
 Global Instance preorder_interval : PreorderedSet interval :=
