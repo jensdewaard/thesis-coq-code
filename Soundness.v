@@ -193,8 +193,24 @@ Hint Resolve ileqb_sound : soundness.
 
 Lemma ieqM_sound : gamma ieqM eqbM.
 Proof.
-  constructor. unfold Interval.ieqb. 
-Admitted.
+  constructor. 
+  destruct H, H0. 
+  unfold Interval.ieqb. 
+  destruct (Interval.max a <? Interval.min a0) eqn:Hdiff.
+  - assert (b =? b0 = false). apply Nat.eqb_neq. unfold not. intros. 
+    subst. assert (preorder (Interval.min a0) (Interval.max a)).
+    eapply preorder_trans. apply H0. apply H2. simpl in H4. 
+    apply Nat.ltb_ge in H4. rewrite H4 in Hdiff.
+    discriminate.
+    rewrite H4. apply gamma_false.
+  - destruct (Interval.min a =? Interval.max a) eqn:Ha1; try reflexivity.
+    destruct (Interval.max a =? Interval.min a0) eqn:Ha2; try reflexivity.
+    destruct (Interval.min a0 =? Interval.max a0) eqn:Ha3; try reflexivity.
+    simpl. rewrite Nat.eqb_eq in Ha1, Ha2, Ha3. 
+    simpl in *. assert (b = b0). Nat.order.
+    rewrite H4. rewrite Nat.eqb_refl. reflexivity.
+  - assumption.
+Qed.
 Hint Resolve ieqM_sound : soundness.
 
 Lemma build_interval_sound :
