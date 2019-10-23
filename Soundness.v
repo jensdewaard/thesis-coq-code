@@ -83,7 +83,7 @@ Defined.
 Hint Resolve ensure_par_sound : soundness.
 
 Lemma extract_parM_sound :  forall n,
-  gamma (extract_parM n) (return_state nat n). 
+  gamma (extract_parM n) (return_state n). 
 Proof.
   intros. unfold gamma; simpl. intros ???. unfold gamma; simpl.
   split. apply extract_par_sound. assumption.
@@ -221,7 +221,7 @@ Qed.
 Hint Resolve build_interval_sound : soundness.
 
 Lemma extract_interval_sound : forall n,
-  gamma (extract_interval n) (return_state nat n).
+  gamma (extract_interval n) (return_state n).
 Proof.
   intros n. constructor. constructor. rewrite Interval.interval_min_refl.
   apply preorder_refl. rewrite Interval.interval_max_refl. apply preorder_refl.
@@ -291,7 +291,7 @@ Qed.
 Hint Resolve and_abM_sound : soundness.
 
 Lemma extract_abM_sound: forall b,
-  gamma (extract_abM b) (return_state bool b).
+  gamma (extract_abM b) (return_state b).
 Proof. 
   intros. unfold gamma in *; simpl in *. destruct b; auto. intros ???. 
   split; auto. constructor. intros ???. constructor. unfold gamma; simpl.
@@ -345,7 +345,7 @@ Hint Resolve store_put_sound : soundness.
 (* Soundness of states *)
 
 Lemma return_state_sound {A B : Type} `{Galois A B} :
-  gamma (return_state_abstract B) (return_state A).
+  gamma (@return_state_abstract B) (@return_state A).
 Proof. 
   intros ???. constructor; auto. 
 Qed.
@@ -357,7 +357,7 @@ Lemma bind_state_sound {A A' B B'}
 forall next next' f f',
 gamma f' f ->
 gamma next' next ->
-gamma (bind_state_abstract A' B' f' next') (bind_state A B f next).
+gamma (@bind_state_abstract A' B' f' next') (@bind_state A B f next).
 Proof.
   intros. 
   unfold bind_state, bind_state_abstract.  
@@ -407,7 +407,7 @@ Lemma bind_state_sound_fun {A A' B B'} `{Galois A A', Galois B B'} :
   forall next next' f f',
   gamma f' f ->
   (forall x x', gamma x' x -> gamma (next' x') (next x)) ->
-  gamma (bind_state_abstract A' B' f' next') (bind_state A B f next).
+  gamma (@bind_state_abstract A' B' f' next') (@bind_state A B f next).
 Proof. 
   intros. apply bind_state_sound. assumption. 
   assert ((forall x x', gamma x' x -> gamma (next' x') (next x)) -> gamma next'

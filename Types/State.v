@@ -11,17 +11,18 @@ Require Import Types.Stores.
 
 Definition State (A : Type) := store -> result A store.
 
-Definition return_state (A : Type) (x : A) : State A :=
+Definition return_state {A : Type} (x : A) : State A :=
   fun st => returnR x st.
+Arguments return_state [_] _.
 
-
-Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
+Definition bind_state {A B : Type} (m : State A) (f : A -> State B) 
     : State B :=
   fun st => match m st with
             | returnR x st' => f x st'
             | crashed => crashed 
             | exception st' => exception st'
             end.
+Arguments bind_state [_ _] _ _.
 
 Definition get : State store := fun st => returnR st st.
 Check get.
@@ -33,10 +34,11 @@ Definition put (st' : store) : State unit :=
 Definition AbstractState (A : Type) :=
   abstract_store -> abstract_result A abstract_store.
 
-Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
+Definition return_state_abstract {A : Type} (x : A) : AbstractState A :=
   fun st => returnRA x st.
+Arguments return_state_abstract [_] _.
 
-Definition bind_state_abstract (A B : Type)
+Definition bind_state_abstract {A B : Type}
   (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
   fun st => match m st with
             | returnRA x st' => f x st'
@@ -54,6 +56,7 @@ Definition bind_state_abstract (A B : Type)
                                                 (join_op st' st'')
                                          end
             end.
+Arguments bind_state_abstract [_ _] _ _.
 
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.
