@@ -15,6 +15,7 @@ Types/Stores.v
 Types/Result.v
 Instances/Preorder.v
 Instances/Joinable.v
+Instances/Monad.v
 Types/State.v
 Instances/Store/ConcreteStore.v
 Instances/Store/AbstractStore.v
@@ -28,7 +29,5 @@ Instances/Galois.v
 Instances/Except/AbstractException.v
 Instances/Except/ConcreteException.v
 SharedInterpreter.v
-ConcreteInterpreter.v
-AbstractInterpreter.v
 Soundness.v
 

@@ -5,23 +5,28 @@ Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Result.
 Require Import Types.State.
+Require Import Instances.Monad.
 
 Definition extract_interval (n : nat) : AbstractState interval := 
-    returnM (n, n).
+    JustA _ (returnM (n, n)).
 
 Definition ensure_interval (v : avalue) : AbstractState interval :=
-  fun st => match v with
-            | VInterval i => returnRA i st
-            | _ => crashedA
-            end.
+  match v with
+  | VInterval i => JustA _ (returnM i)
+  | _ => NoneA _
+  end.
 
-Definition iplusM := fun i => fun j => returnM (iplus i j).
-Definition imultM := fun i => fun j => returnM (imult i j).
-Definition ieqM := fun i => fun j => returnM (ieqb i j).
-Definition ileM := fun i => fun j => returnM (ileqb i j).
+Definition iplusM (i j : interval) : AbstractState interval := 
+  JustA _ (returnM (iplus i j)).
+Definition imultM (i j : interval) : AbstractState interval :=
+  JustA _ (returnM (imult i j)).
+Definition ieqM (i j : interval) : AbstractState abstr_bool :=
+  JustA _ (returnM (ieqb i j)).
+Definition ileM (i j : interval) : AbstractState abstr_bool := 
+  JustA _ (returnM (ileqb i j)).
 
 Definition build_interval (i : interval) : AbstractState avalue :=
-  returnM (VInterval i).  
+  JustA _ (returnM (VInterval i)).  
 
 Global Instance isnat_interval : 
   IsNat AbstractState avalue abstr_bool interval := 

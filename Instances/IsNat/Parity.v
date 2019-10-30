@@ -3,15 +3,17 @@ Require Import Classes.Monad.
 Require Import Types.Parity.
 Require Import Types.AbstractBool.
 Require Import Language.Statements.
-Require Import Types.State.
 Require Import Types.Result.
 Require Import Types.Stores.
+Require Import Types.State.
+Require Import Instances.Monad.
+Require Import Types.Maps.
 
 Definition ensure_par (v : avalue) : AbstractState parity :=
-  fun st => match v with
-            | VParity x => returnRA x st
-            | _ => crashedA 
-            end.
+  match v with
+  | VParity x => JustA _ (return_state x)
+  | _ => NoneA _
+  end.
 
 Fixpoint extract_par (n : nat) : parity :=
   match n with 
@@ -21,22 +23,22 @@ Fixpoint extract_par (n : nat) : parity :=
 end.
 
 Definition extract_parM (n : nat) : AbstractState parity :=
-  returnM (extract_par n).
+  JustA _ (return_state (extract_par n)).
 
 Definition pplusM (n m : parity) : AbstractState parity :=
-  returnM (parity_plus n m).
+  JustA _ (returnM (parity_plus n m)).
 
 Definition pmultM (n m : parity) : AbstractState parity :=
-  returnM (parity_mult n m).
+  JustA _ (returnM (parity_mult n m)).
 
 Definition peqM (n m : parity) : AbstractState abstr_bool :=
-  returnM (parity_eq n m).
+  JustA _ (returnM (parity_eq n m)).
 
 Definition pleM (n m : parity) : AbstractState abstr_bool :=
-  returnM ab_top.
+  JustA _ (returnM ab_top).
 
 Definition build_parity (p : parity) : AbstractState avalue :=
-  returnM (VParity p).
+  JustA _ (returnM (VParity p)).
 
 Global Instance isnat_parity : 
   IsNat AbstractState avalue abstr_bool parity :=

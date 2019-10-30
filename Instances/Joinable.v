@@ -5,6 +5,7 @@ Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Types.Result.
 Require Import Types.Stores.
+Require Import Instances.Monad.
 
 Definition abstract_store_join
   (ast1 ast2 : abstract_store) : abstract_store :=
@@ -125,3 +126,26 @@ Global Instance result_joinable : Joinable (abstract_result A S) := {
 }.
 
 End result_joinable.
+
+Section state_joinable.
+  Context {A S} `{Joinable A, Joinable S}.
+
+  Definition state_join (st st' : state A S) : state A S :=
+    fun x => ((join_op (fst (st x)) (fst (st' x)), 
+              (join_op (snd (st x)) (snd (st' x))))).
+  
+  Lemma state_join_upper_bound_left :
+    forall st st', preorder st (state_join st st').
+  Proof. Admitted.
+
+  Lemma state_join_upper_bound_right :
+    forall st st', preorder st' (state_join st st').
+  Proof.
+  Admitted.
+
+Global Instance state_joinable : Joinable (state A S) := {
+  join_op := state_join;
+  join_upper_bound_left := state_join_upper_bound_left;
+  join_upper_bound_right := state_join_upper_bound_right;
+}.
+End state_joinable.

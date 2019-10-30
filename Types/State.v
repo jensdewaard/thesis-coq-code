@@ -5,12 +5,16 @@ Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
 Require Import Instances.Preorder.
 Require Import Language.Statements.
-Require Import Monad.
+Require Import Classes.Monad.
 Require Import Types.Result.
 Require Import Types.Stores.
+Require Import Types.Maps.
+Require Import Instances.Monad.
 
-Definition State (A : Type) := store -> result A store.
+Definition State (A : Type)         := Maybe (state (total_map cvalue) A).
+Definition AbstractState (A : Type) := AbstractMaybe (state (total_map avalue) A).
 
+(*
 Definition return_state {A : Type} (x : A) : State A :=
   fun st => returnR x st.
 Arguments return_state [_] _.
@@ -25,7 +29,6 @@ Definition bind_state {A B : Type} (m : State A) (f : A -> State B)
 Arguments bind_state [_ _] _ _.
 
 Definition get : State store := fun st => returnR st st.
-Check get.
 
 Definition put (st' : store) : State unit := 
   fun st => returnR tt st'.
@@ -57,26 +60,38 @@ Definition bind_state_abstract {A B : Type}
                                          end
             end.
 Arguments bind_state_abstract [_ _] _ _.
+*)
 
 Section abstract_state_joinable.
 Context {A : Type} `{Joinable A}.
 
+
 Definition join_state_abstract
   (st1 st2 : AbstractState A) : AbstractState A :=
-  fun st => join_op (st1 st) (st2 st).
+  match st1 with
+  | NoneA _ => NoneA _
+  | JustA _ x => match st2 with
+                 | NoneA _ => NoneA _
+                 | JustA _ y => JustA _ (join_op x y)
+                 | JustOrNoneA _ y => JustOrNoneA _ (join_op x y)
+                 end
+  | JustOrNoneA _ x => match st2 with
+                       | NoneA _ => NoneA _
+                       | JustA _ y | JustOrNoneA _ y => 
+                           JustOrNoneA _ (join_op x y)
+                       end
+  end.
 
 Lemma join_state_abstract_upperbound_left : forall st st',
   preorder st (join_state_abstract st st').
 Proof.
-  intros. simpl. constructor. intro x. simpl.
-  unfold join_state_abstract. apply join_result_upperbound_left.
+  intros. destruct st, st'; constructor; apply join_upper_bound_left.
 Qed.
 
 Lemma join_state_abstract_upperbound_right : forall st st',
   preorder st' (join_state_abstract st st').
 Proof.
-  intros. simpl. constructor. intro x. simpl.
-  unfold join_state_abstract. apply join_result_upperbound_right.
+  intros. destruct st, st'; constructor; apply join_upper_bound_right.
 Qed.
 
 Global Instance abstract_state_joinable : Joinable (AbstractState A) := 
@@ -88,14 +103,4 @@ Global Instance abstract_state_joinable : Joinable (AbstractState A) :=
 
 End abstract_state_joinable.
 
-
-Instance state_monad : Monad (State) := {
-  returnM := (return_state);
-  bindM := (bind_state);
-}.
-
-Instance abstract_state_monad : Monad (AbstractState) := {
-  returnM := return_state_abstract;
-  bindM := bind_state_abstract;
-}.
 

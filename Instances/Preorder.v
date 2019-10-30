@@ -1,6 +1,7 @@
 Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Le.
 Require Import Coq.Classes.RelationClasses.
+Require Import Instances.Monad.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
@@ -281,3 +282,55 @@ Global Instance result_preorder : PreorderedSet (abstract_result A S) := {
 }.
 End result_preorder.
 
+Section state_preorder.
+  Context {S A : Type} `{PreorderedSet S, PreorderedSet A}.
+  
+Global Instance state_preorder : 
+  PreorderedSet (state S A).
+Proof.
+  apply preordered_function_spaces.
+Defined.
+
+End state_preorder.
+
+Section maybe_preorder.
+  Context {A} `{PreorderedSet A}.
+
+  Inductive maybe_le : AbstractMaybe A -> AbstractMaybe A -> Prop :=
+    | none_le : forall m, maybe_le m (NoneA A)
+    | just_le : forall x y, preorder x y -> maybe_le (JustA A x) (JustA A y)
+    | just_justornone_le : 
+        forall x y, preorder x y -> maybe_le (JustA A x) (JustOrNoneA A y)
+    | justornone_le :
+        forall x y, preorder x y -> maybe_le (JustOrNoneA A x) (JustOrNoneA A
+        y)
+  .
+
+  Lemma maybe_le_trans : Transitive maybe_le.
+  Proof.
+    intros x y z Hxy Hyz. destruct y.
+    - inversion Hxy; subst. inversion Hyz; subst.
+      + constructor.
+      + constructor. apply preorder_trans with (y0:=a); assumption.
+      + constructor. apply preorder_trans with (y0:=a); assumption.
+    - inversion Hyz; subst. constructor. destruct x.
+      + constructor. inversion Hxy; subst. apply preorder_trans with (y0:=a);
+        assumption.
+      + constructor. inversion Hxy; subst. apply preorder_trans with (y0:=a);
+        assumption.
+      + inversion Hxy.
+    - inversion Hyz; subst. constructor.
+  Qed.
+
+  Lemma maybe_le_refl : Reflexive maybe_le.
+  Proof. 
+    intros x. destruct x; constructor; apply preorder_refl.
+  Qed.
+
+  Global Instance maybe_preorder : PreorderedSet (AbstractMaybe A) :=
+  {
+    preorder := maybe_le;
+    preorder_trans := maybe_le_trans;
+    preorder_refl := maybe_le_refl;
+  }.
+End maybe_preorder.

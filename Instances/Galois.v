@@ -5,28 +5,35 @@ Require Import Coq.Arith.Even.
 Require Import Coq.Bool.Bool.
 Require Import Instances.IsNat.Parity.
 Require Import Instances.Joinable.
+Require Import Instances.Monad.
 Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
-Require Import Types.Parity.
 Require Import Types.Interval.
+Require Import Types.Parity.
 Require Import Types.Result.
 Require Import Types.State.
 Require Import Types.Stores.
 
-Definition gamma_par (p : parity) : nat -> Prop :=
+(*Definition gamma_par (p : parity) : nat -> Prop :=
   match p with
   | par_even => even 
   | par_odd => odd 
   | par_top => (fun n => True)
   | par_bottom => fun n => False
   end.
+  *)
+
+Inductive gamma_par : parity -> nat -> Prop :=
+  | gamma_par_even : forall n, even n -> gamma_par par_even n
+  | gamma_par_odd  : forall n, odd n -> gamma_par par_odd n
+  | gamma_par_top : forall n, gamma_par par_top n.
 
 Lemma gamma_par_monotone : forall p1 p2,
   preorder p1 p2 -> preorder (gamma_par p1) (gamma_par p2).
 Proof.
   destruct p1, p2; simpl; intros; try constructor; try inversion H;
-  intros; try tauto.
+  intros; try tauto; constructor; inversion H0.
 Qed.
 
 Instance galois_parity_nat : Galois nat parity :=
@@ -73,11 +80,8 @@ Lemma gamma_par_extract_n_n : forall n,
 Proof.
   intros. pose proof even_or_odd as Hpar. 
   destruct Hpar with (n:=n) as [Heven | Hodd].
-  - pose proof Heven.
-    apply even_extract_pareven in Heven. rewrite Heven.
-    apply H.
-  - pose proof Hodd. apply odd_extract_parodd in Hodd.
-    rewrite Hodd. apply H.
+  - rewrite even_extract_pareven; try constructor; assumption.
+  - rewrite odd_extract_parodd; try constructor; assumption.
 Qed.
 
 Definition gamma_interval  (i : interval) (n : nat) : Prop :=
@@ -265,6 +269,48 @@ Global Instance galois_result :
 
 End galois_result.
 
+Section galois_maybe.
+  Context {A A'} `{Galois A A'}.
+
+  Inductive gamma_maybe : AbstractMaybe A' -> Maybe A -> Prop :=
+    | gamma_none : forall x, gamma_maybe (NoneA A') x
+    | gamma_justa_just : 
+        forall x y, gamma x y -> gamma_maybe (JustA A' x) (Just A y)
+    | gamma_justnone_just :
+        forall x y, gamma x y -> gamma_maybe (JustOrNoneA A' x) (Just A y)
+    | gamma_justnone_none : 
+        forall x, gamma_maybe (JustOrNoneA A' x) (None A)
+  .
+
+  Lemma gamma_maybe_monotone : monotone gamma_maybe.
+  Proof.
+    constructor. intros m Hm. destruct m.
+    - inversion Hm; subst.
+      + destruct a'.
+        * inversion H1.
+        * inversion H1.
+        * constructor.
+      + destruct a'.
+        * inversion H1; subst. constructor. apply widen with (f:=x).
+          assumption. assumption.
+        * constructor. inversion H1; subst. apply widen with (f:=x).
+          assumption. assumption.
+        * constructor.
+      + destruct a'.
+        * inversion H1.
+        * inversion H1; subst. constructor. apply widen with (f:=x).
+          assumption. assumption.
+        * constructor.
+  - inversion Hm; subst; inversion H1; constructor.
+  Qed.
+
+  Global Instance galois_maybe : Galois (Maybe A) (AbstractMaybe A') :=
+  {
+    gamma := gamma_maybe;
+    gamma_monotone := gamma_maybe_monotone;
+  }.
+End galois_maybe.
+
 Section galois_state.
 Context {A A'} 
   `{Galois A A'}.
@@ -272,9 +318,10 @@ Context {A A'}
 Global Instance galois_state :
   Galois (State A) (AbstractState A').
 Proof.
-  apply GFun. 
+  apply galois_maybe.
 Defined.
 End galois_state.
+
 
 Section galois_unit.
 Definition gamma_unit : 
@@ -293,4 +340,5 @@ Global Instance galois_unit : Galois unit unit :=
   gamma_monotone := gamma_unit_monotone;
 }. 
 End galois_unit.
+
 

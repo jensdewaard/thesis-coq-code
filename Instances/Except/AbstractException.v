@@ -4,19 +4,17 @@ Require Import Instances.Joinable.
 Require Import Types.Stores.
 Require Import Types.Result.
 Require Import Types.State.
+Require Import Instances.Monad.
 
 Definition eval_catch_abstract 
   (st1 st2 : AbstractState unit) : AbstractState unit :=
-  fun st => match (st1 st) with
-  | crashedA => crashedA 
-  | exceptionA st' => st2 st'
-  | exceptionOrReturn x st' => 
-      join_op (exceptionOrReturn x st') (st2 st')
-  | returnRA x st' => returnRA x st'
+  match st1 with
+  | NoneA _ => st2
+  | JustA _ st => JustA _ st
+  | JustOrNoneA _ st => join_op st1 st2
   end.
 
-Definition fail_abstract : AbstractState unit :=
-  fun st => exceptionA st.
+Definition fail_abstract : AbstractState unit := NoneA _.
 
 Instance except_abstract : Except AbstractState := 
 {

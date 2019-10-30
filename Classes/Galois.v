@@ -22,3 +22,10 @@ Proof.
   destruct H1. apply H1. apply H2.
 Qed.
 
+Lemma gamma_widened {A B : Type} `{Galois B A} : forall x y a,
+  gamma x y ->
+  preorder x a ->
+  gamma a y.
+Proof.
+  intros x y a H1 H2. apply widen with (f:=x). assumption. assumption.
+Qed.

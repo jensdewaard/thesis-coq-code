@@ -1,5 +1,5 @@
 Require Import Statements.
-Require Import Monad.
+Require Import Classes.Monad.
 Require Import Classes.IsNat.
 Require Import Classes.IsBool.
 Require Import Classes.Store.

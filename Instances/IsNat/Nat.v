@@ -4,29 +4,33 @@ Require Import Types.Stores.
 Require Import Language.Statements.
 Require Import Types.State.
 Require Import Types.Result.
+Require Import Instances.Monad.
 
 Definition ensure_nat (v : cvalue) : State nat :=
-  fun st => match v with
-            | VNat x => returnR x st
-            | _ => crashed 
-            end.
+  match v with
+  | VNat x => Just _ (return_state x)
+  | _ => None _
+  end.
 
-Definition plusM (n m : nat) : State nat := returnM (plus n m).
+Definition extract_natM (n : nat) : State nat :=
+  Just _ (return_state n).
 
-Definition multM (n m : nat) : State nat := returnM (mult n m).
+Definition plusM (n m : nat) : State nat := Just _ (returnM (plus n m)).
 
-Definition eqbM (n m : nat) : State bool := returnM (Nat.eqb n m).
+Definition multM (n m : nat) : State nat := Just _ (returnM (mult n m)).
 
-Definition lebM (n m : nat) : State bool := returnM (Nat.leb n m).
+Definition eqbM (n m : nat) : State bool := Just _ (returnM (Nat.eqb n m)).
+
+Definition lebM (n m : nat) : State bool := Just _ (returnM (Nat.leb n m)).
 
 Definition build_natural (n : nat) : State cvalue := 
-  returnM (VNat n).
+  Just _ (returnM (VNat n)).
 
 Global Instance nat_numerical : IsNat State cvalue bool nat :=
 {
   ensure_nat := ensure_nat;
   build_nat := build_natural;
-  extract_nat := fun x => returnM x;
+  extract_nat := extract_natM;
   plus_op := plusM;
   mult_op := multM;
   eq_op := eqbM;

@@ -2,16 +2,15 @@ Require Import Types.State.
 Require Import Types.Result.
 Require Import Classes.Except.
 Require Import Types.Stores.
+Require Import Instances.Monad.
 
 Definition eval_catch (st1 st2 : State unit) : State unit :=
-  fun st => match (st1 st) with
-  | crashed => crashed 
-  | exception st' => (st2 st')
-  | x => x
+  match st1 with
+  | None _ => st2
+  | Just _ x => st1
   end.
 
-Definition fail : State unit :=
-  fun st => exception st.
+Definition fail : State unit := None _.
 
 Instance except_concrete : Except State := {
   throw := fail;
