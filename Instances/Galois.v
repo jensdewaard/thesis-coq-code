@@ -1,3 +1,4 @@
+Require Export Base.
 Require Import Classes.Galois.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Arith.
@@ -15,19 +16,11 @@ Require Import Types.Result.
 Require Import Types.State.
 Require Import Types.Stores.
 
-(*Definition gamma_par (p : parity) : nat -> Prop :=
-  match p with
-  | par_even => even 
-  | par_odd => odd 
-  | par_top => (fun n => True)
-  | par_bottom => fun n => False
-  end.
-  *)
-
 Inductive gamma_par : parity -> nat -> Prop :=
   | gamma_par_even : forall n, even n -> gamma_par par_even n
   | gamma_par_odd  : forall n, odd n -> gamma_par par_odd n
   | gamma_par_top : forall n, gamma_par par_top n.
+Hint Constructors gamma_par : soundness.
 
 Lemma gamma_par_monotone : forall p1 p2,
   preorder p1 p2 -> preorder (gamma_par p1) (gamma_par p2).
@@ -75,24 +68,20 @@ Proof.
     rewrite extract_S_n. rewrite IHk. reflexivity. ring. ring.
 Qed.
 
-Lemma gamma_par_extract_n_n : forall n,
-  gamma_par (extract_par n) n.
-Proof.
-  intros. pose proof even_or_odd as Hpar. 
-  destruct Hpar with (n:=n) as [Heven | Hodd].
-  - rewrite even_extract_pareven; try constructor; assumption.
-  - rewrite odd_extract_parodd; try constructor; assumption.
-Qed.
 
-Definition gamma_interval  (i : interval) (n : nat) : Prop :=
-  (preorder (min i) n) /\ (preorder n (max i)).
+Inductive gamma_interval : interval -> nat -> Prop :=
+  | gamma_interval_in_range : 
+      forall i n, preorder (min i) n  -> 
+                  preorder n (max i) -> 
+                  gamma_interval i n.
+Hint Constructors gamma_interval : soundness.
 
 Lemma gamma_interval_monotone : monotone gamma_interval.
 Proof. 
-  intros i i' Hi. constructor. intros n Hn. destruct Hn, Hi.
-  constructor.
-  - eapply preorder_trans. apply H1. apply H.
-  - eapply preorder_trans. apply H0. apply H2.
+  intros i i' Hi. constructor. intros n Hn. 
+  constructor; destruct Hn; destruct Hi.
+  apply preorder_trans with (y:=min i); assumption.
+  apply preorder_trans with (y:=max i); assumption.
 Qed.
 
 Instance  galois_interval : Galois nat interval :=
@@ -101,19 +90,18 @@ Instance  galois_interval : Galois nat interval :=
   gamma_monotone := gamma_interval_monotone;
 }.
 
-Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
-  match ab with
-  | ab_true   => Is_true b
-  | ab_false  => ~Is_true b
-  | ab_top    => True
-  | ab_bottom => False
-end.
+Inductive gamma_bool : abstr_bool -> bool -> Prop :=
+  | gamma_true : gamma_bool ab_true true
+  | gamma_false : gamma_bool ab_false false
+  | gamma_ab_top : forall b, gamma_bool ab_top b.
+Hint Constructors gamma_bool : soundness.
 
 Lemma gamma_bool_monotone : monotone gamma_bool.
 Proof.
-  unfold monotone. intros b1 b2 ?.
-  destruct b1, b2; constructor; intros; destruct x; simpl in *; 
-  try inversion H0; try inversion H; try tauto. 
+  constructor. intros b Hgamma. destruct b. inversion Hgamma; subst.
+  inversion H; constructor.
+  inversion H; constructor. 
+  inversion H; subst; inversion Hgamma; constructor.
 Qed.
 
 Instance galois_boolean : Galois bool abstr_bool :=
@@ -122,27 +110,22 @@ Instance galois_boolean : Galois bool abstr_bool :=
   gamma_monotone := gamma_bool_monotone;
 }.
 
-Lemma gamma_false : gamma ab_false false.
-Proof.
-  unfold gamma; simpl. unfold not. intro. apply H.
-Qed.
-
 Section galois_functions.
 Context {A A' B B' : Type} 
   `{Galois B A, Galois B' A'}.
 
-Definition gamma_fun (f' : A-> A') (f : B -> B') : 
-Prop :=
-  forall (a : A) (b : B), gamma a b -> gamma (f' a) (f b).
+Inductive gamma_fun : (A-> A') -> (B -> B') -> Prop :=
+  | gamma_fun_increasing : forall (f : A -> A') (f' : B -> B'),
+    (forall (a : A) (b : B), gamma a b -> gamma (f a) (f' b)) -> 
+    gamma_fun f f'.
 
 Lemma gamma_fun_monotone :
   monotone gamma_fun.
 Proof.
   constructor.
-  intros x Hgamma. unfold gamma_fun in *. 
-  intros a0 b Hgamma2.
-  apply widen with (f:= a a0). destruct H3; apply H3.
-  apply Hgamma. apply Hgamma2.
+  intros x Hgamma. inversion H3; subst. constructor. intros.
+  apply widen with (f:= a a0). apply H4. destruct Hgamma.
+  apply H6. apply H5.
 Qed.
 
 Global Instance GFun : 
@@ -153,24 +136,25 @@ Global Instance GFun :
 }.
 
 End galois_functions.
+Hint Constructors gamma_fun : soundness.
 
 Section galois_values.
 
-Definition gamma_value : avalue -> cvalue -> Prop :=
-  fun av => fun cv => match av, cv with
-                      | VParity p, VNat n => gamma p n
-                      | VInterval i, VNat n => gamma i n
-                      | VAbstrBool ab, VBool b => gamma ab b
-                      | VTop, _ => True
-                      | _, _ => False
-                      end.
+Inductive gamma_value : avalue -> cvalue -> Prop :=
+  | gamma_value_parity : forall p n,
+      gamma p n -> gamma_value (VParity p) (VNat n)
+  | gamma_value_interval : forall i n,
+      gamma i n -> gamma_value (VInterval i) (VNat n)
+  | gamma_value_bool : forall ab b,
+      gamma ab b -> gamma_value (VAbstrBool ab) (VBool b)
+  | gamma_value_top : forall v, gamma_value VTop v.
+
 
 Lemma gamma_value_monotone : monotone gamma_value.
 Proof.
-  unfold monotone. intros a a' Hpre.
-  inversion Hpre; subst; constructor; intros z Hgamma; try reflexivity;
-  destruct z; try inversion Hgamma; unfold gamma_value; 
-  unfold gamma_value in H; eapply widen; try apply H;try apply Hgamma.
+  constructor. intros x Hgamma. inversion Hgamma; subst;
+   destruct a'; inversion H; subst; try constructor; try assumption;
+    eapply widen; try apply H3; try apply H0.
 Qed.
 
 Global Instance galois_values : Galois cvalue avalue := 
@@ -179,15 +163,18 @@ Global Instance galois_values : Galois cvalue avalue :=
   gamma_monotone := gamma_value_monotone;
 }.
 End galois_values.
+Hint Constructors gamma_value : soundness.
 
 
-Definition gamma_store : abstract_store -> store -> Prop :=
-  fun st' => fun st => forall x, gamma (st' x) (st x).
+Inductive gamma_store : abstract_store -> store -> Prop :=
+  | gamma_store_cons : forall st st',
+      (forall x, gamma (st' x) (st x)) -> gamma_store st' st.
+Hint Constructors gamma_store : soundness.
 
-Definition gamma_store_monotone : monotone gamma_store.
-Proof. unfold monotone.
-  intros ast ast'. simpl. constructor. intros st. unfold gamma_store in *. 
-  intros Hgamma x. destruct H. eapply widen. apply H. apply Hgamma.
+Lemma gamma_store_monotone : monotone gamma_store.
+Proof. constructor. intros st Hgamma.
+  inversion H; subst. constructor. intros x'. inversion Hgamma; subst.
+  apply widen with (f:=a x'); auto.
 Qed.
 
 Global Instance galois_store : Galois store abstract_store :=
@@ -199,19 +186,21 @@ Global Instance galois_store : Galois store abstract_store :=
 Section galois_pairs.
 Context {A B C D} `{Galois B A} `{Galois D C}.
 
-Definition gamma_pairs :
+Inductive gamma_pairs :
   prod A C-> prod B D -> Prop := 
-  fun (p1 : A*C) (p2 : B*D) => 
-  gamma (fst p1) (fst p2) /\ gamma (snd p1) (snd p2).
+  | gamma_pairs_cons : forall a b c d,
+      gamma a b ->
+      gamma c d ->
+      gamma_pairs (a,c) (b,d).
 
 Lemma gamma_pairs_monotone :
   monotone gamma_pairs.
 Proof.
-  unfold monotone. intros [a c] [a' c'].
-  intro Hpre. simpl. constructor. intros [b d]. unfold gamma_pairs; simpl.
-  intros [Hab Hac]. inversion Hpre; subst. split.
-  - eapply widen. apply H6. apply Hab.
-  - eapply widen. apply H8. apply Hac. 
+  constructor. intros [b d] Hgamma. 
+  destruct H3 as [a a' c c' Haa' Hcc'].
+  inv Hgamma. constructor. 
+  - apply widen with (f:=a); auto. 
+  - apply widen with (f:=c); auto.
 Qed.
 
 Global Instance galois_pairs :
@@ -221,11 +210,13 @@ Global Instance galois_pairs :
   gamma_monotone := gamma_pairs_monotone;
 }.
 End galois_pairs.
+Hint Constructors gamma_pairs : soundness.
 
+(*
 Section galois_result.
 Context {A A': Type} `{Galois A' A}.
 
-Definition gamma_result : abstract_result A abstract_store -> 
+Inductive gamma_result : abstract_result A abstract_store -> 
                           result A' store -> Prop :=
   fun r1 => fun r2 => match r1, r2 with
                       | returnRA a s, returnR b t => 
@@ -268,6 +259,7 @@ Global Instance galois_result :
 }.
 
 End galois_result.
+*)
 
 Section galois_maybe.
   Context {A A'} `{Galois A A'}.
@@ -279,8 +271,8 @@ Section galois_maybe.
     | gamma_justnone_just :
         forall x y, gamma x y -> gamma_maybe (JustOrNoneA A' x) (Just A y)
     | gamma_justnone_none : 
-        forall x, gamma_maybe (JustOrNoneA A' x) (None A)
-  .
+        forall x, gamma_maybe (JustOrNoneA A' x) (None A).
+
 
   Lemma gamma_maybe_monotone : monotone gamma_maybe.
   Proof.
@@ -310,6 +302,7 @@ Section galois_maybe.
     gamma_monotone := gamma_maybe_monotone;
   }.
 End galois_maybe.
+Hint Constructors gamma_maybe : soundness.
 
 Section galois_state.
 Context {A A'} 
@@ -324,14 +317,15 @@ End galois_state.
 
 
 Section galois_unit.
-Definition gamma_unit : 
+Inductive gamma_unit : 
   unit -> unit -> Prop :=  
-  fun tt tt => True.
+    | gamma_unit_tt :  gamma_unit tt tt.
+
 
 Lemma gamma_unit_monotone : monotone gamma_unit.
 Proof.
   unfold monotone.
-  intros. simpl. constructor. reflexivity.
+  intros. simpl. constructor. intros x. destruct a, a', x. reflexivity.
 Qed.
 
 Global Instance galois_unit : Galois unit unit := 
@@ -340,5 +334,6 @@ Global Instance galois_unit : Galois unit unit :=
   gamma_monotone := gamma_unit_monotone;
 }. 
 End galois_unit.
+Hint Constructors gamma_unit : soundness.
 
 
