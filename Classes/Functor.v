@@ -10,3 +10,5 @@ Class Functor (F : Type -> Type) : Type := {
 
 Notation "x '<$>' y" := (fmap x y)
   (at level 20, y at level 100, only parsing).
+
+Hint Rewrite @fmap_id @fmap_compose : soundness.

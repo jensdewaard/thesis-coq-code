@@ -1,3 +1,4 @@
+Require Export Base.
 Require Import PreorderedSet.
 Require Import Instances.Preorder.
 
@@ -10,6 +11,11 @@ Class Galois (A B : Type)
 }.
 Arguments Build_Galois A B {_ _ _}.
 Arguments gamma {_ _ _ _}.
+
+Ltac gamma_destruct := repeat
+  match goal with
+  | x : gamma _  _ |- _ => inv x
+  end.
 
 Lemma widen {A B : Type} `{Galois B A}:
   forall (f f' : A) (b : B),
@@ -29,3 +35,4 @@ Lemma gamma_widened {A B : Type} `{Galois B A} : forall x y a,
 Proof.
   intros x y a H1 H2. apply widen with (f:=x). assumption. assumption.
 Qed.
+

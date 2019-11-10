@@ -57,12 +57,12 @@ Lemma gamma_fun_applied {A A' B B'} `{Galois A A', Galois B B'}
 Proof. constructor. intros. apply H3. apply H4. Qed.
 (*Hint Resolve gamma_fun_applied : soundness. *)
 
-Require Import Instances.Monad.
+(*Require Import Instances.Monad.
 Lemma return_state_sound :
   gamma (return_state) (return_state).
 Proof.
   intros. constructor. intros. constructor. intros. constructor; assumption.
-Qed.
+Qed.*)
 
 (* Soundness of parity operations *)
 
@@ -116,17 +116,21 @@ Proof. auto with soundness. Qed.
 Lemma ensure_par_sound : 
   gamma ensure_par ensure_nat.
 Proof.
-  repeat constructor. intros. 
-  destruct a; try constructor. destruct b; try inversion H.
-  repeat constructor. assumption. intros x. simpl.
-  destruct H3. apply H3.
+  repeat constructor. intros.
+  destruct a.
+  - gamma_destruct; repeat constructor; gamma_destruct; try assumption.
+  - gamma_destruct; repeat constructor; assumption.
+  - gamma_destruct; repeat constructor; assumption.
+  - gamma_destruct; repeat constructor; try assumption. 
+    unfold ensure_par, ensure_nat. destr; repeat constructor; assumption.
+  - gamma_destruct.
 Qed.
 Hint Resolve ensure_par_sound : soundness.
 
 Lemma extract_parM_sound :  forall n,
   gamma (extract_parM n) (extract_natM n). 
 Proof. repeat constructor; simpl; destruct H;
-  auto with soundness. 
+  auto with soundness. destruct H0. apply H0.
 Qed.
 Hint Resolve extract_parM_sound : soundness.
 
@@ -134,7 +138,7 @@ Lemma pplusM_sound :
   gamma pplusM plusM.
 Proof. 
   repeat constructor; simpl; eauto with soundness.
-  destruct H1; apply H1.
+  destruct H2. apply H2. destruct H1. apply H1.
 Qed.
 Hint Resolve pplusM_sound : soundness.
 
@@ -142,6 +146,7 @@ Lemma pmultM_sound :
   gamma pmultM multM.
 Proof.
   repeat constructor; simpl; eauto with soundness. 
+  destruct H2; assumption.
   destruct H1; assumption.
 Qed.
 Hint Resolve pmultM_sound : soundness.
@@ -150,6 +155,7 @@ Lemma peqM_sound :
   gamma peqM eqbM.
 Proof.
   repeat constructor; simpl. eauto with soundness.
+  destruct H2; assumption.
   destruct H1; assumption.
 Qed.
 Hint Resolve peqM_sound : soundness.
@@ -158,6 +164,7 @@ Lemma pleM_sound :
   gamma pleM lebM.
 Proof.
   repeat constructor; simpl; eauto with soundness.
+  destruct H2; assumption.
   destruct H1; assumption.
 Qed.
 Hint Resolve pleM_sound : soundness.
@@ -166,7 +173,8 @@ Lemma build_parity_sound :
   gamma build_parity build_natural.
 Proof.
   repeat constructor. assumption. 
-  destruct H0. assumption.
+  destruct H1; assumption.
+  destruct H0; assumption.
 Qed.
 Hint Resolve build_parity_sound : soundness.
 
@@ -179,6 +187,7 @@ Proof.
   apply Coq.Arith.Plus.plus_le_compat; assumption.
   rewrite Interval.interval_max_plus;
   apply Coq.Arith.Plus.plus_le_compat; assumption.
+  destruct H2; assumption.
   destruct H1; assumption.
 Qed.
 Hint Resolve iplusM_sound : soundness.
@@ -191,6 +200,7 @@ Proof.
   apply Coq.Arith.Mult.mult_le_compat; assumption.
   rewrite Interval.interval_max_mult;
   apply Coq.Arith.Mult.mult_le_compat; assumption.
+  destruct H2; assumption.
   destruct H1; assumption.
 Qed.
 Hint Resolve imultM_sound.
@@ -206,18 +216,19 @@ Proof.
     assumption. apply lt_n_Sm_le. 
     apply lt_trans with (m:=Interval.min (n3, n4)). apply Hint.
     apply le_lt_n_Sm. assumption.
-    apply Nat.leb_le in H4. rewrite H4. constructor. 
+    apply Nat.leb_le in H5. rewrite H5. constructor. 
   - apply Nat.ltb_nlt in Hint.
     destruct (Interval.max (n3, n4) <? Interval.min (n1, n2)) eqn:Hint2.
     apply Nat.ltb_lt in Hint2.
     + assert (n <=? n0 = false).
       apply leb_correct_conv.
-      apply le_lt_n_Sm in H3.
-      eapply le_trans with (m:=S (Interval.max (n3, n4))). apply H3.
+      apply le_lt_n_Sm in H4.
+      eapply le_trans with (m:=S (Interval.max (n3, n4))). apply H4.
       apply lt_n_Sm_le. apply lt_n_S. 
       apply le_trans with (m:=Interval.min (n1,n2)); assumption. 
-      rewrite H4. constructor. 
+      rewrite H5. constructor. 
     + constructor. 
+  - destruct H2; assumption.
   - destruct H1; assumption.
 Qed.
 Hint Resolve ileqb_sound : soundness.
@@ -230,15 +241,16 @@ Proof.
   - assert (n =? n0 = false). apply Nat.eqb_neq. unfold not. intros. 
     subst. assert (preorder (Interval.min i0) (Interval.max i)).
     apply preorder_trans with (y:=n0); assumption.
-    simpl in H4. apply Nat.ltb_ge in H4. rewrite H4 in Hdiff.
+    simpl in *. apply Nat.ltb_ge in H5. rewrite H5 in Hdiff.
     discriminate.
-    rewrite H4. constructor. 
+    rewrite H5. constructor. 
   - destruct (Interval.min i =? Interval.max i) eqn:Ha1; try constructor.
     destruct (Interval.max i =? Interval.min i0) eqn:Ha2; try constructor.
     destruct (Interval.min i0 =? Interval.max i0) eqn:Ha3; try constructor.
     simpl. rewrite Nat.eqb_eq in Ha1, Ha2, Ha3. 
     simpl in *. assert (n = n0). Nat.order.
     subst. rewrite Nat.eqb_refl. constructor. 
+  - destruct H2; assumption.
   - destruct H1; assumption.
 Qed.
 Hint Resolve ieqM_sound : soundness.
@@ -247,26 +259,29 @@ Lemma build_interval_sound :
   gamma build_interval build_natural.
 Proof.
   repeat constructor; destruct H; try assumption.
-  destruct H0. assumption.
+  destruct H1; assumption.
+  destruct H0; assumption.
 Qed.
 Hint Resolve build_interval_sound : soundness.
 
 Lemma extract_interval_sound : forall n,
   gamma (extract_interval n) (extract_natM n).
 Proof.
-  intros n. constructor. constructor. constructor. 
-  simpl. constructor. rewrite Interval.interval_min_refl. apply preorder_refl.
-  simpl. rewrite Interval.interval_max_refl. auto.
-  assumption.
+  intros n. repeat constructor. 
+  simpl. rewrite Interval.interval_min_refl. reflexivity. 
+  rewrite Interval.interval_max_refl. reflexivity.
+  destruct H0; assumption.
+  destruct H; assumption.
 Qed.
 Hint Resolve extract_interval_sound : soundness.
 
 Lemma ensure_interval_sound : gamma ensure_interval ensure_nat.
 Proof.
-  repeat constructor. intros. destruct a; try constructor.
-  destruct b; inv H; repeat constructor. simpl in *. 
-  destruct H2. apply H0. destruct H2. apply H1.
-  destruct H. apply H.
+  repeat constructor. intros. destruct a;
+  inv H; repeat constructor. destruct H0; assumption. destruct H0; assumption.
+  destruct H2; assumption. destruct H2; assumption. destruct H; assumption.
+  destruct H0; assumption. destruct b; repeat constructor; destruct H0;
+  assumption.
 Qed.
 Hint Resolve ensure_interval_sound : soundness.
 
@@ -303,7 +318,13 @@ Lemma ensure_abool_sound :
   gamma ensure_abool ensure_bool.
 Proof. repeat constructor. intros.
   destruct a; try constructor. destruct b; try inv H.
-  repeat constructor. assumption. destruct H. assumption.
+  repeat constructor. destruct H0; assumption. 
+  inv H. repeat constructor. assumption. inv H; assumption.
+  inv H0; assumption. destruct b; repeat constructor.
+  inv H0; assumption. inv H0; assumption. destruct b; constructor.
+  constructor. assumption. constructor. assumption. destruct b.
+  constructor. constructor. assumption. constructor. constructor.
+  assumption.
 Qed.
 Hint Resolve ensure_abool_sound : soundness.
 
@@ -311,7 +332,8 @@ Lemma neg_abM_sound :
   gamma neg_abM negbM.
 Proof.
   repeat constructor; simpl. apply gamma_fun_apply.
-  apply ab_neg_sound. assumption. destruct H0. assumption.
+  apply ab_neg_sound. assumption. 
+  inv H1; assumption. inv H0; assumption.
 Qed.
 Hint Resolve neg_abM_sound : soundness.
 
@@ -319,7 +341,8 @@ Lemma and_abM_sound :
   gamma and_abM andbM.
 Proof.
   repeat constructor; simpl. repeat apply gamma_fun_apply.
-  apply ab_and_sound. assumption. assumption. destruct H1. assumption.
+  apply ab_and_sound. assumption. assumption. inv H2; assumption.
+  inv H1; assumption.
 Qed.
 Hint Resolve and_abM_sound : soundness.
 
@@ -327,14 +350,15 @@ Lemma extract_abM_sound: forall b,
   gamma (extract_abM b) (extract_boolean b).
 Proof. 
   repeat constructor; simpl. destruct b; constructor.
-  destruct H; assumption.
+  inv H0; assumption. inv H; assumption.
 Qed.
 Hint Resolve extract_abM_sound : soundness.
 
 Lemma build_boolean_sound :
   gamma build_abool build_bool.
 Proof.
-  repeat constructor. assumption. destruct H0; assumption.
+  repeat constructor. assumption. inv H1; assumption.
+  inv H0; assumption.
 Qed.
 Hint Resolve build_boolean_sound : soundness.
 
@@ -352,7 +376,8 @@ Hint Resolve functions_sound : soundness.*)
 Lemma store_get_sound : forall s,
   gamma (abstract_store_get s) (store_get s).
 Proof.
-  repeat constructor; destruct H; apply H.
+  repeat constructor. inv H0. apply H1. inv H0; assumption.
+  inv H; assumption.
 Qed.
 Hint Resolve store_get_sound : soundness.
 
@@ -371,14 +396,12 @@ Lemma store_put_sound : forall s,
 Proof. 
   repeat constructor; simpl.
   intros x. unfold t_update. destruct (beq_string s x). assumption.
-  destruct H0. apply H0.
+  inv H1. apply H2. inv H0; assumption.
 Qed.
 Hint Resolve store_put_sound : soundness.
 
 (* Soundness of states *)
-
-Print return_state.
-Check bind_state.
+Require Import Instances.Monad.
 Lemma bind_state_sound {S S' A A' B B'} 
   `{Galois S S'}
   `{Galois A A', Galois B B'} : 
@@ -414,10 +437,10 @@ Hint Resolve bind_state_sound_fun : soundness.
 
 (* Soundness of interpreters *)
 
-(*
+
 Lemma extract_build_val_sound : forall v,
   gamma (extract_build_val (M:=AbstractState) (A:=isnat_parity) v) 
-        (extract_build_val v).
+        (extract_build_val (M:=ConcreteState) v).
 Proof.
   destruct v; simpl; eauto with soundness.
 Qed.
@@ -495,4 +518,4 @@ Theorem sound_interpreter:
 Proof.
   induction c; simpl; eauto 30 with soundness.
 Qed.
-*)
+

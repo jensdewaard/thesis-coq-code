@@ -2,7 +2,7 @@ Require Export Base.
 Require Import Classes.Functor.
 Require Import Coq.Program.Basics.
 
-Class Applicative (F : Type -> Type) `{Functor F} : Type :=
+Class Applicative (F : Type -> Type) `{is_functor: Functor F} : Type :=
 {
   pure : forall {A}, A -> F A;
   app : forall {A B}, F (A -> B) -> F A -> F B;
@@ -17,3 +17,6 @@ Class Applicative (F : Type -> Type) `{Functor F} : Type :=
 
 Notation "x '<*>' y" := (app x y)
   (at level 20, y at level 100, only parsing).
+
+Hint Rewrite @app_id @app_homomorphism @app_interchange @app_compose :
+  soundness.

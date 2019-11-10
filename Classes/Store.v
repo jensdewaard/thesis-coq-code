@@ -1,7 +1,8 @@
 Require Export Coq.Strings.String.
+Require Import Classes.Monad.
 
-Class Store (M : Type -> Type) (valType : Type) :=
+Class Store (S : Type) (M : Type -> Type) `{inst : Monad M} :=
 {
-  get : string -> M valType;
-  put : string -> valType -> M unit;
+  get : M S;
+  put : S -> M unit;
 }.

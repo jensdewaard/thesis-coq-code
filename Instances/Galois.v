@@ -265,14 +265,13 @@ Section galois_maybe.
   Context {A A'} `{Galois A A'}.
 
   Inductive gamma_maybe : AbstractMaybe A' -> Maybe A -> Prop :=
-    | gamma_none : forall x, gamma_maybe (NoneA A') x
+    | gamma_none : forall x, gamma_maybe (NoneA) x
     | gamma_justa_just : 
-        forall x y, gamma x y -> gamma_maybe (JustA A' x) (Just A y)
+        forall x y, gamma x y -> gamma_maybe (JustA x) (Just y)
     | gamma_justnone_just :
-        forall x y, gamma x y -> gamma_maybe (JustOrNoneA A' x) (Just A y)
+        forall x y, gamma x y -> gamma_maybe (JustOrNoneA x) (Just y)
     | gamma_justnone_none : 
-        forall x, gamma_maybe (JustOrNoneA A' x) (None A).
-
+        forall x, gamma_maybe (JustOrNoneA x) (None).
 
   Lemma gamma_maybe_monotone : monotone gamma_maybe.
   Proof.
@@ -309,9 +308,9 @@ Context {A A'}
   `{Galois A A'}.
 
 Global Instance galois_state :
-  Galois (State A) (AbstractState A').
+  Galois (ConcreteState A) (AbstractState A').
 Proof.
-  apply galois_maybe.
+  apply GFun.
 Defined.
 End galois_state.
 

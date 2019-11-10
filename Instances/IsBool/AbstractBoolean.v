@@ -9,17 +9,18 @@ Require Import Types.Result.
 Require Import Types.State.
 Require Import Types.Stores.
 Require Import Instances.Monad.
+Require Import Classes.Applicative.
 
 Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
   match v with
-  | VAbstrBool b => JustA _ (returnM b)
-  | _ => NoneA _
+  | VAbstrBool b => pure_maybeAT _ (pure b)
+  | _ => pure NoneA 
   end.
 
 Definition and_abM (b c : abstr_bool) : AbstractState abstr_bool := 
-  JustA _ (returnM (and_ab b c)).
+  pure_maybeAT _ (pure (and_ab b c)).
 Definition neg_abM (b : abstr_bool) : AbstractState abstr_bool := 
-  JustA _ (returnM (neg_ab b)).
+  pure_maybeAT _ (pure (neg_ab b)).
 
 Definition eval_if_abstract (b : abstr_bool) (st1 st2 : AbstractState unit) 
   : AbstractState unit := 
@@ -37,10 +38,10 @@ Definition extract_ab (b : bool) : abstr_bool :=
   end.
 
 Definition extract_abM (b : bool) : AbstractState abstr_bool :=
-  JustA _ (returnM (extract_ab b)).
+  pure_maybeAT _ (pure (extract_ab b)).
 
 Definition build_abool (b : abstr_bool) : AbstractState avalue :=
-  JustA _ (returnM (VAbstrBool b)).
+  pure_maybeAT _ (pure (VAbstrBool b)).
 
 Instance abstract_boolean_type : IsBool AbstractState avalue abstr_bool :=
 {

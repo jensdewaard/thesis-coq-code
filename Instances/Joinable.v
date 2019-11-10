@@ -128,24 +128,73 @@ Global Instance result_joinable : Joinable (abstract_result A S) := {
 End result_joinable.
 
 Section state_joinable.
-  Context {A S} `{Joinable A, Joinable S}.
+  Context {S A} `{Joinable S, Joinable A}.
 
-  Definition state_join (st st' : state A S) : state A S :=
+  Definition state_join (st st' : State S A) : State S A :=
     fun x => ((join_op (fst (st x)) (fst (st' x)), 
               (join_op (snd (st x)) (snd (st' x))))).
   
   Lemma state_join_upper_bound_left :
     forall st st', preorder st (state_join st st').
-  Proof. Admitted.
+  Proof. 
+    intros. constructor. intros. unfold state_join.
+    destruct (st x), (st' x). constructor;
+    apply join_upper_bound_left. 
+  Qed.
 
   Lemma state_join_upper_bound_right :
     forall st st', preorder st' (state_join st st').
   Proof.
-  Admitted.
+    intros. constructor. intros. unfold state_join.
+    destruct (st x), (st' x). constructor;
+    apply join_upper_bound_right.
+  Qed.
 
-Global Instance state_joinable : Joinable (state A S) := {
+Global Instance state_joinable : Joinable (State S A) := {
   join_op := state_join;
   join_upper_bound_left := state_join_upper_bound_left;
   join_upper_bound_right := state_join_upper_bound_right;
 }.
 End state_joinable.
+
+Section abstract_maybe_joinable.
+Context {A : Type} `{Joinable A}.
+
+Definition join_maybe_abstract
+  (st1 st2 : AbstractMaybe A) : AbstractMaybe A :=
+  match st1 with
+  | NoneA => NoneA
+  | JustA x => match st2 with
+                 | NoneA  => NoneA
+                 | JustA y => JustA (join_op x y)
+                 | JustOrNoneA y => JustOrNoneA (join_op x y)
+                 end
+  | JustOrNoneA x => match st2 with
+                       | NoneA => NoneA
+                       | JustA y | JustOrNoneA y => 
+                           JustOrNoneA (join_op x y)
+                       end
+  end.
+
+Lemma join_maybe_abstract_upperbound_left : forall st st',
+  preorder st (join_maybe_abstract st st').
+Proof.
+  intros. destruct st, st'; constructor; apply join_upper_bound_left.
+Qed.
+
+Lemma join_maybe_abstract_upperbound_right : forall st st',
+  preorder st' (join_maybe_abstract st st').
+Proof.
+  intros. destruct st, st'; constructor; apply join_upper_bound_right.
+Qed.
+
+Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) := 
+{
+  join_op := join_maybe_abstract;
+  join_upper_bound_left := join_maybe_abstract_upperbound_left;
+  join_upper_bound_right := join_maybe_abstract_upperbound_right;
+}.
+
+End abstract_maybe_joinable.
+
+

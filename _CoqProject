@@ -2,6 +2,8 @@
 Base.v
 Types/Maps.v
 Classes/PreorderedSet.v
+Classes/Functor.v
+Classes/Applicative.v
 Classes/Monad.v
 Classes/Joinable.v
 Classes/IsNat.v
@@ -23,12 +25,12 @@ Instances/Store/AbstractStore.v
 Instances/IsNat/Parity.v
 Instances/IsNat/Nat.v
 Instances/IsNat/Interval.v
+Instances/Except/AbstractException.v
+Instances/Except/ConcreteException.v
 Instances/IsBool/Boolean.v
 Instances/IsBool/AbstractBoolean.v
 Classes/Galois.v
 Instances/Galois.v
-Instances/Except/AbstractException.v
-Instances/Except/ConcreteException.v
 SharedInterpreter.v
 Soundness.v
 

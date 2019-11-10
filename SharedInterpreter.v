@@ -4,7 +4,7 @@ Require Import Classes.IsNat.
 Require Import Classes.IsBool.
 Require Import Classes.Store.
 Require Import Classes.Except.
-
+Require Import Classes.Applicative.
 
 Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type}
     `{Monad M, A : IsNat M valType boolType natType, IsBool M valType boolType}
@@ -74,7 +74,7 @@ Fixpoint shared_ceval
     A : IsNat M valType boolType natType, IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
-  | CSkip => returnM tt
+  | CSkip => pure tt
   | c1 ;c; c2 =>
       (shared_ceval c1) ;; (shared_ceval c2)
   | x ::= a => 

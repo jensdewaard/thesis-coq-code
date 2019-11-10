@@ -1,3 +1,4 @@
+Require Export Base.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Le.
 Require Import Coq.Classes.RelationClasses.
@@ -16,7 +17,6 @@ Global Instance preorder_nat : PreorderedSet nat :=
   preorder_trans := le_trans;
 }.
 
-
 Inductive ab_le : abstr_bool -> abstr_bool -> Prop :=
   | ab_le_bottom : forall ab, ab_le ab_bottom ab
   | ab_le_top : forall ab, ab_le ab ab_top
@@ -24,7 +24,7 @@ Inductive ab_le : abstr_bool -> abstr_bool -> Prop :=
 
 Lemma ab_le_trans :forall a b c,
   ab_le a b -> ab_le b c -> ab_le a c.
-Proof. 
+Proof.
   intros. destruct a, b, c; try constructor; try inversion H0; 
   try inversion H.
 Qed.
@@ -36,7 +36,6 @@ Instance preorder_ab : PreorderedSet abstr_bool :=
   preorder_trans := ab_le_trans;
 }.
 
-
 Section preordered_functions.
 Context {A A' : Type} `{PreorderedSet A'}.
 
@@ -47,7 +46,7 @@ Inductive pointwise_ordering :
 
 Lemma pointwise_ordering_refl : 
   Reflexive pointwise_ordering.
-Proof. 
+Proof.  
   intros f. constructor. intro x. apply preorder_refl.
 Qed.
 
@@ -286,7 +285,7 @@ Section state_preorder.
   Context {S A : Type} `{PreorderedSet S, PreorderedSet A}.
   
 Global Instance state_preorder : 
-  PreorderedSet (state S A).
+  PreorderedSet (State S A).
 Proof.
   apply preordered_function_spaces.
 Defined.
@@ -294,19 +293,45 @@ Defined.
 End state_preorder.
 
 Section maybe_preorder.
-  Context {A} `{PreorderedSet A}.
-
-  Inductive maybe_le : AbstractMaybe A -> AbstractMaybe A -> Prop :=
-    | none_le : forall m, maybe_le m (NoneA A)
-    | just_le : forall x y, preorder x y -> maybe_le (JustA A x) (JustA A y)
-    | just_justornone_le : 
-        forall x y, preorder x y -> maybe_le (JustA A x) (JustOrNoneA A y)
-    | justornone_le :
-        forall x y, preorder x y -> maybe_le (JustOrNoneA A x) (JustOrNoneA A
-        y)
-  .
+  Context {A : Type} `{PreorderedSet A}.
+  
+  Inductive maybe_le : Maybe A -> Maybe A -> Prop :=
+    | none_le : forall m, maybe_le m None
+    | just_le : forall x y, preorder x y -> maybe_le (Just x) (Just y).
 
   Lemma maybe_le_trans : Transitive maybe_le.
+  Proof. 
+    unfold Transitive. intros. 
+    inversion H0; inversion H1; simple_solve.
+    subst. constructor. constructor. subst. inversion H6. subst.
+    eapply preorder_trans. apply H2. apply H5.
+  Qed.
+
+  Lemma maybe_le_refl : Reflexive maybe_le.
+  Proof. 
+    unfold Reflexive. destruct x; constructor. apply preorder_refl.
+  Qed.
+
+  Global Instance maybe_preorder : PreorderedSet (Maybe A) :=
+  {
+    preorder := maybe_le;
+    preorder_trans := maybe_le_trans;
+    preorder_refl := maybe_le_refl;
+  }.
+End maybe_preorder.
+
+Section maybea_preorder.
+  Context {A : Type} `{PreorderedSet A}.
+
+  Inductive maybea_le : AbstractMaybe A -> AbstractMaybe A -> Prop :=
+    | nonea_le : forall m, maybea_le m (NoneA)
+    | justa_le : forall x y, preorder x y -> maybea_le (JustA x) (JustA y)
+    | just_justornone_le : 
+        forall x y, preorder x y -> maybea_le (JustA x) (JustOrNoneA y)
+    | justornone_le :
+        forall x y, preorder x y -> maybea_le (JustOrNoneA x) (JustOrNoneA y).
+
+  Lemma maybea_le_trans : Transitive maybea_le.
   Proof.
     intros x y z Hxy Hyz. destruct y.
     - inversion Hxy; subst. inversion Hyz; subst.
@@ -322,15 +347,36 @@ Section maybe_preorder.
     - inversion Hyz; subst. constructor.
   Qed.
 
-  Lemma maybe_le_refl : Reflexive maybe_le.
+  Lemma maybea_le_refl : Reflexive maybea_le.
   Proof. 
     intros x. destruct x; constructor; apply preorder_refl.
   Qed.
 
-  Global Instance maybe_preorder : PreorderedSet (AbstractMaybe A) :=
+  Global Instance maybea_preorder : PreorderedSet (AbstractMaybe A) :=
   {
-    preorder := maybe_le;
-    preorder_trans := maybe_le_trans;
-    preorder_refl := maybe_le_refl;
+    preorder := maybea_le;
+    preorder_trans := maybea_le_trans;
+    preorder_refl := maybea_le_refl;
   }.
-End maybe_preorder.
+End maybea_preorder.
+
+
+Section maybeAT_preorder.
+  Context {A : Type} `{PreorderedSet A}.
+  Context {M : Type -> Type} `{Monad M}. 
+  Hypothesis (sets : forall A, PreorderedSet A -> PreorderedSet (M A)).
+
+  Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A).
+  unfold MaybeAT. pose proof maybea_preorder. 
+  apply sets in X.  apply X.
+  Defined.
+End maybeAT_preorder.
+
+Section statet_preorder.
+  Context {S A : Type}.
+  Context {M : Type -> Type} `{PreorderedSet (M (A*S)%type)}.
+  Global Instance statet_preorder : PreorderedSet (StateT S M A).
+  unfold StateT. apply preordered_function_spaces.
+  Defined.
+End statet_preorder.
+

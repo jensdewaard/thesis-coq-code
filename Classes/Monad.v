@@ -1,3 +1,5 @@
+Require Export Base.
+Require Import Classes.Functor.
 Require Import Classes.Applicative.
 
 Class Monad (M : Type -> Type) `{Applicative M} : Type :=
@@ -11,21 +13,18 @@ Class Monad (M : Type -> Type) `{Applicative M} : Type :=
     bindM (bindM MA f) g = bindM MA (fun a => bindM (f a) g);
 }.
 
-Arguments Build_Monad {_ _ _ _}.
-Arguments bindM {_ _ _ _ _ _}.
-
 Lemma bind_equiv_l {M : Type -> Type} {A B : Type} `{Monad M} : 
-  forall (m m' : M A) k,
-  m = m' -> bindM m k = @bindM M _ _ _ A B m' k.
+  forall (m m' : M A) (k : A -> M B),
+  m = m' -> bindM m k = bindM m' k.
 Proof.
-  intros. rewrite H2. reflexivity.
+  intros. subst. reflexivity.
 Qed.
 
 Lemma bind_equiv_r {M : Type -> Type} {A B : Type} `{Monad M} : 
-  forall (m : M A) k k',
-  k = k' -> bindM m k = @bindM M _ _ _ A B m k'.
+  forall (m : M A) (k k' : A -> M B),
+  k = k' -> bindM m k = bindM m k'.
 Proof.
-  intros. rewrite H2. reflexivity.
+  intros. subst. reflexivity.
 Qed.
 
 Notation "x '<<' y ; z" := (bindM y (fun x => z))
@@ -34,8 +33,11 @@ Notation "x '<<' y ; z" := (bindM y (fun x => z))
 Notation "x ;; z" := (bindM x (fun _ => z))
     (at level 100, z at level 200, only parsing, right associativity).
 
+Hint Rewrite @bind_id_left @bind_id_right @bind_assoc @bind_equiv_l 
+  @bind_equiv_r : soundness.
+
 Section MonadTransformer.
-  Context {M} `{Monad M}.
+  Context {M} `{inst : Monad M}.
 
   Class MonadT (T : (Type -> Type) -> Type -> Type) : Type :=
   {
