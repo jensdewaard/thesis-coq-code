@@ -11,13 +11,12 @@ Require Import Types.Maps.
 Require Import Classes.Applicative.
 Require Import Instances.Monad.
 
-Compute AbstractState.
-Print pure_state.
-
+Print AbstractState.
+Print liftT.
 Definition ensure_par (v : avalue) : AbstractState parity :=
   match v with
-  | VParity x => pure_state (x)
-  | _ => pure_state NoneA
+  | VParity x => liftT (liftT (pure x))
+  | _ => liftT (liftT (pure NoneA))
   end.
 
 Fixpoint extract_par (n : nat) : parity :=
