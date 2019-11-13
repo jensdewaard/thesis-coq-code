@@ -8,19 +8,81 @@ Require Import Instances.Monad.
 Require Import Classes.Monad.
 Require Import Classes.Applicative.
 
-Definition eval_catch_abstract 
-  (st1 st2 : AbstractState unit) : AbstractState unit :=
-  bindM (M:=State abstract_store) st1 (fun x => match x with
-                                       | JustA _ => st1
-                                       | JustOrNoneA _ => st2
-                                       | NoneA => st2
-                                       end).
+Section except_maybe.
+  Definition trycatch_maybe {A : Type} (x y : Maybe A) : Maybe A :=
+    match x with
+    | None => y
+    | _ => x
+    end.
+  Hint Unfold trycatch_maybe : soundness.
+  Instance except_maybe : Except Maybe :=
+  {
+    throw := @None;
+    trycatch := @trycatch_maybe;
+  }. all: solve_monad. Defined.
+End except_maybe.
 
-Definition fail_abstract : AbstractState unit := 
-  pure (F:=State abstract_store) NoneA.
+Section except_maybeT.
+  Context {M : Type -> Type} `{inst : Monad M}.
 
-Instance except_abstract : Except AbstractState := 
-{
-  throw := fail_abstract;
-  trycatch := eval_catch_abstract;
-}.
+  Definition throw_maybeT (A : Type) : MaybeT M A := pure (@None A).
+
+  Definition trycatch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
+    @bindM M inst _ _ mx (fun x : Maybe A =>
+      match x with
+      | None => my
+      | _  => mx
+      end).
+  Hint Unfold trycatch_maybeT : soundness.
+  Arguments trycatch_maybeT [_].
+
+  Instance except_maybeT : Except (MaybeT M) :=
+  {
+    throw := throw_maybeT;
+    trycatch := trycatch_maybeT;
+  }. 1-2: solve_monad.
+  - intros. unfold trycatch_maybeT. Admitted.
+End except_maybeT.
+Require Import Classes.PreorderedSet.
+Section except_maybeAT.
+  Context {M : Type -> Type} `{inst : Monad M}.
+
+  Definition throw_maybeAT (A : Type) : MaybeAT M A := pure (@NoneA A).
+
+  Definition trycatch_maybeAT {A}
+    (mx my : MaybeAT M A) : MaybeAT M A :=
+    @bindM M inst _ _ mx (fun x : AbstractMaybe A =>
+      match x with
+      | JustA a => mx
+      | JustOrNoneA a => my
+      | NoneA => my
+      end).
+  Arguments trycatch_maybeAT [_].
+  Hint Unfold throw_maybeAT trycatch_maybeAT : soundness.
+
+  Instance except_maybeAT : Except (MaybeAT M) :=
+    {
+      throw := throw_maybeAT;
+      trycatch := trycatch_maybeAT;
+    }. all: solve_monad. Admitted.
+End except_maybeAT.
+
+Section except_stateT.
+  Context {M : Type -> Type} `{inst_m : Monad M} 
+    `{inst_e : @Except M inst_m}.
+
+  Definition throw_stateT {S} A : StateT S M A := liftT throw.
+
+  Definition trycatch_stateT {S A} (a b : StateT S M A) : StateT S M A := 
+    fun s => trycatch (a s) (b s).
+  Hint Unfold throw_stateT trycatch_stateT : soundness.
+
+  Instance except_stateT (S : Type) : Except (StateT S M) :=
+  {
+    throw := @throw_stateT S;
+    trycatch := @trycatch_stateT S;
+  }. Admitted.
+End except_stateT.
+
+Global Instance except_abstract_state : Except AbstractState.
+Proof. apply except_maybeAT. Defined.

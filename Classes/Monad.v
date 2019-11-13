@@ -1,9 +1,12 @@
 Require Export Base.
 Require Import Classes.Functor.
 Require Import Classes.Applicative.
+Require Import Classes.PreorderedSet.
 
-Class Monad (M : Type -> Type) `{Applicative M}: Type :=
+Class Monad (M : Type -> Type) : Type :=
 {
+  is_functor :> Functor M;
+  is_applicative :> Applicative M;
   bindM : forall {A B}, M A  -> (A -> M B) -> M B;
   bind_id_left : forall {A B : Type} (f : A -> M B) (a : A), 
     bindM (pure a) f = f a;

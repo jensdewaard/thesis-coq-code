@@ -9,21 +9,21 @@ Require Import Classes.Applicative.
 
 Definition ensure_bool (v : cvalue) : ConcreteState bool :=
   match v with
-  | VBool b => pure_maybeT _ (pure b)
-  | _ => pure None
+  | VBool b => liftT (pure b)
+  | _ => liftT (pure None)
   end.
 
 Definition build_boolean (b : bool) : ConcreteState cvalue :=
-  pure_maybeT _ (pure (VBool b)).
+  liftT (pure (VBool b)).
 
 Definition extract_boolean (b : bool) : ConcreteState bool :=
-  pure_maybeT _ (pure b).
+  liftT (pure b).
 
 Definition andbM (b c : bool) : ConcreteState bool := 
-  pure_maybeT _ (pure (andb b c)).
+  liftT (pure (andb b c)).
 
 Definition negbM (b : bool) : ConcreteState bool := 
-  pure_maybeT _ (pure (negb b)).
+  liftT (pure (negb b)).
 
 Definition eval_if {A} (b : bool) (st1 st2 : ConcreteState A) : ConcreteState A :=
   if b then st1 else st2.

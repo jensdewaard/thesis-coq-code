@@ -9,7 +9,6 @@ Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.Even.
 Require Import Coq.Arith.PeanoNat.
 Require Import Instances.Except.AbstractException.
-Require Import Instances.Except.ConcreteException.
 Require Export Instances.Galois.
 Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsBool.Boolean.
@@ -18,7 +17,6 @@ Require Import Instances.IsNat.Parity.
 Require Import Instances.IsNat.Interval.
 Require Import Instances.Joinable.
 Require Import Instances.Store.AbstractStore.
-Require Import Instances.Store.ConcreteStore.
 Require Import Language.Statements.
 Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
@@ -118,7 +116,10 @@ Lemma ensure_par_sound :
 Proof.
   repeat constructor. intros.
   destruct a.
-  - gamma_destruct; repeat constructor; gamma_destruct; try assumption.
+  - gamma_destruct. unfold ensure_par, ensure_nat. 
+    unfold gamma. simpl. unfold gamma_maybe_maybe.
+
+    repeat constructor; gamma_destruct; try assumption.
   - gamma_destruct; repeat constructor; assumption.
   - gamma_destruct; repeat constructor; assumption.
   - gamma_destruct; repeat constructor; try assumption. 

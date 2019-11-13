@@ -11,12 +11,10 @@ Require Import Types.Maps.
 Require Import Classes.Applicative.
 Require Import Instances.Monad.
 
-Print AbstractState.
-Print liftT.
 Definition ensure_par (v : avalue) : AbstractState parity :=
   match v with
-  | VParity x => liftT (liftT (pure x))
-  | _ => liftT (liftT (pure NoneA))
+  | VParity x => liftT (pure x)
+  | _ => liftT (pure NoneA)
   end.
 
 Fixpoint extract_par (n : nat) : parity :=
@@ -27,22 +25,22 @@ Fixpoint extract_par (n : nat) : parity :=
 end.
 
 Definition extract_parM (n : nat) : AbstractState parity :=
-  pure_maybeAT _ (pure_state (extract_par n)).
+  liftT (pure (extract_par n)).
 
 Definition pplusM (n m : parity) : AbstractState parity :=
-  pure_maybeAT _ (pure (parity_plus n m)).
+  liftT (pure (parity_plus n m)).
 
 Definition pmultM (n m : parity) : AbstractState parity :=
-  pure_maybeAT _ (pure (parity_mult n m)).
+  liftT (pure (parity_mult n m )).
 
 Definition peqM (n m : parity) : AbstractState abstr_bool :=
-  pure_maybeAT _ (pure (parity_eq n m)).
+  liftT (pure (parity_eq n m)).
 
 Definition pleM (n m : parity) : AbstractState abstr_bool :=
-  pure_maybeAT _ (pure ab_top).
+  liftT (pure ab_top).
 
 Definition build_parity (p : parity) : AbstractState avalue :=
-  pure_maybeAT _ (pure (VParity p)).
+  liftT (pure (VParity p)).
 
 Global Instance isnat_parity : 
   IsNat AbstractState avalue abstr_bool parity :=

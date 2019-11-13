@@ -197,4 +197,21 @@ Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) :=
 
 End abstract_maybe_joinable.
 
+  Require Import Classes.Applicative.
+  Require Import Classes.Functor.
+
+Section joinable_maybeAT.
+  Context {A} `{Joinable A}.
+  Context {M : Type -> Type} `{Monad M, 
+    forall {A}, PreorderedSet A -> PreorderedSet (M A)}.
+  
+  Definition join_maybeAT : MaybeAT M A -> MaybeAT M A-> MaybeAT M A := 
+    liftA2 join_op.
+
+  Global Instance maybeAT_joinable : Joinable (MaybeAT M A) :=
+  {
+    join_op := join_maybeAT;
+  }.
+  Admitted.
+End joinable_maybeAT.
 

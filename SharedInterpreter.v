@@ -15,15 +15,16 @@ Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type
   end.
 
 Fixpoint shared_eval_expr 
-    {M : Type -> Type} {valType boolType natType : Type}
-    `{Monad M, Store M valType,
+    {M : Type -> Type} {S valType boolType natType : Type}
+    `{Monad M, Store S M valType,
       A: IsNat M valType boolType natType, IsBool M valType boolType}
     (e : expr) : M valType :=
   match e with
   | EVal v =>
       extract_build_val v
   | EVar x =>
-      get x
+      s << get;
+      retrieve x
   | EPlus e1 e2 => 
       v1 << shared_eval_expr e1 ;
       v2 << shared_eval_expr e2 ;
@@ -69,8 +70,8 @@ Fixpoint shared_eval_expr
 Open Scope com_scope.
 
 Fixpoint shared_ceval 
-  {M : Type -> Type} {valType natType boolType : Type}
-  `{Monad M, Store M valType, Except M, 
+  {M : Type -> Type} {S valType natType boolType : Type}
+  `{Monad M, Store S M valType, Except M, 
     A : IsNat M valType boolType natType, IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
@@ -79,7 +80,8 @@ Fixpoint shared_ceval
       (shared_ceval c1) ;; (shared_ceval c2)
   | x ::= a => 
       v << shared_eval_expr a ;
-      put x v
+      s << update x v ;
+      put s
   | CIf b c1 c2 => 
       v << shared_eval_expr b ;
       b' << ensure_bool v ;

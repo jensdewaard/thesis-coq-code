@@ -360,15 +360,15 @@ Section maybea_preorder.
   }.
 End maybea_preorder.
 
-
+Require Import Classes.Applicative.
 Section maybeAT_preorder.
   Context {A : Type} `{PreorderedSet A}.
-  Context {M : Type -> Type} `{Monad M}. 
-  Hypothesis (sets : forall A, PreorderedSet A -> PreorderedSet (M A)).
+  Context {M : Type -> Type} `{inst : Monad M} 
+    {M_preserves_order : forall A, PreorderedSet A -> PreorderedSet (M A)}.
 
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A).
-  unfold MaybeAT. pose proof maybea_preorder. 
-  apply sets in X.  apply X.
+    unfold MaybeAT. apply M_preserves_order.
+    apply maybea_preorder.
   Defined.
 End maybeAT_preorder.
 

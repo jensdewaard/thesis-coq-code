@@ -9,25 +9,25 @@ Require Import Instances.Monad.
 Require Import Classes.Applicative.
 
 Definition extract_interval (n : nat) : AbstractState interval := 
-    pure_maybeAT _ (pure (n, n)).
+  liftT (pure (n, n)).
 
 Definition ensure_interval (v : avalue) : AbstractState interval :=
   match v with
-  | VInterval i => pure_maybeAT _ (pure i)
-  | _ => pure NoneA 
+  | VInterval i => liftT (pure i)
+  | _ => liftT (pure NoneA)
   end.
 
 Definition iplusM (i j : interval) : AbstractState interval := 
-  pure_maybeAT _ (pure (iplus i j)).
+  liftT (pure (iplus i j)).
 Definition imultM (i j : interval) : AbstractState interval :=
-  pure_maybeAT _ (pure (imult i j)).
+  liftT (pure (imult i j)).
 Definition ieqM (i j : interval) : AbstractState abstr_bool :=
-  pure_maybeAT _ (pure (ieqb i j)).
+  liftT (pure (ieqb i j)).
 Definition ileM (i j : interval) : AbstractState abstr_bool := 
-  pure_maybeAT _ (pure (ileqb i j)).
+  liftT (pure (ileqb i j)).
 
 Definition build_interval (i : interval) : AbstractState avalue :=
-  pure_maybeAT _ (pure (VInterval i)).  
+  liftT (pure (VInterval i)).  
 
 Global Instance isnat_interval : 
   IsNat AbstractState avalue abstr_bool interval := 

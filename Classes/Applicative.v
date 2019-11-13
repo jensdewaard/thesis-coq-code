@@ -2,8 +2,9 @@ Require Export Base.
 Require Import Classes.Functor.
 Require Import Coq.Program.Basics.
 
-Class Applicative (F : Type -> Type) `{Functor F} : Type :=
+Class Applicative (F : Type -> Type) : Type :=
 {
+  is_functor :> Functor F;
   pure : forall {A}, A -> F A;
   app : forall {A B}, F (A -> B) -> F A -> F B;
   app_homomorphism : forall {A B} (f:A -> B) (x:A), 
@@ -24,7 +25,7 @@ Hint Rewrite <- @app_interchange : soundness.
 
 Section laws_and_methods.
   Context {F : Type -> Type} `{Applicative F}.
-  Variables A B C D : Type.
+  Context {A B C D : Type}.
 
   Lemma app_id : forall f, app (pure (@id A)) f = f.
   Proof.

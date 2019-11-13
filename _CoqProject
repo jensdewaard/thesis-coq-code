@@ -26,7 +26,6 @@ Instances/IsNat/Parity.v
 Instances/IsNat/Nat.v
 Instances/IsNat/Interval.v
 Instances/Except/AbstractException.v
-Instances/Except/ConcreteException.v
 Instances/IsBool/Boolean.v
 Instances/IsBool/AbstractBoolean.v
 Classes/Galois.v

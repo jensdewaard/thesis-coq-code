@@ -334,7 +334,7 @@ Section MaybeT_Monad.
 
   Definition bind_maybeT {A B : Type} (Mma : M (Maybe A))
     (f : A -> M (Maybe B)) : M (Maybe B) :=
-    @bindM M _ _ _ (Maybe A) (Maybe B) Mma (fun ma =>
+    @bindM M inst (Maybe A) (Maybe B) Mma (fun ma =>
       match ma with
       | None => pure None
       | Just a => f a
@@ -472,17 +472,17 @@ End MaybeAT_Applicative.
 Hint Unfold pure_maybeAT app_maybeAT : soundness.
 
 Section MaybeAT_Monad.
-  Context {M : Type -> Type} `{Monad M}.
+  Context {M : Type -> Type} `{inst : Monad M}.
 
   Definition bind_maybeAT {A B} 
     (Mma : M (AbstractMaybe A))
     (f : A -> M (AbstractMaybe B)) : M (AbstractMaybe B) :=
-  @bindM M _ _ _ (AbstractMaybe A) (AbstractMaybe B) Mma (fun ma =>
+  @bindM M inst (AbstractMaybe A) (AbstractMaybe B) Mma (fun ma =>
     match ma with
     | NoneA => pure NoneA
     | JustA a => f a
     | JustOrNoneA a => 
-        @bindM M _ _ _ (AbstractMaybe B) (AbstractMaybe B) (f a) (fun mfa =>
+        @bindM M inst (AbstractMaybe B) (AbstractMaybe B) (f a) (fun mfa =>
                        match mfa with
                        | NoneA => pure NoneA
                        | JustA b => pure (JustOrNoneA b)

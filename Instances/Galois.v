@@ -264,16 +264,21 @@ End galois_result.
 Section galois_maybe.
   Context {A A'} `{Galois A A'}.
 
-  Inductive gamma_maybe : AbstractMaybe A' -> Maybe A -> Prop :=
-    | gamma_none : forall x, gamma_maybe (NoneA) x
-    | gamma_justa_just : 
-        forall x y, gamma x y -> gamma_maybe (JustA x) (Just y)
-    | gamma_justnone_just :
-        forall x y, gamma x y -> gamma_maybe (JustOrNoneA x) (Just y)
-    | gamma_justnone_none : 
-        forall x, gamma_maybe (JustOrNoneA x) (None).
+  Inductive gamma_maybeA_maybe : AbstractMaybe A' -> Maybe A -> Prop :=
+    | gamma_noneA : forall x, gamma_maybeA_maybe (NoneA) x
+    | gamma_justA_just : 
+        forall x y, gamma x y -> gamma_maybeA_maybe (JustA x) (Just y)
+    | gamma_justnoneA_justA :
+        forall x y, gamma x y -> gamma_maybeA_maybe (JustOrNoneA x) (Just y)
+    | gamma_justnoneA_noneA : 
+        forall x, gamma_maybeA_maybe (JustOrNoneA x) (None).
 
-  Lemma gamma_maybe_monotone : monotone gamma_maybe.
+  Inductive gamma_maybe_maybe : Maybe A' -> Maybe A -> Prop :=
+    | gamma_none : forall x, gamma_maybe_maybe None x
+    | gamma_just : forall a b,
+        gamma a b -> gamma_maybe_maybe (Just a) (Just b).
+
+  Lemma gamma_maybe_monotone : monotone gamma_maybeA_maybe.
   Proof.
     constructor. intros m Hm. destruct m.
     - inversion Hm; subst.
@@ -295,13 +300,26 @@ Section galois_maybe.
   - inversion Hm; subst; inversion H1; constructor.
   Qed.
 
-  Global Instance galois_maybe : Galois (Maybe A) (AbstractMaybe A') :=
+  Lemma gamma_maybe_maybe_monotone : monotone gamma_maybe_maybe.
+  Proof.
+    constructor. intros m Hm. destruct a, a', m; try constructor;
+      inv Hm; inv H1; try assumption. eapply widen.
+      apply H5. assumption.
+  Qed.
+
+  Global Instance galois_maybe_maybeA : Galois (Maybe A) (AbstractMaybe A') :=
   {
-    gamma := gamma_maybe;
+    gamma := gamma_maybeA_maybe;
     gamma_monotone := gamma_maybe_monotone;
   }.
+
+  Global Instance galois_maybe_maybe : Galois (Maybe A) (Maybe A') :=
+  {
+    gamma := gamma_maybe_maybe;
+    gamma_monotone := gamma_maybe_maybe_monotone;
+  }.
 End galois_maybe.
-Hint Constructors gamma_maybe : soundness.
+Hint Constructors gamma_maybeA_maybe gamma_maybe_maybe : soundness.
 
 Section galois_state.
 Context {A A'} 
