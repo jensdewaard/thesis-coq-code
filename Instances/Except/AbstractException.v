@@ -23,15 +23,17 @@ Section except_maybe.
 End except_maybe.
 
 Section except_maybeT.
-  Context {M : Type -> Type} `{inst : Monad M}.
+  Context {M : Type -> Type} `{Applicative M} {inst : Monad M}.
 
-  Definition throw_maybeT (A : Type) : MaybeT M A := pure (@None A).
+  Definition throw_maybeT (A : Type) : MaybeT M A :=
+    @pure M _ H0 _ (@None A).
+  Hint Unfold throw_maybeT : soundness.
 
   Definition trycatch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
-    @bindM M inst _ _ mx (fun x : Maybe A =>
+    @bindM M _ _ inst _ _ mx (fun x : Maybe A =>
       match x with
       | None => my
-      | _  => mx
+      | Just a => pure (Just a)
       end).
   Hint Unfold trycatch_maybeT : soundness.
   Arguments trycatch_maybeT [_].
@@ -40,8 +42,8 @@ Section except_maybeT.
   {
     throw := throw_maybeT;
     trycatch := trycatch_maybeT;
-  }. 1-2: solve_monad.
-  - intros. unfold trycatch_maybeT. Admitted.
+  }. all: solve_monad. Defined.
+
 End except_maybeT.
 Require Import Classes.PreorderedSet.
 Section except_maybeAT.
@@ -51,10 +53,10 @@ Section except_maybeAT.
 
   Definition trycatch_maybeAT {A}
     (mx my : MaybeAT M A) : MaybeAT M A :=
-    @bindM M inst _ _ mx (fun x : AbstractMaybe A =>
+    @bindM M _ _ inst _ _ mx (fun x : AbstractMaybe A =>
       match x with
-      | JustA a => mx
-      | JustOrNoneA a => my
+      | JustA a => pure (JustA a)
+      | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
       | NoneA => my
       end).
   Arguments trycatch_maybeAT [_].
@@ -64,12 +66,13 @@ Section except_maybeAT.
     {
       throw := throw_maybeAT;
       trycatch := trycatch_maybeAT;
-    }. all: solve_monad. Admitted.
+    }. 
+    Admitted.
 End except_maybeAT.
 
 Section except_stateT.
   Context {M : Type -> Type} `{inst_m : Monad M} 
-    `{inst_e : @Except M inst_m}.
+    `{inst_e : @Except M _ _ inst_m}.
 
   Definition throw_stateT {S} A : StateT S M A := liftT throw.
 
@@ -81,7 +84,8 @@ Section except_stateT.
   {
     throw := @throw_stateT S;
     trycatch := @trycatch_stateT S;
-  }. Admitted.
+  }. 
+  Admitted.
 End except_stateT.
 
 Global Instance except_abstract_state : Except AbstractState.

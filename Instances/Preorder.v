@@ -1,3 +1,4 @@
+Require Import Classes.Applicative.
 Require Export Base.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Le.
@@ -10,6 +11,9 @@ Require Import Types.Parity.
 Require Import Types.Result.
 Require Import Types.Stores.
 
+Hint Unfold Reflexive Transitive : soundness.
+Hint Resolve le_trans : soundness.
+
 Global Instance preorder_nat : PreorderedSet nat := 
 {
   preorder := le;
@@ -17,16 +21,32 @@ Global Instance preorder_nat : PreorderedSet nat :=
   preorder_trans := le_trans;
 }.
 
-Inductive ab_le : abstr_bool -> abstr_bool -> Prop :=
-  | ab_le_bottom : forall ab, ab_le ab_bottom ab
-  | ab_le_top : forall ab, ab_le ab ab_top
-  | ab_le_refl : forall ab, ab_le ab ab.
+Definition ab_le (a b : abstr_bool) : Prop :=
+  match a with
+  | ab_bottom => True
+  | ab_top => match b with
+              | ab_top => True
+              | _ => False
+              end
+  | ab_true => match b with
+               | ab_true | ab_top => True
+               | ab_false | ab_bottom => False
+               end
+  | ab_false => match b with
+                | ab_false | ab_top => True
+                | ab_true  | ab_bottom => False
+                end
+  end.
+Hint Unfold ab_le : soundness.
 
-Lemma ab_le_trans :forall a b c,
-  ab_le a b -> ab_le b c -> ab_le a c.
+Lemma ab_le_refl : Reflexive ab_le.
 Proof.
-  intros. destruct a, b, c; try constructor; try inversion H0; 
-  try inversion H.
+  simple_solve. 
+Qed.
+
+Lemma ab_le_trans : Transitive ab_le.
+Proof. 
+  simple_solve. 
 Qed.
 
 Instance preorder_ab : PreorderedSet abstr_bool :=
@@ -37,88 +57,76 @@ Instance preorder_ab : PreorderedSet abstr_bool :=
 }.
 
 Section preordered_functions.
-Context {A A' : Type} `{PreorderedSet A'}.
+  Context {A A' : Type} `{PreorderedSet A'}.
 
-Inductive pointwise_ordering : 
-  (A->A') -> (A->A') -> Prop :=
-  | pointwise : forall (f1 f2 : (A->A')),
-      (forall x, preorder (f1 x) (f2 x)) -> pointwise_ordering f1 f2.
+  Definition pointwise_ordering (f g : A -> A') : Prop :=
+    forall x, preorder (f x) (g x).
+  Hint Unfold pointwise_ordering : soundness.
 
-Lemma pointwise_ordering_refl : 
-  Reflexive pointwise_ordering.
-Proof.  
-  intros f. constructor. intro x. apply preorder_refl.
-Qed.
+  Lemma pointwise_ordering_refl : 
+    Reflexive pointwise_ordering.
+  Proof.  
+    simple_solve. 
+  Qed.
 
-Lemma pointwise_ordering_trans : 
-  Transitive pointwise_ordering.
-Proof.
-  constructor.
-  intros. 
-  inversion H0; subst; clear H0.
-  inversion H1; subst; clear H1.
-  eapply preorder_trans. apply H2. apply H0.
-Qed.
+  Lemma pointwise_ordering_trans : 
+    Transitive pointwise_ordering.
+  Proof.
+    simple_solve.
+  Qed.
 
-Global Instance preordered_function_spaces : 
+  Global Instance preordered_function_spaces : 
   PreorderedSet (A->A') :=
-{
-  preorder := pointwise_ordering;
-  preorder_refl := pointwise_ordering_refl;
-  preorder_trans := pointwise_ordering_trans;
-}.
-  
+  {
+    preorder := pointwise_ordering;
+    preorder_refl := pointwise_ordering_refl;
+    preorder_trans := pointwise_ordering_trans;
+  }.
 End preordered_functions.
+Hint Unfold pointwise_ordering : soundness.
 
 Section preordered_pairs.
-Context {A B : Type} `{PreorderedSet A, PreorderedSet B}.
+  Context {A B : Type} `{PreorderedSet A, PreorderedSet B}.
 
-Inductive preorder_pair_le : 
-  (prod A B) -> (prod A B) -> Prop :=
-  | preorder_pair : forall (a a' : A) (b b' : B), 
-      preorder a a' -> preorder b b' -> preorder_pair_le (a,b) (a',b').
+  Definition preorder_pair_le (p1 p2 : prod A B) : Prop :=
+    let (a, b) := p1 in let (c, d) := p2 in
+    preorder a c /\ preorder b d.
+  Hint Unfold preorder_pair_le : soundness.
 
-Lemma preorder_pair_le_refl :
-  Reflexive preorder_pair_le.
-Proof. 
-  intros a.
-  destruct a. constructor; apply preorder_refl.
-Qed.
+  Lemma preorder_pair_le_refl :
+    Reflexive preorder_pair_le.
+  Proof. 
+    simple_solve. 
+  Qed.
 
-Lemma preorder_pair_le_trans :
-  Transitive preorder_pair_le.
-Proof. 
-  intros x y z. 
-  intros. inversion H1; subst.  inversion H2; subst. constructor.
-  - eapply preorder_trans. apply H3. apply H7.
-  - eapply preorder_trans. apply H4. apply H9.
-Qed.
+  Lemma preorder_pair_le_trans :
+    Transitive preorder_pair_le.
+  Proof. 
+    simple_solve. 
+  Qed.
 
-Global Instance preorder_pairs : 
+  Global Instance preorder_pairs : 
   PreorderedSet (A * B)%type :=
-{
-  preorder := preorder_pair_le;
-  preorder_refl := preorder_pair_le_refl;
-  preorder_trans := preorder_pair_le_trans;
-}.
+  {
+    preorder := preorder_pair_le;
+    preorder_refl := preorder_pair_le_refl;
+    preorder_trans := preorder_pair_le_trans;
+  }.
 End preordered_pairs.
+Hint Unfold preorder_pair_le : soundness.
 
-Inductive interval_le : interval -> interval -> Prop :=
-  | interval_le_shorter : forall i i', 
-      preorder (min i') (min i) -> preorder (max i) (max i') -> interval_le i i'.
+Definition interval_le (i j : interval) : Prop := 
+  preorder (min j) (min i) /\ preorder (max i) (max j).
+Hint Unfold interval_le : soundness.
 
 Lemma interval_le_refl : Reflexive interval_le.
 Proof.
-  unfold Reflexive. intro x. destruct x as [n m].
-  constructor; apply preorder_refl.
+  simple_solve. 
 Qed.
 
 Lemma interval_le_trans : Transitive interval_le.
 Proof.
-  unfold Transitive. intros i j k Hij Hjk. inversion Hij; subst; clear Hij;
-  inversion Hjk; subst; clear Hjk. constructor.
-  - eapply preorder_trans. apply H1. apply H.
-  - eapply preorder_trans. apply H0. apply H2.
+  simple_solve. 
 Qed.
 
 Global Instance preorder_interval : PreorderedSet interval :=
@@ -128,18 +136,20 @@ Global Instance preorder_interval : PreorderedSet interval :=
   preorder_trans := interval_le_trans;
 }.
 
-Inductive parity_le : parity -> parity -> Prop :=
-  | lt_top : forall p, parity_le p par_top
-  | lt_bottom : forall p, parity_le par_bottom p
-  | lt_refl : forall p, parity_le p p.
+Definition parity_le (p q : parity) : Prop :=
+  match p with
+  | par_bottom => True
+  | p' => q = p'
+  end.
+Hint Unfold parity_le : soundness.
 
-Lemma parity_le_refl : forall p, parity_le p p.
-destruct p; constructor. Qed.
+Lemma parity_le_refl : Reflexive parity_le.
+Proof. simple_solve. Qed.
 
-Lemma parity_le_trans : forall p1 p2 p3,
-  parity_le p1 p2 -> parity_le p2 p3 -> parity_le p1 p3.
-destruct p1, p2, p3; intros; try constructor; 
-  try inversion H; try inversion H0. Qed.
+Lemma parity_le_trans : Transitive parity_le.
+Proof.
+  simple_solve. 
+Qed.
 
 Global Instance proset_parity : PreorderedSet parity :=
 {
@@ -148,14 +158,14 @@ Global Instance proset_parity : PreorderedSet parity :=
   preorder_trans := parity_le_trans;
 }.
 
-Inductive unit_le : unit -> unit -> Prop :=
-  | unit_le_refl : forall x, unit_le x x.
+Definition unit_le (u v : unit) : Prop := u = v.
+Hint Unfold unit_le : soundness.
 
-Lemma unit_le_trans : forall a b c,
-  unit_le a b -> unit_le b c -> unit_le a c.
-Proof.
-  intros. destruct a, b, c. assumption.
-Qed.
+Lemma unit_le_refl : Reflexive unit_le.
+Proof. simple_solve. Qed.
+
+Lemma unit_le_trans : Transitive unit_le.
+Proof. simple_solve. Qed.
 
 Instance preorder_unit : PreorderedSet unit :=
 {
@@ -164,32 +174,26 @@ Instance preorder_unit : PreorderedSet unit :=
   preorder_trans := unit_le_trans;
 }.
 
-
-Inductive avalue_le : avalue -> avalue -> Prop :=
-  | avalue_le_par : forall x y, 
-      preorder x y -> avalue_le (VParity x) (VParity y)
-  | avalue_le_bool : forall b c,
-      preorder b c -> avalue_le (VAbstrBool b) (VAbstrBool c)
-  | avalue_le_interval : forall i j,
-      preorder i j -> avalue_le (VInterval i) (VInterval j)
-  | avalue_le_top : forall v,
-      avalue_le v VTop
-  | avalue_le_bot : forall v,
-      avalue_le VBottom v.
+Definition avalue_le (v w : avalue) : Prop :=
+  match v, w with
+  | VParity x, VParity y => preorder x y
+  | VAbstrBool b, VAbstrBool c => preorder b c
+  | VInterval i, VInterval j => preorder i j
+  | _, VTop => True
+  | VBottom, _ => True
+  | _, _ => False
+  end.
+Hint Unfold avalue_le : soundness.
 
 Lemma avalue_le_trans : Transitive avalue_le.
 Proof.
-  unfold Transitive. intros x y z Hxy Hyz.
-  inversion Hxy; subst;
-  inversion Hyz; subst; try constructor. 
-  - eapply preorder_trans. apply H. apply H1.
-  - eapply preorder_trans. apply H. apply H1.
-  - eapply preorder_trans. apply H. apply H1.
+  intros x y z Hxy Hyz. destruct x, y, z; unfold avalue_le in *; try pre_trans;
+  try inversion Hyz; try inversion Hxy; try reflexivity.
 Qed.
 
 Lemma avalue_le_refl : Reflexive avalue_le.
 Proof. 
-  unfold Reflexive. intro x. destruct x; constructor; apply preorder_refl.
+  simple_solve.
 Qed.
 
 Global Instance avalue_preorder : PreorderedSet avalue :=
@@ -201,32 +205,27 @@ Global Instance avalue_preorder : PreorderedSet avalue :=
 
 
 Section preordered_sets_le.
-Context {A : Type}.
+  Context {A : Type}.
 
-Inductive preordered_set_le : (A -> Prop) -> (A -> Prop) -> Prop := 
-  | preordered_set_le_allin : forall (set1 set2 : (A -> Prop)),
-      (forall (x : A), set1 x -> set2 x) -> preordered_set_le set1 set2.
+  Definition preordered_set_le (set1 set2 : A -> Prop) : Prop :=
+    forall x, set1 x -> set2 x.
+  Hint Unfold preordered_set_le : soundness.
 
-Lemma preordered_set_le_refl : forall (a : (A->Prop)),
-  preordered_set_le a a.
-Proof.
-  intros. constructor. intros. assumption.
-Qed.
+  Lemma preordered_set_le_refl : Reflexive preordered_set_le. 
+  Proof. simple_solve. Qed.
 
-Lemma preordered_set_le_trans : forall (x y z : (A->Prop)),
-  preordered_set_le x y -> preordered_set_le y z -> preordered_set_le x z.
-Proof. 
-  intros. constructor. inversion H; inversion H0; subst; auto.
-Qed.
+  Lemma preordered_set_le_trans : Transitive preordered_set_le.
+  Proof. simple_solve. Qed.
 
-Global Instance types_to_prop : PreorderedSet (A -> Prop) :=
-{
-  preorder := preordered_set_le;
-  preorder_refl := preordered_set_le_refl;
-  preorder_trans := preordered_set_le_trans;
-}.
+  Global Instance types_to_prop : PreorderedSet (A -> Prop) :=
+  {
+    preorder := preordered_set_le;
+    preorder_refl := preordered_set_le_refl;
+    preorder_trans := preordered_set_le_trans;
+  }.
 
 End preordered_sets_le.
+Hint Unfold preordered_set_le : soundness.
 
 Instance preordered_abstract_store : PreorderedSet abstract_store
 := {
@@ -235,82 +234,32 @@ Instance preordered_abstract_store : PreorderedSet abstract_store
   preorder_trans := pointwise_ordering_trans;
 }.
 
-Section result_preorder.
-Context {A S: Type} `{PreorderedSet A, PreorderedSet S}.
-
-Inductive result_le : abstract_result A S -> abstract_result A S -> Prop :=
-  | result_le_crashed : forall r, result_le r (crashedA )
-  | result_le_exception : forall s1 s2, 
-      preorder s1 s2 -> result_le (exceptionA s1) (exceptionA s2)
-  | result_le_return : forall a1 a2 s1 s2, 
-      preorder a1 a2 -> 
-      preorder s1 s2 ->
-      result_le (returnRA a1 s1) (returnRA a2 s2)
-  | result_le_exception_or : forall a st1 st2, 
-      preorder st1 st2 -> 
-      result_le (exceptionA st1) (exceptionOrReturn a st2)
-  | result_le_return_or : forall a1 a2 s1 s2,
-      preorder s1 s2 ->
-      preorder a1 a2 ->
-      result_le (returnRA a1 s1) (exceptionOrReturn a2 s2)
-  | result_le_or_or : forall a1 a2 s1 s2,
-      preorder a1 a2 ->
-      preorder s1 s2 ->
-      result_le (exceptionOrReturn a1 s1) (exceptionOrReturn a2 s2).
-
-Lemma result_le_refl :
-  Reflexive result_le.
-Proof.
-  unfold Reflexive. destruct x; try constructor; try apply preorder_refl.
-Qed.
-
-Lemma result_le_trans :
-  Transitive result_le.
-Proof.
-  unfold Transitive.
-  intros x y z H1 H2.
-  inversion H1; inversion H2; subst; 
-  try constructor; try inversion H2; subst; auto; eapply preorder_trans;
-  try apply H3; try apply H4; auto.
-Qed.
-
-Global Instance result_preorder : PreorderedSet (abstract_result A S) := {
-  preorder := result_le;
-  preorder_refl := result_le_refl;
-  preorder_trans := result_le_trans;
-}.
-End result_preorder.
-
 Section state_preorder.
   Context {S A : Type} `{PreorderedSet S, PreorderedSet A}.
   
-Global Instance state_preorder : 
+  Global Instance state_preorder : 
   PreorderedSet (State S A).
-Proof.
-  apply preordered_function_spaces.
-Defined.
-
+  Proof.
+    apply preordered_function_spaces.
+  Defined.
 End state_preorder.
 
 Section maybe_preorder.
-  Context {A : Type} `{PreorderedSet A}.
-  
-  Inductive maybe_le : Maybe A -> Maybe A -> Prop :=
-    | none_le : forall m, maybe_le m None
-    | just_le : forall x y, preorder x y -> maybe_le (Just x) (Just y).
+  Context {A} `{PreorderedSet A}.
+
+  Definition maybe_le (m n : Maybe A) : Prop :=
+    match m, n with
+    | _, None => True
+    | None, Just _ => False
+    | Just x, Just y => preorder x y
+    end.
+  Hint Unfold maybe_le : soundness.
 
   Lemma maybe_le_trans : Transitive maybe_le.
-  Proof. 
-    unfold Transitive. intros. 
-    inversion H0; inversion H1; simple_solve.
-    subst. constructor. constructor. subst. inversion H6. subst.
-    eapply preorder_trans. apply H2. apply H5.
-  Qed.
+  Proof. simple_solve. Qed.
 
   Lemma maybe_le_refl : Reflexive maybe_le.
-  Proof. 
-    unfold Reflexive. destruct x; constructor. apply preorder_refl.
-  Qed.
+  Proof. simple_solve. Qed.
 
   Global Instance maybe_preorder : PreorderedSet (Maybe A) :=
   {
@@ -319,37 +268,31 @@ Section maybe_preorder.
     preorder_refl := maybe_le_refl;
   }.
 End maybe_preorder.
+Hint Unfold maybe_le : soundness.
 
 Section maybea_preorder.
   Context {A : Type} `{PreorderedSet A}.
 
-  Inductive maybea_le : AbstractMaybe A -> AbstractMaybe A -> Prop :=
-    | nonea_le : forall m, maybea_le m (NoneA)
-    | justa_le : forall x y, preorder x y -> maybea_le (JustA x) (JustA y)
-    | just_justornone_le : 
-        forall x y, preorder x y -> maybea_le (JustA x) (JustOrNoneA y)
-    | justornone_le :
-        forall x y, preorder x y -> maybea_le (JustOrNoneA x) (JustOrNoneA y).
+  Definition maybea_le (m n : AbstractMaybe A) : Prop :=
+    match m, n with
+    | _, NoneA => True
+    | JustA x, JustA y
+    | JustA x, JustOrNoneA y
+    | JustOrNoneA x, JustOrNoneA y => preorder x y
+    | _, _ => False
+    end.
+  Hint Unfold maybea_le : soundness.
 
   Lemma maybea_le_trans : Transitive maybea_le.
   Proof.
-    intros x y z Hxy Hyz. destruct y.
-    - inversion Hxy; subst. inversion Hyz; subst.
-      + constructor.
-      + constructor. apply preorder_trans with (y0:=a); assumption.
-      + constructor. apply preorder_trans with (y0:=a); assumption.
-    - inversion Hyz; subst. constructor. destruct x.
-      + constructor. inversion Hxy; subst. apply preorder_trans with (y0:=a);
-        assumption.
-      + constructor. inversion Hxy; subst. apply preorder_trans with (y0:=a);
-        assumption.
-      + inversion Hxy.
-    - inversion Hyz; subst. constructor.
+    intros x y z Hxy Hyz. destruct x, y, z; simpl in *;
+    try pre_trans; try reflexivity;
+      try inv Hxy; try inv Hyz.
   Qed.
 
   Lemma maybea_le_refl : Reflexive maybea_le.
   Proof. 
-    intros x. destruct x; constructor; apply preorder_refl.
+    simple_solve.
   Qed.
 
   Global Instance maybea_preorder : PreorderedSet (AbstractMaybe A) :=
@@ -359,8 +302,8 @@ Section maybea_preorder.
     preorder_refl := maybea_le_refl;
   }.
 End maybea_preorder.
+Hint Unfold maybea_le : soundness.
 
-Require Import Classes.Applicative.
 Section maybeAT_preorder.
   Context {A : Type} `{PreorderedSet A}.
   Context {M : Type -> Type} `{inst : Monad M} 

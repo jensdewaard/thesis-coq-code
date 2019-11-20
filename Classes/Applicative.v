@@ -2,9 +2,8 @@ Require Export Base.
 Require Import Classes.Functor.
 Require Import Coq.Program.Basics.
 
-Class Applicative (F : Type -> Type) : Type :=
+Class Applicative (F : Type -> Type) `{Functor F} : Type :=
 {
-  is_functor :> Functor F;
   pure : forall {A}, A -> F A;
   app : forall {A B}, F (A -> B) -> F A -> F B;
   app_homomorphism : forall {A B} (f:A -> B) (x:A), 

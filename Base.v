@@ -1,10 +1,12 @@
 Require Export Utf8.
 Require Export Program.Basics.
 Require Export FunctionalExtensionality.
+Require Import Coq.Arith.Even.
 
 Create HintDb soundness.
 
 Ltac inv H := inversion H; subst; clear H.
+Ltac inj H := injection H; intros; subst.
 
 Notation "f '$' x" := (f x)
   (at level 20, right associativity, only parsing).
@@ -21,7 +23,6 @@ Proof. reflexivity. Qed.
 
 Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 
-
 Ltac ext := let x := fresh "x" in extensionality x.
 
 Ltac unmatch x :=
@@ -36,14 +37,21 @@ Ltac destr :=
   match goal with
   | [ |- context [match ?x with _ => _ end]] => unmatch x
   | [ |- context [let (_, _) := ?x in _]] => destruct x eqn:?
-  | H : (_ , _) = (_, _) |- _ => inv H; subst
+  | H : (_ , _) = (_, _) |- _ => inv H
+  | H : _ /\ _ |- _ => destruct H
+  | H : match ?x with _ => _ end |- _ => destruct x eqn:?
+  | |- _ ∧ _ => split
   end.
 
-Ltac simplify := cbn; intros; repeat ext; try destr.
+Ltac simplify := simpl in *; intros; repeat ext; try destr; 
+  destruct_all unit.
 
-Ltac simple_solve := cbn; intros;
-  repeat (autorewrite with soundness + autounfold with soundness);
-  try (unfold compose, id, const; congruence + reflexivity).
+Ltac simple_solve := autounfold with soundness; intros;
+  repeat (simplify; 
+    autorewrite with soundness in * + autounfold with soundness in *;
+    intros; subst
+  );
+  try (unfold compose, id, const; contradiction + discriminate + eauto with soundness).
 
 (* We have some recursive typeclasses instances, for example Monad M -> 
  * Monad (MaybeT M). As typeclass instances search by default is depth first 

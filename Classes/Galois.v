@@ -25,14 +25,12 @@ Proof.
   pose proof gamma_monotone.
   unfold monotone in H3. apply H3 in H1.
   simpl in H1. 
-  destruct H1. apply H1. apply H2.
+  unfold preordered_set_le in H1.
+  auto.
 Qed.
 
-Lemma gamma_widened {A B : Type} `{Galois B A} : forall x y a,
-  gamma x y ->
-  preorder x a ->
-  gamma a y.
-Proof.
-  intros x y a H1 H2. apply widen with (f:=x). assumption. assumption.
-Qed.
-
+Ltac apply_widen :=
+  match goal with
+  | H : preorder ?a ?b, I : gamma ?a ?c |- gamma ?b ?c =>
+      eapply widen; apply H + apply I
+  end.
