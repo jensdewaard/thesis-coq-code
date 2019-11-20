@@ -521,7 +521,7 @@ Section MaybeAT_Monad.
     bind_id_right := bind_maybeAT_id_right;
     bind_assoc := bind_maybeAT_assoc;
   }. all: solve_monad.  
-  - rewrite <- fmap_bind_pure. admit.
+  - rewrite <- bind_id_right. admit.
   - unfold fmap_maybeAT in *. autorewrite with soundness. f_equal. unfold compose.
     ext. repeat destr; unfold fmap_abstract_maybe in Heqa; try inj Heqa.
     reflexivity. 1-3: discriminate. reflexivity. 1-3: discriminate.

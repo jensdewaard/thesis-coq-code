@@ -13,7 +13,7 @@ Class Monad (M : Type -> Type) `{Applicative M} : Type :=
   bind_assoc : forall {A B C : Type} (MA : M A) (f : A -> M B) (g : B -> M C),
     bindM (bindM MA f) g = bindM MA (fun a => bindM (f a) g);
   bind_app : forall {A B : Type} (mf : M (A -> B)) (ma : M A),
-    app mf ma = bindM mf (fun f => bindM ma (fun a => pure (f a)));
+    app mf ma = bindM mf (fun f => bindM ma (fun a => (f ∘ pure) a));
   bind_fmap : forall {A B C : Type} (f : A -> B) (x : M A) (g : B -> M C),
     bindM (fmap f x) g = bindM x (f ∘ g);
 }.
@@ -26,20 +26,41 @@ Ltac solve_monad := repeat (simplify; simple_solve;
   | _ => simple_solve
   end).
 
-Section laws.
+Section laws_and_methods.
   Context {M : Type -> Type} `{Monad M}.
   
+  Definition join {A} (x : M (M A)) : M A := bindM x id.
+
+  Lemma join_fmap {A : Type} (x : M(M(M(A)))) : 
+    join (fmap join x) = join (join x).
+  Proof.
+    unfold join. rewrite bind_fmap. rewrite bind_assoc.
+    f_equal.
+  Qed.
+
+  Lemma join_return {A : Type} (x :M A) : 
+    join (fmap pure x) = join (pure x).
+  Proof.
+    unfold join. rewrite bind_id_left. 
+    rewrite id_refl. unfold id. rewrite bind_fmap.
+    unfold compose. apply bind_id_right. 
+  Qed.
+
   Lemma fmap_bind : forall {A B C : Type} (x : M A) (f : A -> M B) (g : B -> C),
     fmap g (bindM x f) = bindM x (fun a : A => fmap g (f a)).
   Proof. 
-  Admitted.
+    intros. rewrite app_fmap. rewrite bind_app. rewrite bind_id_left.
+    rewrite bind_assoc. f_equal. ext. rewrite app_fmap.
+    rewrite bind_app. rewrite bind_id_left. f_equal.
+  Qed.
 
   Lemma fmap_bind_pure : forall {A B} (f : A -> B) (x : M A),
-    fmap f x = bindM x (fun a : A => pure (f a)).
+    fmap f x = bindM x (fun a : A => (f ∘ pure) a).
   Proof.
-  Admitted.
+    intros. rewrite <- bind_fmap. rewrite bind_id_right. reflexivity.
+  Qed.
 
-End laws.
+End laws_and_methods.
 Hint Rewrite @bind_fmap @fmap_bind @fmap_bind_pure : soundness.
 
 Notation "x '<<' y ; z" := (bindM y (fun x => z))
@@ -47,7 +68,6 @@ Notation "x '<<' y ; z" := (bindM y (fun x => z))
 
 Notation "x ;; z" := (bindM x (fun _ => z))
     (at level 100, z at level 200, only parsing, right associativity).
-
 
 Section MonadTransformer.
   Context {M} `{inst : Monad M}.
