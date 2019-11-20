@@ -1,7 +1,7 @@
 Require Import Classes.IsBool.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
-Require Import Instances.Except.AbstractException.
+Require Import Instances.Except.
 Require Import Instances.Joinable.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.

@@ -9,7 +9,7 @@ Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.Even.
 Require Import Coq.Arith.PeanoNat.
-Require Import Instances.Except.AbstractException.
+Require Import Instances.Except.
 Require Import Instances.IsBool.AbstractBoolean.
 Require Import Instances.IsBool.Boolean.
 Require Import Instances.IsNat.Interval.
