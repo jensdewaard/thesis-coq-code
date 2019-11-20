@@ -49,32 +49,35 @@ Require Import Classes.PreorderedSet.
 Section except_maybeAT.
   Context {M : Type -> Type} `{inst : Monad M}.
 
-  Definition throw_maybeAT (A : Type) : MaybeAT M A := pure (@NoneA A).
+  Definition throw_maybeAT {A : Type} : MaybeAT M A := pure (@NoneA A).
 
   Definition trycatch_maybeAT {A}
     (mx my : MaybeAT M A) : MaybeAT M A :=
-    @bindM M _ _ inst _ _ mx (fun x : AbstractMaybe A =>
+    @bindM _ _ _ inst _ _ mx (fun x : AbstractMaybe A =>
       match x with
       | JustA a => pure (JustA a)
       | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
       | NoneA => my
       end).
+  
   Arguments trycatch_maybeAT [_].
   Hint Unfold throw_maybeAT trycatch_maybeAT : soundness.
 
   Instance except_maybeAT : Except (MaybeAT M) :=
     {
-      throw := throw_maybeAT;
+      throw := @throw_maybeAT;
       trycatch := trycatch_maybeAT;
-    }. 
-    Admitted.
+    }. 1,3: solve_monad.
+      intros. unfold trycatch_maybeAT. 
+      rewrite <- (@bind_id_right M H H0 inst). f_equal. simple_solve.
+    Defined.
 End except_maybeAT.
 
 Section except_stateT.
   Context {M : Type -> Type} `{inst_m : Monad M} 
     `{inst_e : @Except M _ _ inst_m}.
 
-  Definition throw_stateT {S} A : StateT S M A := liftT throw.
+  Definition throw_stateT {S} A : StateT S M A := fun _ => throw.
 
   Definition trycatch_stateT {S A} (a b : StateT S M A) : StateT S M A := 
     fun s => trycatch (a s) (b s).
@@ -84,9 +87,10 @@ Section except_stateT.
   {
     throw := @throw_stateT S;
     trycatch := @trycatch_stateT S;
-  }. 
-  Admitted.
+  }. all: solve_monad. 
+  Qed.
 End except_stateT.
 
 Global Instance except_abstract_state : Except AbstractState.
 Proof. apply except_maybeAT. Defined.
+
