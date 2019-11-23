@@ -566,9 +566,6 @@ Qed.
 Hint Resolve sound_fail : soundness.
 *)
 
-Require Import Classes.Except.
-Instance except_conc : Except ConcreteState. Admitted.
-
 Theorem sound_interpreter:
   forall c, gamma (shared_ceval 
                     (M:=AbstractState) 

@@ -94,3 +94,6 @@ End except_stateT.
 Global Instance except_abstract_state : Except AbstractState.
 Proof. apply except_maybeAT. Defined.
 
+Require Import Classes.Except.
+Instance except_conc : Except ConcreteState. 
+Proof. apply except_maybeT. Defined.
