@@ -17,7 +17,7 @@ Require Import Instances.IsNat.Nat.
 Require Import Instances.IsNat.Parity.
 Require Import Instances.Joinable.
 Require Import Instances.Monad.
-Require Import Instances.Store.AbstractStore.
+Require Import Instances.Store.
 Require Import Language.Statements.
 Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
