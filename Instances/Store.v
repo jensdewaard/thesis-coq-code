@@ -80,3 +80,16 @@ Section store_maybeAT.
     update := fun x v => liftT (update x v);
   }.
 End store_maybeAT.
+
+Instance conc_store : Store store ConcreteState cvalue. 
+Proof. 
+  apply store_maybeT. eapply store_stateT. apply
+    applicative_maybe. apply cvalue.
+Defined.
+
+Instance abs_store : Store abstract_store AbstractState avalue.
+Proof.
+  apply store_maybeAT. eapply store_stateT_abstract. apply applicative_maybe.
+  apply avalue.
+Defined.
+

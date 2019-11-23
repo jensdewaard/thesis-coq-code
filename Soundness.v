@@ -486,14 +486,6 @@ Proof.
 Admitted.
 Hint Resolve extract_build_val_sound : soundness.
 
-
-Require Import Classes.Store.
-Require Import Stores.
-Instance conc_store : Store store ConcreteState cvalue.
-Admitted.
-Instance abs_store : Store abstract_store AbstractState avalue.
-Admitted.
-
 Theorem eval_expr_sound : forall a,
   gamma (shared_eval_expr (M:=AbstractState) (A:=isnat_parity) a) 
         (shared_eval_expr (M:=ConcreteState) a).
