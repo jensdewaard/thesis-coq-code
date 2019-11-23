@@ -23,6 +23,9 @@ Proof. reflexivity. Qed.
 
 Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 
+Definition flip {A B C : Type} (f : A → B → C) (x : B) (y : A) : C :=
+  f y x.
+
 Ltac ext := let x := fresh "x" in extensionality x.
 
 Ltac unmatch x :=
