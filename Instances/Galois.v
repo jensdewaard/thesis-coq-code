@@ -226,4 +226,10 @@ Global Instance galois_unit : Galois unit unit :=
 End galois_unit.
 Hint Unfold gamma_unit : soundness.
 
+Section galois_maybeT.
+  Context {M M' : Type → Type} `{Monad M, Monad M'}.
+  Context {A A' : Type} `{PreorderedSet (MaybeT M' A')}.
 
+  Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A').
+  Proof. Admitted.
+End galois_maybeT.

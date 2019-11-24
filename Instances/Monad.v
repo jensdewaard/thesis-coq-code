@@ -637,6 +637,7 @@ Section Functor_StateT.
     fun s : S => bindM (m s) 
       (fun x => let (a, s') := x : (A*S)%type in pure (f a, s')).
   Hint Unfold fmap_stateT : soundness.
+  Arguments fmap_stateT [_].
 
   Global Instance functor_stateT (S : Type) : Functor (StateT S M) :=
   {
