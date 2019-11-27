@@ -1,5 +1,5 @@
-Require Import Classes.Applicative.
 Require Export Base.
+Require Import Classes.Applicative.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Le.
 Require Import Coq.Classes.RelationClasses.
@@ -8,7 +8,7 @@ Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Parity.
-Require Import Types.Result.
+Require Import Types.State.
 Require Import Types.Stores.
 
 Hint Unfold Reflexive Transitive : soundness.
@@ -331,3 +331,11 @@ Section statet_preorder.
   }.
 End statet_preorder.
 
+Section preorder.
+  Context {A} `{PreorderedSet A}.
+
+  Global Instance preorder_abstract_state : PreorderedSet (AbstractState A).
+  Proof.
+    apply statet_preorder.
+  Defined.
+End preorder.
