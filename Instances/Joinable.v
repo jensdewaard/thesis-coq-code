@@ -77,6 +77,31 @@ Global Instance state_joinable : Joinable (State S A) := {
 }.
 End state_joinable.
 
+Section maybe_joinable.
+  Context {A : Type} `{Joinable A}.
+
+  Definition join_maybe (m n : Maybe A) : Maybe A :=
+    match m, n with
+    | Just x, Just y => Just (join_op x y)
+    | _, _ => None
+    end.
+
+  Definition join_maybe_left : ∀ m n, preorder m (join_maybe m n).
+  Proof.
+    destruct m, n; simpl; auto with soundness. 
+  Qed.
+
+  Definition join_maybe_right : ∀ m n, preorder n (join_maybe m n).
+  Proof. destruct m, n; simpl; auto with soundness. Qed.
+
+  Global Instance maybe_joinable : Joinable (Maybe A) :=
+  {
+    join_op := join_maybe;
+    join_upper_bound_left := join_maybe_left;
+    join_upper_bound_right := join_maybe_right;
+  }.
+End maybe_joinable.
+
 Section abstract_maybe_joinable.
 Context {A : Type} `{Joinable A}.
 
@@ -114,6 +139,32 @@ Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) :=
 
 End abstract_maybe_joinable.
 
+Section joinable_pairs.
+  Context {A B} `{Joinable A, Joinable B}.
+
+  Definition join_pair (p q : (A*B)%type) : (A*B)%type :=
+    (join_op (fst p) (fst q), join_op (snd p) (snd q)).
+
+  Lemma join_pair_left : ∀ p q, preorder p (join_pair p q).
+  Proof.
+    intros. simpl. unfold join_pair, preorder_pair_le. destruct p.
+    simpl. auto with soundness.
+  Qed.
+
+  Lemma join_pair_right : ∀ p q, preorder q (join_pair p q).
+  Proof.
+    intros. simpl. unfold join_pair, preorder_pair_le. destruct q.
+    simpl. auto with soundness.
+  Qed.
+
+  Global Instance joinable_pairs : Joinable (A*B) :=
+  {
+    join_op := join_pair;
+    join_upper_bound_left := join_pair_left;
+    join_upper_bound_right := join_pair_right;
+  }.
+End joinable_pairs.
+
 Section joinable_maybeAT_state.
   Context {S A} `{Joinable A, Joinable S}.
 
@@ -127,7 +178,31 @@ End joinable_maybeAT_state.
 
 Section joinable_abstract_state.
   Context {A} `{Joinable A}.
-  Global Instance abstract_state_joinable : Joinable (AbstractState A).
+  Compute (AbstractState A).
+  
+  Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A :=
+    λ st, join_op (st1 st) (st2 st).
+
+  Lemma join_abstract_state_left : ∀ st st', 
+    preorder st (join_abstract_state st st').
   Proof.
-  Admitted.
+    intros. unfold join_abstract_state. simpl.
+    unfold pointwise_ordering. intros. simpl. unfold maybe_le, join_maybe.
+    destruct (st x), (st' x); auto with soundness.
+  Qed.
+
+  Lemma join_abstract_store_right : ∀ st st',
+    preorder st' (join_abstract_state st st').
+  Proof. 
+    intros. unfold join_abstract_state; simpl. unfold pointwise_ordering.
+    intros. simpl. unfold maybe_le, join_maybe. destruct (st' x), (st x);
+    auto with soundness.
+  Qed.
+  
+  Global Instance abstract_state_joinable : Joinable (AbstractState A) :=
+  {
+    join_op := join_abstract_state;
+    join_upper_bound_left := join_abstract_state_left;
+    join_upper_bound_right := join_abstract_store_right;
+  }.
 End joinable_abstract_state.

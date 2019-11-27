@@ -28,7 +28,7 @@ Definition eval_if_abstract (b : abstr_bool) (st1 st2 : AbstractState unit)
   match b with
   | ab_true   => st1
   | ab_false  => st2
-  | ab_top    => st2
+  | ab_top    => join_op st1 st2
   | ab_bottom => throw
   end.
 

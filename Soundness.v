@@ -614,20 +614,21 @@ Lemma sound_if_op :
   gamma (eval_if_abstract)
   (eval_if).
 Proof.
-  intros ????????????. 
+  intros ?????????.
   destruct b. 
   - (* true *)
     destruct a. 
-    + apply H0. apply H2.
+    + apply H0. 
     + unfold gamma in H; simpl in H. contradiction.
-    + unfold eval_if_abstract, eval_if. admit.
+    + unfold eval_if_abstract, eval_if. apply widen with (f:=a0).
+      apply join_upper_bound_left. apply H0.
     + unfold gamma in H; simpl in H. contradiction.
   - destruct a; simpl.
     + unfold gamma in H; simpl in H; contradiction.
-    + apply H1. apply H2.
-    + apply H1. apply H2.
+    + apply H1.
+    + eapply widen with (f:=a1). apply join_abstract_store_right. auto.
     + unfold gamma in H; simpl in H; contradiction.
-Admitted.
+Qed.
 Hint Resolve sound_if_op : soundness.
 
 (*Lemma sound_eval_catch :
