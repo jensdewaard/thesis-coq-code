@@ -1,18 +1,9 @@
 (* State and AbstractStates *)
 
-Require Import Classes.Joinable.
 Require Import Classes.PreorderedSet.
-Require Import Instances.Joinable.
 Require Import Instances.Preorder.
-Require Import Language.Statements.
-Require Import Classes.Functor.
-Require Import Classes.Applicative.
-Require Import Classes.Monad.
-Require Import Types.Result.
 Require Import Types.Stores.
-Require Import Types.Maps.
 Require Import Instances.Monad.
-Require Import FunctionalExtensionality.
 
 Definition ConcreteState := MaybeT (StateT store Maybe ).
 

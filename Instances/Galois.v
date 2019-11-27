@@ -206,10 +206,11 @@ Context {A A'}
   `{Galois A A'}.
 
 Global Instance galois_state :
-  Galois (ConcreteState A) (AbstractState A').
-Proof.
-  apply GFun.
-Defined.
+  Galois (ConcreteState A) (AbstractState A') :=
+  {
+    gamma := gamma_fun;
+    gamma_monotone := gamma_fun_monotone;
+  }.
 End galois_state.
 
 Section galois_unit.
@@ -229,7 +230,11 @@ Hint Unfold gamma_unit : soundness.
 Section galois_maybeT.
   Context {M M' : Type → Type} `{Monad M, Monad M'}.
   Context {A A' : Type} `{PreorderedSet (MaybeT M' A')}.
+  Context {M_has_galois : Galois (M (Maybe A)) (M' (Maybe A'))}.
 
-  Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A').
-  Proof. Admitted.
+  Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A') :=
+  {
+    gamma := gamma (Galois:=(M_has_galois));
+    gamma_monotone := gamma_monotone;
+  }.
 End galois_maybeT.

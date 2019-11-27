@@ -238,10 +238,12 @@ Section state_preorder.
   Context {S A : Type} `{PreorderedSet S, PreorderedSet A}.
   
   Global Instance state_preorder : 
-  PreorderedSet (State S A).
-  Proof.
-    apply preordered_function_spaces.
-  Defined.
+  PreorderedSet (State S A) :=
+  {
+    preorder := pointwise_ordering;
+    preorder_refl := pointwise_ordering_refl;
+    preorder_trans := pointwise_ordering_trans;
+  }.
 End state_preorder.
 
 Section maybe_preorder.
@@ -306,20 +308,26 @@ Hint Unfold maybea_le : soundness.
 
 Section maybeAT_preorder.
   Context {A : Type} `{PreorderedSet A}.
-  Context {M : Type -> Type} `{inst : Monad M} 
+  Context {M : Type -> Type} `{inst : Monad} 
     {M_preserves_order : forall A, PreorderedSet A -> PreorderedSet (M A)}.
 
-  Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A).
-    unfold MaybeAT. apply M_preserves_order.
-    apply maybea_preorder.
-  Defined.
+  Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=
+  {
+    preorder := preorder (X:=(M (AbstractMaybe A)));
+    preorder_refl := preorder_refl;
+    preorder_trans := preorder_trans;
+  }.
+
 End maybeAT_preorder.
 
 Section statet_preorder.
   Context {S A : Type}.
   Context {M : Type -> Type} `{PreorderedSet (M (A*S)%type)}.
-  Global Instance statet_preorder : PreorderedSet (StateT S M A).
-  unfold StateT. apply preordered_function_spaces.
-  Defined.
+  Global Instance statet_preorder : PreorderedSet (StateT S M A) :=
+  {
+    preorder := pointwise_ordering;
+    preorder_refl := pointwise_ordering_refl;
+    preorder_trans := pointwise_ordering_trans;
+  }.
 End statet_preorder.
 

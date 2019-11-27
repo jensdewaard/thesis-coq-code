@@ -27,16 +27,12 @@ Require Import Types.Parity.
 Require Import Types.Interval.
 Require Import Types.State.
 Require Import Types.Stores.
+Require Import Classes.SoundMonad.
 
-Arguments join_op : simpl never.
-
-Hint Extern 5 (gamma ?A ?B) => constructor : soundness.
-  
 (* Soundness of unit *)
-
 Lemma gamma_unit_sound :
   gamma tt tt.
-Proof. eauto with soundness. Qed.
+Proof. constructor.  Qed.
 Hint Resolve gamma_unit_sound : soundness.
 
 (* Soundness of functions *)
@@ -53,106 +49,95 @@ Lemma gamma_fun_applied {A A' B B'} `{Galois A A', Galois B B'}
       (forall x x', gamma x' x -> gamma (f' x') (f x)) ->
         gamma f' f.
 Proof. 
-  intro. simpl; unfold gamma_fun. eauto with soundness. 
+  intro. unfold gamma; simpl; unfold gamma_fun. eauto with soundness. 
 Qed.
 Hint Resolve gamma_fun_applied : soundness.
 
 (* Soundness of monadic operations *)
-Section maybe_sound. 
-  Lemma fmap_maybe_sound : gamma fmap_maybe fmap_maybe.
-  Proof.
-    intros ???. intros ???. unfold fmap_maybe. destruct a0, b0; 
-    eauto with soundness.
-  Qed.
+Instance maybe_sound {A A'} `{Galois A A'} : SoundMonads Maybe Maybe.
+Proof.
+  split; intros f g Hfg x y Hxy.
+  - destruct x, y; eauto with soundness.
+    apply Hfg. apply Hxy.
+  - apply Hfg. apply Hxy.
+  - destruct f, g, x, y; eauto with soundness.
+    apply Hfg. apply Hxy.
+  - destruct f, g; eauto with soundness. 
+    apply Hxy. apply Hfg. inv Hfg.
+Defined.
 
-  Lemma app_maybe_sound : gamma app_maybe app_maybe.
-  Proof.
-    intros ???. intros ???. destruct a, b, a0, b0; eauto with soundness. 
-    simpl in *. apply H in H0. apply H0.
-  Qed.
+Instance maybeA_sound {A A'} `{Galois A A'} : SoundMonads Maybe AbstractMaybe.
+Proof. split; intros f g Hfg x y Hxy.
+  - destruct x, y; eauto with soundness;
+    apply Hfg; apply Hxy. 
+  - apply Hfg. apply Hxy.
+  - destruct f, g, x, y; eauto with soundness; apply Hfg; apply Hxy.
+  - destruct f, g; eauto with soundness.
+    simpl. apply Hxy. apply Hfg.
+    inv Hfg. simpl in *. apply Hxy in Hfg.
+    destruct (x a), (y a0); eauto with soundness; simpl in *. 
+    inv Hfg. simpl. destruct (x a); eauto with soundness.
+Defined.
 
-  Lemma bind_maybe_sound : ∀ f f' k k',
-    gamma f f' → gamma k k' →
-    gamma (bind_maybe f k) (bind_maybe f' k').
-  Proof.
-    intros ???. intros ???. unfold bind_maybe. destruct f, f'; 
-    eauto with soundness. contradiction.
-  Qed.
-End maybe_sound.
+Instance galois_stateT {S S' M M' A A'} 
+  `{Galois S S', Galois (M (A*S)%type) (M'(A'*S')%type)} :
+  Galois (StateT S M A) (StateT S' M' A') :=
+  {
+    gamma := gamma_fun;
+  }.
+Proof.
+  unfold monotone. intros.
+  unfold gamma_fun. simpl. unfold Preorder.preordered_set_le.
+  intros. simpl in H3. unfold Preorder.pointwise_ordering in H3.
+  eapply widen. apply H3. apply H4. apply H5.
+Defined.
 
-Section maybeA_sound. 
-  Lemma fmap_maybeA_sound : gamma fmap_abstract_maybe fmap_maybe.
-  Proof.
-    repeat intros ???. destruct a0, b0; simpl; eauto with soundness.
-    simpl in H0. apply H in H0. apply H0.
-    simpl in H0. apply H in H0. apply H0.
-  Qed.
+Instance state_sound {S S' A A'} `{Galois S S', Galois A A'} 
+  : SoundMonads (State store) (State abstract_store).
+Proof. split; intros f g Hfg x y Hxy.
+- intros s t Hst. simpl.
+  unfold fmap_state. apply Hxy in Hst. repeat destr. simpl in *.
+  destruct Hst as [Ha Ha']. split.
+  apply Hfg. apply Ha. apply Ha'.
+- simpl. split. apply Hfg. apply Hxy.
+- simpl. unfold app_state, gamma_pairs.
+  intros s t Hst. apply Hfg in Hst. destruct (f s) as [f' s'] eqn:Hfs.
+  destruct (g t) as [g' t'] eqn:Hgt. destruct Hst as [Hfg' Hst'].
+  apply Hxy in Hst'.
+  destruct (x s') as [x' s''] eqn:Hxs. destruct (y t') as [y' t''] eqn:Hyt. 
+  destruct Hst' as [Hxy' Hst'']. split. apply Hfg'. apply Hxy'. apply Hst''.
+- intros s t Hst. simpl. unfold bind_state. apply Hfg in Hst.
+  destr; destr. destruct Hst. apply Hxy; assumption. 
+Defined.
 
-  Lemma app_maybeA_sound : gamma app_abstract_maybe app_maybe.
-  Proof.
-    repeat intros ???. destruct a, b, a0, b0; simpl in *; eauto with soundness;
-    apply H; apply H0.
-  Qed.
+Hint Resolve fmap_sound app_sound bind_sound : soundness.
 
-  Lemma bind_maybeA_sound {A A' B B'} `{Galois A' A, Galois B' B} :
-    ∀ f f' x x', gamma f f' → gamma x x' →
-    gamma (@bind_maybeA A B f x) (@bind_maybe A' B' f' x').
-  Proof.
-    intros. destruct f eqn:?, f' eqn:?; eauto with soundness. inv H3.
-    - apply H4 in H3. simpl. destruct (x a) eqn:?.
-      + destruct (x' a0); simpl in *; auto.
-      + destruct (x' a0); simpl in *; auto.
-      + reflexivity.
-    - simpl; destruct (x a); reflexivity.
-  Qed.
-End maybeA_sound.
-
-Instance galois_stateT {S M A B} `{PreorderedSet (StateT S M B)} : 
-  Galois (StateT S M A) (StateT S M B).
+Instance composed_monad_sound {S S' A A'} `{Galois S S', Galois A A'} : 
+  SoundMonads ConcreteState AbstractState.
+Proof. split.
 Admitted.
 
 Section stateT_sound.
-  Check @fmap_stateT.
+  Context {S S' A A' B B'} `{Galois S S', Galois A A', Galois B B'}.
+  Context {M M' : Type → Type} `{Galois (M B) (M' B'), Monad M, Monad M'}.
+  Context `{Galois (M A) (M A')}.
+  Context `{Galois (M (B*S)) (M' (B'*S'))}.
+  Context `{SoundMonads M M'}.
+
+  Lemma foobar : ∀ n, n. Admitted.
+  Lemma fmap_stateT_sound : ∀ f' f k' k,
+    gamma (@fmap_stateT M' _ _ _ S' A' B' f' k') (
+           @fmap_stateT M _ _ _ S A B f k).
+  Proof.
+    intros. unfold fmap_stateT. 
+  Admitted.
+  (*
+  Preorder.statet_preorder:
+  ∀ (S A : Type) (M : Type → Type),
+    PreorderedSet (M (A * S)%type) → PreorderedSet (StateT S M A)
+    *)
 
 End stateT_sound.
-
-Section state_sound.
-  Context {S S' A A' B B'} `{Galois S S', Galois A A', Galois B B'}.
-
-  Lemma fmap_state_sound : ∀ f' f k' k,
-    gamma f' f → gamma k' k → 
-    gamma (@fmap_state S' A' B' f' k') (@fmap_state S A B f k).
-  Proof.
-    intros. unfold fmap_state. intros ???.
-    destruct (k' a) eqn:?, (k b) eqn:?. simpl in *. 
-    apply H6 in H7. rewrite Heqp in H7.
-    rewrite Heqp0 in H7. split. apply H5. apply H7. apply H7.
-  Qed.
-
-  Lemma app_state_sound : ∀ f' f k' k,
-    gamma f' f → gamma k' k →
-    gamma (@app_state S' A' B' f' k') (@app_state S A B f k).
-  Proof.
-    intros. unfold app_state. intros ???. 
-    destruct (f' a) eqn:?. destruct (k' s) eqn:?. 
-    destruct (f b) eqn:?. destruct (k s1) eqn:?.
-    apply H5 in H7. rewrite Heqp, Heqp1 in H7.
-    destruct H7. apply H6 in H8. rewrite Heqp0, Heqp2 in H8.  destruct H8.
-    clear Heqp Heqp1 Heqp0 Heqp2.
-    split. apply H7. apply H8. apply H9.
-  Qed.
-
-  Lemma bind_state_sound : ∀ f' f k' k,
-    gamma f' f → gamma k' k →
-    gamma (@bind_state S' A' B' f' k') (@bind_state S A B f k).
-  Proof.
-    unfold bind_state. repeat constructor. intros.
-    simpl; unfold gamma_fun; intros.
-    apply H5 in H7.
-    destruct (f' a) eqn:Hfa, (f b) eqn:Hfb.
-    apply H6; apply H7.
-  Qed.
-End state_sound.
 
 (*Lemma lift_maybeAT_sound : gamma lift_maybeAT lift_maybeT.
   Proof.
@@ -229,27 +214,49 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma lift_maybeAT_sound {A A'} `{Galois A A'} : 
+  gamma (lift_maybeAT (A:=A')) (lift_maybeT (A:=A)).
+Proof.
+  unfold lift_maybeAT, lift_maybeT.
+  intros ??????. simpl. apply H1 in H2. 
+  destruct (a a0), (b b0); eauto with soundness.
+  destruct p, p0. apply H2. inv H2.
+Qed.
+Hint Resolve lift_maybeAT_sound : soundness.
+
+Lemma lift_stateT_sound {A A' S S'} `{Galois S S', Galois A A'} :
+  gamma lift_stateT lift_stateT.
+Proof.
+Admitted.
+Hint Resolve lift_stateT_sound : soundness.
+
 (* Monadic versions of parity operations *)
 Hint Unfold gamma : soundness.
 Lemma ensure_par_sound : 
   gamma ensure_par ensure_nat.
 Proof.
-  unfold ensure_par, ensure_nat. intros ???. destruct a eqn:?, b eqn:?;
+  unfold ensure_par, ensure_nat. intros a c H. destruct a eqn:?, c eqn:?;
     try contradiction.
-  - apply gamma_fun_apply. admit. eauto with soundness.
-  - apply gamma_fun_apply. admit. eauto with soundness.
-  - admit.
-  - admit.
-  - apply gamma_fun_apply. admit. eauto with soundness.
-Admitted.
+  - apply gamma_fun_apply. apply lift_maybeAT_sound. 
+    apply gamma_fun_apply. simpl. unfold pure_stateT. intros ??????. 
+    simpl. split; assumption. assumption.
+  - apply gamma_fun_apply. apply lift_stateT_sound.
+    eauto with soundness.
+  - simpl. unfold lift_stateT, fmap_stateT. intros s t Hst. simpl. auto.
+  - simpl. unfold lift_stateT, fmap_stateT, pure_stateT.
+    simpl. intros s t Hst. simpl. auto.
+  - apply gamma_fun_apply. apply lift_stateT_sound. auto.
+Qed.
 Hint Resolve ensure_par_sound : soundness.
 
 Lemma extract_parM_sound :  forall n,
   gamma (extract_parM n) (extract_natM n). 
 Proof. 
   intros. unfold extract_parM, extract_natM.  apply gamma_fun_apply.
-  admit. eauto with soundness.
-Admitted.
+  apply lift_maybeAT_sound. apply gamma_fun_apply; eauto with soundness.
+  simpl. unfold pure_stateT. intros ???. intros ???. apply gamma_fun_apply.
+  simpl. intros ???. auto. split; auto.
+Qed.
 Hint Resolve extract_parM_sound : soundness.
 
 Lemma pplusM_sound : 
@@ -258,8 +265,11 @@ Proof.
   simpl; unfold gamma_fun; intros.
   simpl; unfold gamma_fun; intros.
   unfold pplusM, plusM. apply gamma_fun_apply. 
-  admit. eauto with soundness.
-Admitted.
+  apply lift_maybeAT_sound.
+  eauto with soundness. apply gamma_fun_apply; eauto with soundness.
+  simpl. unfold pure_stateT. intros ??????. apply gamma_fun_apply.
+  eauto with soundness. split; auto.
+Qed.
 (*  repeat constructor; simpl; eauto with soundness.
 
   destruct H2. apply H2. destruct H1. apply H1.
@@ -271,12 +281,11 @@ Lemma pmultM_sound :
 Proof.
   simpl; unfold gamma_fun; intros.
   simpl; unfold gamma_fun; intros.
-  unfold pmultM, multM. apply gamma_fun_apply. admit.
+  unfold pmultM, multM. apply gamma_fun_apply. apply lift_maybeAT_sound.
+  apply gamma_fun_apply. simpl. unfold pure_stateT. intros ??????.
+  apply gamma_fun_apply; auto with soundness. split; auto.
   eauto with soundness.
-  (*repeat constructor; simpl; eauto with soundness. 
-  destruct H2; assumption.
-  destruct H1; assumption.*)
-Admitted.
+Qed.
 Hint Resolve pmultM_sound : soundness.
 
 Lemma peqM_sound :
@@ -284,9 +293,11 @@ Lemma peqM_sound :
 Proof.
   simpl; unfold gamma_fun; intros.
   simpl; unfold gamma_fun; intros.
-  unfold peqM, eqbM. apply gamma_fun_apply. admit.
+  unfold peqM, eqbM. apply gamma_fun_apply. apply lift_maybeAT_sound.
+  apply gamma_fun_apply. simpl. unfold pure_stateT. intros ??????.
+  apply gamma_fun_apply. simpl. eauto with soundness. split; auto.
   eauto with soundness.
-Admitted.
+Qed.
 Hint Resolve peqM_sound : soundness.
 
 Lemma pleM_sound :
@@ -294,9 +305,11 @@ Lemma pleM_sound :
 Proof.
   simpl; unfold gamma_fun; intros.
   simpl; unfold gamma_fun; intros.
-  unfold pleM, lebM. apply gamma_fun_apply. admit.
-  eauto with soundness.
-Admitted.
+  unfold pleM, lebM. apply gamma_fun_apply. apply lift_maybeAT_sound.
+  apply gamma_fun_apply. simpl. unfold pure_stateT. intros ??????.
+  apply gamma_fun_apply. simpl. eauto with soundness. split; auto.
+  reflexivity. 
+Qed.
 Hint Resolve pleM_sound : soundness.
 
 Lemma build_parity_sound :
@@ -304,49 +317,59 @@ Lemma build_parity_sound :
 Proof.
   intros ???. 
   unfold build_parity, build_natural. apply gamma_fun_apply.
-  admit. eauto with soundness.
-Admitted.
+  apply lift_maybeAT_sound. apply gamma_fun_apply. simpl; unfold pure_stateT.
+  intros ??????. apply gamma_fun_apply. simpl. eauto with soundness. split;
+  auto. auto.
+Qed.
 Hint Resolve build_parity_sound : soundness.
 
 (* Soundness of operations on intervals *)
+Require Import Omega.
 Lemma iplusM_sound :
   gamma iplusM plusM.
 Proof. 
-  intros ???. intros ???. unfold iplusM, plusM. apply gamma_fun_apply.
-  admit. apply gamma_fun_apply. eauto with soundness.
-Admitted.
+  intros ???. intros ???. unfold iplusM, plusM. apply gamma_fun_apply;
+  eauto with soundness. apply gamma_fun_apply. simpl. unfold pure_stateT.
+  intros ??????. apply gamma_fun_apply; eauto with soundness. split; auto.
+  simpl. unfold gamma_interval. split.
+  - rewrite interval_min_plus. destruct H0, H. simpl in *. omega.
+  - rewrite interval_max_plus. destruct H0, H. simpl in *. omega.
+Qed.
 Hint Resolve iplusM_sound : soundness.
 
 Lemma imultM_sound :
   gamma imultM multM.
 Proof.
-  intros ???. intros ???. unfold imultM, multM. apply gamma_fun_apply.
-  admit. eauto with soundness.
-Admitted.
-  (*
-  repeat constructor; simpl; destruct H, H0.
-  rewrite Interval.interval_min_mult;
-  apply Coq.Arith.Mult.mult_le_compat; assumption.
-  rewrite Interval.interval_max_mult;
-  apply Coq.Arith.Mult.mult_le_compat; assumption.
-  destruct H2; assumption.
-  destruct H1; assumption.
-*)
+  intros ???. intros ???. unfold imultM, multM. apply gamma_fun_apply;
+  eauto with soundness. apply gamma_fun_apply; eauto with soundness.
+  simpl. unfold pure_stateT. intros ??????. apply gamma_fun_apply; eauto
+    with soundness. split; auto.
+  simpl. unfold gamma_interval. split.
+  - rewrite interval_min_mult. destruct H, H0; simpl in *. 
+    apply Coq.Arith.Mult.mult_le_compat; auto.
+  - rewrite interval_max_mult. destruct H, H0; simpl in *.
+    apply Coq.Arith.Mult.mult_le_compat; auto.
+Qed.
 Hint Resolve imultM_sound.
 
 Lemma ileqb_sound :
   gamma ileM lebM.
 Proof.
-  intros ???. intros ???. unfold ileM, lebM. apply gamma_fun_apply.
-  admit. eauto with soundness.
+  intros ???. intros ???. unfold ileM, lebM. apply gamma_fun_apply; eauto with
+    soundness.
+  apply gamma_fun_apply; eauto with soundness. simpl. unfold pure_stateT.
+  intros ??????. apply gamma_fun_apply; eauto with soundness. split; auto.
+  unfold ileqb. destruct H, H0. simpl in *. unfold Galois.gamma_bool.
+  destruct (max a <? min a0) eqn:Hcompa, (b <=? b0) eqn:Hcompb.
+  reflexivity. rewrite leb_iff_conv in Hcompb. assert (min a0 <= max a). 
+  eapply le_trans. apply H0. 
 Admitted.
 Hint Resolve ileqb_sound : soundness.
 
 Lemma ieqM_sound : gamma ieqM eqbM.
 Proof.
   intros ???. intros ???. unfold ieqM, eqbM.
-  apply gamma_fun_apply. admit.
-  eauto with soundness.
+  apply gamma_fun_apply; eauto with soundness. 
 Admitted.
 Hint Resolve ieqM_sound : soundness.
 
@@ -354,33 +377,35 @@ Lemma build_interval_sound :
   gamma build_interval build_natural.
 Proof.
   intros ???. unfold build_interval, build_natural.
-  apply gamma_fun_apply. admit.
-  eauto with soundness.
-Admitted.
+  apply gamma_fun_apply; eauto with soundness. 
+  apply gamma_fun_apply; eauto with soundness. simpl. unfold pure_stateT.
+  intros ??????. apply gamma_fun_apply; eauto with soundness.
+  split; auto.
+Qed.
 Hint Resolve build_interval_sound : soundness.
 
 Lemma extract_interval_sound : forall n,
   gamma (extract_interval n) (extract_natM n).
 Proof.
   intros ?. unfold extract_interval, extract_natM.
-  apply gamma_fun_apply. admit.
+  apply gamma_fun_apply; eauto with soundness.
   simpl. unfold pure_stateT. intros ???. simpl.
-  split.
-  - eauto with soundness. admit.
-  - eauto with soundness.
-Admitted.
+  split; auto.
+  unfold gamma_interval. rewrite interval_min_refl, interval_max_refl. 
+  split; apply preorder_refl.
+Qed.
 Hint Resolve extract_interval_sound : soundness.
 
 Lemma ensure_interval_sound : gamma ensure_interval ensure_nat.
 Proof.
   intros ???. unfold ensure_interval, ensure_nat.
   destruct a, b; try contradiction.
-  - admit. 
-  - apply gamma_fun_apply. admit. eauto with soundness.
-  - apply gamma_fun_apply. admit. eauto with soundness.
-  - admit.
-  - apply gamma_fun_apply. admit. eauto with soundness.
-Admitted.
+  - simpl. unfold lift_stateT. intros ???. simpl. auto.
+  - apply gamma_fun_apply; eauto with soundness. apply lift_stateT_sound.
+  - apply gamma_fun_apply; eauto with soundness. 
+  - simpl. unfold lift_stateT. intros ???. simpl. auto.
+  - simpl. unfold lift_stateT. intros ???. simpl. auto.
+Qed.
 Hint Resolve ensure_interval_sound : soundness.
 
 (* Soundness of operations on booleans *)
@@ -418,41 +443,53 @@ Lemma ensure_abool_sound :
   gamma ensure_abool ensure_bool.
 Proof. 
   intros ???. unfold ensure_abool, ensure_bool. 
-  destruct a, b; eauto with soundness; try contradiction.
-  apply gamma_fun_apply. admit. eauto with soundness.
-Admitted.
+  destruct a, b; eauto with soundness; try contradiction;
+  try apply gamma_fun_apply; eauto with soundness. apply lift_stateT_sound.
+  simpl. unfold pure_stateT. intros ???. apply gamma_fun_apply; eauto with
+    soundness. split; auto. apply lift_stateT_sound. apply lift_stateT_sound.
+  simpl. unfold lift_stateT. intros ???. simpl. auto.
+Qed.
 Hint Resolve ensure_abool_sound : soundness.
 
 Lemma neg_abM_sound :
   gamma neg_abM negbM.
 Proof.
-  intros ???. unfold neg_abM, negbM. apply gamma_fun_apply.
-  admit. apply gamma_fun_apply. eauto with soundness.
+  intros ???. unfold neg_abM, negbM. apply gamma_fun_apply; eauto with
+    soundness.
+  apply gamma_fun_apply; eauto with soundness.
+  simpl. unfold pure_stateT. intros ??????. simpl. split; auto.
   destruct a, b; eauto with soundness.
-Admitted.
+Qed.
 Hint Resolve neg_abM_sound : soundness.
 
 Lemma and_abM_sound :
   gamma and_abM andbM.
 Proof.
-  intros ??????. unfold and_abM, andbM. apply gamma_fun_apply.
-  admit. destruct a, b, a0, b0; eauto with soundness.
-Admitted.
+  intros ??????. unfold and_abM, andbM. apply gamma_fun_apply;
+  eauto with soundness. apply gamma_fun_apply. simpl.
+  intros ??????. unfold pure_stateT. simpl. split; auto.
+  destruct a, b, a0, b0; eauto with soundness.
+Qed.
 Hint Resolve and_abM_sound : soundness.
 
 Lemma extract_abM_sound: forall b,
   gamma (extract_abM b) (extract_boolean b).
 Proof. 
-  intro b. unfold extract_abM, extract_boolean. apply gamma_fun_apply.
-  admit. destruct b; eauto with soundness.
-Admitted.
+  intro b. unfold extract_abM, extract_boolean. apply gamma_fun_apply;
+  eauto with soundness. apply gamma_fun_apply; eauto with soundness. 
+  simpl. intros ??????. unfold pure_stateT. split; auto.
+  destruct b; eauto with soundness.
+Qed.
 Hint Resolve extract_abM_sound : soundness.
 
 Lemma build_boolean_sound :
-  gamma build_abool build_bool.
+  gamma build_abool build_boolean.
 Proof.
-  intros ???. unfold build_abool, build_bool.
-Admitted.
+  intros ???. unfold build_abool, build_boolean.
+  apply gamma_fun_apply; eauto with soundness.
+  apply gamma_fun_apply; eauto with soundness.
+  simpl. unfold pure_stateT; intros ??????; simpl. split; auto.
+Qed.
 Hint Resolve build_boolean_sound : soundness.
 
 (* Soundness of applied functions *)
@@ -479,7 +516,6 @@ Lemma t_update_sound : forall (ast : abstract_store) (st : store) x p n,
   gamma p n ->
   gamma (t_update ast x p) (t_update st x n).
 Proof. 
-  repeat constructor.
   unfold t_update. intros. simpl. unfold gamma_store. intro x'.
   destruct (beq_string x x'); auto. 
 Qed.
@@ -520,8 +556,10 @@ Lemma extract_build_val_sound : forall v,
         (extract_build_val (M:=ConcreteState) v).
 Proof.
   destruct v; simpl. 
-  - intros ???. apply gamma_fun_apply. unfold bindM. apply bind_maybeAT_sound.
-  eauto with soundness.
+  - intros ???. apply gamma_fun_apply; eauto with soundness. 
+    (* apply bindM_sound, apply extract sound, build sound *)
+    admit.
+  - (* as above *)
 Admitted.
 Hint Resolve extract_build_val_sound : soundness.
 

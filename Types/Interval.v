@@ -1,3 +1,4 @@
+Require Export Base.
 Require Import Types.AbstractBool.
 Require Import Coq.Arith.Plus.
 Require Import Coq.Arith.Mult.
@@ -10,11 +11,14 @@ Definition min (i : interval) : nat :=
 Definition max (i : interval) : nat := 
   if (Nat.leb (fst i) (snd i)) then (snd i) else (fst i).
 
+
 Definition iplus (i1 i2 : interval) : interval := 
   ((min i1) + (min i2), (max i1) + (max i2)).
+Hint Unfold iplus : soundness.
 
 Definition imult (i1 i2 : interval) : interval :=
   ((min i1) * (min i2), (max i1) * (max i2)).
+Hint Unfold imult : soundness.
 
 Definition ieqb (i1 i2 : interval) : abstr_bool :=
   if (Nat.ltb (max i1) (min i2)) then
@@ -32,6 +36,7 @@ Definition ileqb (i1 i2 : interval) : abstr_bool :=
     ab_false
   else
     ab_top.
+
 
 Require Import Coq.Arith.Le.
 Lemma interval_increasing : forall i,
@@ -89,12 +94,14 @@ Lemma interval_min_refl : forall i,
 Proof.
   intro. unfold min. simpl. destruct (i <=? i); reflexivity.
 Qed.
+Hint Rewrite interval_min_refl : soundness.
 
 Lemma interval_max_refl : forall i,
   max (i,i) = i.
 Proof.
   intro. unfold max. simpl. destruct (i <=? i); reflexivity.
 Qed.
+Hint Rewrite interval_max_refl : soundness.
 
 Lemma interval_min_mult : forall i j,
   min (imult i j) = min i * min j.
@@ -112,5 +119,3 @@ Proof.
   apply Coq.Arith.Mult.mult_le_compat; apply interval_increasing.
   unfold max at 1. simpl. apply Nat.leb_le in H. rewrite H. reflexivity.
 Qed.
-
-

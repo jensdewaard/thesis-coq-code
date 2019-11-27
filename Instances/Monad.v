@@ -301,20 +301,32 @@ Hint Rewrite fmap_maybeT_id fmap_maybeT_compose : soundness.
 Section MaybeT_Applicative.
   Context {M : Type -> Type} `{inst : Monad M}.
 
-  Definition pure_maybeT {A : Type} (x : A) :  M (Maybe A) :=
+  Definition pure_maybeT {A : Type} (x : A) : MaybeT M A :=
     pure (Just x).
   Arguments pure_maybeT [_] _.
   Hint Unfold pure_maybeT : soundness.
 
-  Definition app_maybeT {A B : Type} (Mmf : M (Maybe (A -> B)))
-    (Mma : M (Maybe A)) : M (Maybe B) :=
-    Mmf >>= (λ mf, Mma >>= (λ ma, pure (app_maybe mf ma))).
+  Definition app_maybeT {A B : Type} (Mmf : MaybeT M (A -> B))
+    (Mma : MaybeT M A) : MaybeT M B := 
+    @bindM M _ _ inst _ _ Mmf (λ mf : Maybe (A → B), 
+      match mf with
+      | Just f =>
+          @bindM M _ _ inst _ _ Mma (λ ma : Maybe A, 
+            match ma with
+            | Just a => pure (Just (f a))
+            | None => pure None
+            end)
+      | None => pure None
+      end).
   Arguments app_maybeT [_ _] _ _.
   Hint Unfold app_maybeT : soundness.
 
   Lemma app_maybeT_id : ∀ (A : Type) (f : M (Maybe A)),
     app_maybeT (pure_maybeT id) f = f.
-  Proof. solve_monad. Qed.
+  Proof. 
+    solve_monad. rewrite <- (bind_id_right (M:=M)). 
+    f_equal; ext. destruct x; reflexivity.
+  Qed.
 
   Lemma app_maybeT_homomorphism : ∀ (A B : Type) (f : A → B) (x : A),
   app_maybeT (pure_maybeT f) (pure_maybeT x) = pure_maybeT (f x).
@@ -330,16 +342,18 @@ Section MaybeT_Applicative.
     app_maybeT (app_maybeT (app_maybeT (pure_maybeT compose) u) v) w.
   Proof. 
     intros. unfold app_maybeT, pure_maybeT. rewrite bind_id_left.
-    repeat rewrite bind_assoc. f_equal; ext. rewrite bind_id_left.
-    repeat rewrite bind_assoc. f_equal; ext. rewrite bind_id_left.
-    repeat rewrite bind_assoc. f_equal; ext. rewrite bind_id_left.
-    solve_monad. 
+    repeat rewrite bind_assoc. f_equal; ext. destruct x. rewrite bind_id_left.
+    repeat rewrite bind_assoc. f_equal; ext. destruct x. rewrite bind_id_left.
+    repeat rewrite bind_assoc. f_equal; ext. destruct x. rewrite bind_id_left.
+    reflexivity. rewrite bind_id_left. reflexivity. repeat rewrite bind_id_left.
+    reflexivity. repeat rewrite bind_id_left. reflexivity.
   Qed.
 
   Lemma fmap_app_maybeT : ∀ (A B : Type) (f : A → B) (x : MaybeT M A),
-  fmap f x = app_maybeT (pure_maybeT f) x.
+  fmap_maybeT f x = app_maybeT (pure_maybeT f) x.
   Proof. 
-    solve_monad. rewrite fmap_bind_pure. reflexivity.
+    solve_monad. rewrite fmap_bind_pure. f_equal; ext. 
+    unfold compose. destruct x0; reflexivity.
   Qed.
 
   Global Instance applicative_maybeT : Applicative (MaybeT M) :=
@@ -359,10 +373,10 @@ Hint Rewrite app_maybeT_id app_maybeT_homomorphism : soundness.
 Section MaybeT_Monad.
   Context {M : Type -> Type} `{inst : Monad M}.
 
-  Definition bind_maybeT {A B : Type} (Mma : MaybeT M A)
+  Definition bind_maybeT {A B : Type} (x : MaybeT M A)
     (f : A -> MaybeT M B) : MaybeT M B :=
-    @bindM M _ _ inst (Maybe A) (Maybe B) Mma (fun ma =>
-      match ma with
+    @bindM M _ _ inst (Maybe A) (Maybe B) x (fun v =>
+      match v with
       | None => pure None
       | Just a => f a
       end
@@ -377,7 +391,8 @@ Section MaybeT_Monad.
   Lemma bind_maybeT_id_right : ∀ (A : Type) (MA : MaybeT M A),
     bind_maybeT MA pure = MA.
   Proof. 
-    solve_monad. rewrite <- (bind_id_right (M:=M)). f_equal. simple_solve.
+    solve_monad. rewrite <- (bind_id_right (M:=M)). f_equal. 
+    ext; destruct x; reflexivity.
   Qed.
 
   Lemma bind_maybeT_assoc : ∀ (A B C : Type) (MA : MaybeT M A) 
@@ -385,18 +400,15 @@ Section MaybeT_Monad.
     bind_maybeT (bind_maybeT MA f) g =
     bind_maybeT MA (λ a : A, bind_maybeT (f a) g).
   Proof. solve_monad. Qed.
-  
+
   Lemma bind_maybeT_app : ∀ (A B : Type) (mf : MaybeT M (A → B)) 
     (ma : MaybeT M A),
     mf <*> ma = 
-    bind_maybeT mf (λ f : A → B, bind_maybeT ma (λ a : A, pure (f a))).
+    bind_maybeT mf (λ f : A → B, bind_maybeT ma (λ a : A, (f ∘ pure) a)).
   Proof. 
-    intros. simpl. unfold app_maybeT, pure_maybeT. simple_solve. 
-    f_equal; ext. solve_monad. unfold pass. 
-    unfold compose. unfold const. unfold fmap_replace_left.
-    unfold compose. rewrite app_fmap. 
-
-  Admitted.
+    intros. simpl. unfold app_maybeT, pure_maybeT, bind_maybeT.
+    f_equal; ext.
+  Qed.
 
   Lemma bind_maybeT_fmap : ∀ (A B C : Type) (f : A → B) 
     (x : MaybeT M A) (g : B → MaybeT M C),
@@ -406,9 +418,8 @@ Section MaybeT_Monad.
   Lemma bind_maybeT_pass : ∀ (A B : Type) (ma : MaybeT M A) (mb : MaybeT M B),
     ma >> mb = bind_maybeT ma (λ _ : A, mb).
   Proof.
-    intros. unfold pass, fmap_replace_left, compose.
-    rewrite app_fmap. unfold bind_maybeT.
-  Admitted.
+    solve_monad.
+  Qed.
 
   Global Instance monad_maybeT : Monad (MaybeT M) :=
   {
@@ -473,17 +484,46 @@ Section MaybeAT_Applicative.
   Arguments pure_maybeAT [_] _.
   Hint Unfold pure_maybeAT : soundness.
 
-  Definition app_maybeAT {A B : Type} (Mmf : M (AbstractMaybe (A -> B)))
-    (Mma : M (AbstractMaybe A)) : M (AbstractMaybe B) :=
-    bindM Mmf (fun mf : AbstractMaybe (A -> B) =>
-    bindM Mma (fun ma : AbstractMaybe A =>
-      pure (app_abstract_maybe mf ma))).
+  Definition app_maybeT' {A B : Type} (Mmf : MaybeT M (A -> B))
+    (Mma : MaybeT M A) : MaybeT M B := 
+    @bindM M _ _ inst _ _ Mmf (λ mf : Maybe (A → B), 
+      match mf with
+      | Just f =>
+          @bindM M _ _ inst _ _ Mma (λ ma : Maybe A, 
+            match ma with
+            | Just a => pure (Just (f a))
+            | None => pure None
+            end)
+      | None => pure None
+      end).
+  Definition app_maybeAT {A B : Type} (Mmf : MaybeAT M (A -> B))
+    (Mma : MaybeAT M A) : MaybeAT M B :=
+    @bindM M _ _ inst _ _ Mmf 
+      (λ mf : AbstractMaybe (A -> B),
+      match mf with 
+      | JustA f => @bindM M _ _ inst _ _ Mma 
+          (λ ma : AbstractMaybe A,
+          match ma with
+          | JustOrNoneA a => pure (F:=M) (JustOrNoneA (f a))
+          | JustA a => pure (F:=M) (JustA (f a))
+          | NoneA => pure (F:=M) NoneA
+          end)
+      | JustOrNoneA f => @bindM M _ _ inst _ _ Mma (λ ma : AbstractMaybe A,
+          match ma with
+          | JustA a | JustOrNoneA a => pure (F:=M) (JustOrNoneA (f a))
+          | NoneA => pure (F:=M) NoneA
+          end)
+      | NoneA => pure (F:=M) NoneA
+      end).
   Arguments app_maybeAT [_ _] _ _.
   Hint Unfold app_maybeAT : soundness.
 
   Lemma app_maybeAT_id : ∀ (A : Type) (f : MaybeAT M A), 
     app_maybeAT (pure_maybeAT id) f = f.
-  Proof. solve_monad. Qed.
+  Proof. 
+    solve_monad. rewrite <- (bind_id_right (M:=M)). f_equal; ext.
+    destruct x; reflexivity.
+  Qed.
 
   Lemma app_maybeAT_homomorphism : ∀ (A B : Type) (f : A → B) (x : A),
     app_maybeAT (pure_maybeAT f) (pure_maybeAT x) = pure_maybeAT (f x).
@@ -498,8 +538,15 @@ Section MaybeAT_Applicative.
     (u : MaybeAT M (B → C)) (v : MaybeAT M (A → B)) (w : MaybeAT M A),
     app_maybeAT u (app_maybeAT v w) =
     app_maybeAT (app_maybeAT (app_maybeAT (pure_maybeAT compose) u) v) w.
-  Proof. solve_monad. Admitted.
+  Proof. solve_monad. Qed.
   Hint Unfold fmap_maybeAT : soundness.
+
+  Lemma app_maybeAT_fmap : ∀ (A B : Type) (f : A → B) (x : MaybeAT M A),
+    f <$> x = app_maybeAT (pure_maybeAT f) x.
+  Proof.
+    solve_monad. unfold fmap_abstract_maybe. rewrite fmap_bind_pure.
+    f_equal; ext. unfold compose. destruct x0; reflexivity.
+  Qed.
 
   Global Instance applicative_maybeAT : Applicative (MaybeAT M) :=
   {
@@ -509,8 +556,8 @@ Section MaybeAT_Applicative.
     app_homomorphism := app_maybeAT_homomorphism;
     app_interchange := app_maybeAT_interchange;
     app_compose := app_maybeAT_compose;
-  }. solve_monad. unfold fmap_abstract_maybe. rewrite fmap_bind_pure.
-  reflexivity. Defined.
+    app_fmap := app_maybeAT_fmap;
+  }. 
 End MaybeAT_Applicative.
 Hint Unfold pure_maybeAT app_maybeAT : soundness.
 
@@ -549,6 +596,25 @@ Section MaybeAT_Monad.
     bind_maybeAT MA (λ a : A, bind_maybeAT (f a) g).
   Proof. solve_monad. Qed.
 
+  Lemma bind_maybeAT_app : ∀ (A B : Type) (mf : MaybeAT M (A → B)) 
+    (ma : MaybeAT M A), mf <*> ma =
+    bind_maybeAT mf (λ f : A → B, bind_maybeAT ma (λ a : A, (f ∘ pure) a)).
+  Proof.
+    solve_monad.
+  Qed.
+
+  Lemma bind_maybeAT_fmap : ∀ (A B C : Type) (f : A → B) (x : MaybeAT M A) 
+    (g : B → MaybeAT M C), bind_maybeAT (f <$> x) g = bind_maybeAT x (f ∘ g).
+  Proof.
+    solve_monad.
+  Qed.
+
+  Lemma bind_maybeAT_pass : ∀ (A B : Type) (ma : MaybeAT M A) 
+    (mb : MaybeAT M B), ma >> mb = bind_maybeAT ma (λ _ : A, mb).
+  Proof.
+    solve_monad.
+  Qed.
+
   Global Instance monad_maybeAT 
   : Monad (MaybeAT M) :=
   {
@@ -556,7 +622,10 @@ Section MaybeAT_Monad.
     bind_id_left := bind_maybeAT_id_left;
     bind_id_right := bind_maybeAT_id_right;
     bind_assoc := bind_maybeAT_assoc;
-  }. all: solve_monad. Admitted.
+    bind_app := bind_maybeAT_app;
+    bind_fmap := bind_maybeAT_fmap;
+    bind_pass := bind_maybeAT_pass;
+  }. 
 End MaybeAT_Monad.
 Hint Unfold bind_maybeAT : soundness.
 
@@ -568,10 +637,24 @@ Section MaybeAT_MonadT.
   Arguments lift_maybeAT [_].
   Hint Unfold lift_maybeAT : soundness.
 
+  Definition lift_maybeAT_pure : ∀ (A : Type) (x : A),
+    lift_maybeAT (pure x) = pure x.
+  Proof.
+    solve_monad.
+  Qed.
+
+  Definition lift_maybeAT_bind : ∀ (A B : Type) (x : M A) (f : A → M B),
+    lift_maybeAT (x >>= f) = lift_maybeAT x >>= (f ∘ lift_maybeAT (A:=B)).
+  Proof. 
+    solve_monad.
+  Qed.
+
   Global Instance monadT_maybeAT : MonadT MaybeAT :=
   {
     liftT := lift_maybeAT;
-  }. all: solve_monad. Admitted.
+    lift_pure := lift_maybeAT_pure;
+    lift_bind := lift_maybeAT_bind;
+  }. 
     
 End MaybeAT_MonadT.
 
@@ -688,7 +771,7 @@ Hint Unfold bind_stateT : soundness.
 Section MonadT_StateT.
   Context {M : Type -> Type} `{Monad M}.
 
-  Definition lift_stateT (S : Type) {A : Type} (MA : M A) : StateT S M A :=
+  Definition lift_stateT {S : Type} {A : Type} (MA : M A) : StateT S M A :=
     fun st => bindM MA (fun a => pure (a, st)).
   Hint Unfold lift_stateT : soundness.
 
@@ -697,4 +780,3 @@ Section MonadT_StateT.
     liftT := @lift_stateT S;
   }. all: solve_monad. Defined.
 End MonadT_StateT.
-

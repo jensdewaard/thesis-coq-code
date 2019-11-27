@@ -6,8 +6,8 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Instances.Monad.
 Require Import Instances.Preorder.
 Require Import Language.Statements.
-Require Import Types.Result.
 Require Import Types.Stores.
+Require Import Types.State.
 
 Definition abstract_store_join
   (ast1 ast2 : abstract_store) : abstract_store :=
@@ -114,19 +114,20 @@ Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) :=
 
 End abstract_maybe_joinable.
 
-Section joinable_maybeAT.
-  Context {A} `{Joinable A}.
-  Context {M : Type -> Type} `{Monad M, 
-    forall {A}, PreorderedSet A -> PreorderedSet (M A)}.
-  
-  Definition join_maybeAT : MaybeAT M A -> MaybeAT M A-> MaybeAT M A := 
-    liftA2 join_op.
-  Hint Unfold join_maybeAT : soundness.
+Section joinable_maybeAT_state.
+  Context {S A} `{Joinable A, Joinable S}.
 
-  Global Instance maybeAT_joinable : Joinable (MaybeAT M A) :=
+  Global Instance maybeAT_state_joinable : Joinable (MaybeAT (State S) A) :=
   {
-    join_op := join_maybeAT;
+    join_op := state_join;
+    join_upper_bound_left := state_join_upper_bound_left;
+    join_upper_bound_right := state_join_upper_bound_right;
   }.
-  Admitted.
-End joinable_maybeAT.
+End joinable_maybeAT_state.
 
+Section joinable_abstract_state.
+  Context {A} `{Joinable A}.
+  Global Instance abstract_state_joinable : Joinable (AbstractState A).
+  Proof.
+  Admitted.
+End joinable_abstract_state.

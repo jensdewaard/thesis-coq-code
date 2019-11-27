@@ -13,7 +13,7 @@ Notation "x '<$>' y" := (fmap x y)
   (at level 40, left associativity).
 
 Section methods.
-  Context {F : Type -> Type} `{Functor F}.
+  Context {F : Type -> Type} `{F_inst: Functor F}.
 
   (* g (f a) = compose g f = f ∘ g *)
   Definition fmap_replace_left {A B} : A → F B → F A :=
