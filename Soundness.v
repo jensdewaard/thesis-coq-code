@@ -127,19 +127,6 @@ Instance maybeA_sound {A A'} `{Galois A A'} :
   bind_sound := bind_abstract_maybe_sound;
 }.
 
-Instance galois_stateT {S S' M M' A A'} 
-  `{Galois S S', Galois (M (A*S)%type) (M'(A'*S')%type)} :
-  Galois (StateT S M A) (StateT S' M' A') :=
-  {
-    gamma := gamma_fun;
-  }.
-Proof.
-  unfold monotone. intros.
-  unfold gamma_fun. simpl. unfold Preorder.preordered_set_le.
-  intros. simpl in H3. unfold Preorder.pointwise_ordering in H3.
-  eapply widen. apply H3. apply H4. apply H5.
-Defined.
-
 Instance state_sound {S S' A A'} `{Galois S S', Galois A A'} 
   : SoundMonads (State store) (State abstract_store).
 Proof. split; intros f g Hfg x y Hxy.

@@ -240,3 +240,17 @@ Section galois_maybeT.
     gamma_monotone := gamma_monotone;
   }.
 End galois_maybeT.
+
+Instance galois_stateT {S S' M M' A A'} 
+  `{Galois S S', Galois (M (A*S)%type) (M'(A'*S')%type)} :
+  Galois (StateT S M A) (StateT S' M' A') :=
+  {
+    gamma := gamma_fun;
+  }.
+Proof.
+  unfold monotone. intros.
+  unfold gamma_fun. simpl. unfold Preorder.preordered_set_le.
+  intros. simpl in H3. unfold Preorder.pointwise_ordering in H3.
+  eapply widen. apply H3. apply H4. apply H5.
+Defined.
+
