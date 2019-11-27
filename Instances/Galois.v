@@ -106,7 +106,9 @@ Hint Unfold gamma_value : soundness.
 
 Lemma gamma_value_monotone : monotone gamma_value.
 Proof.
-  simple_solve. 
+  unfold monotone, gamma_value. intros. intros x. 
+  repeat destr; intros; try contradiction; try reflexivity.
+  all: simpl in H; eapply widen; apply H + assumption.
 Qed.
 
 Global Instance galois_values : Galois cvalue avalue := 
