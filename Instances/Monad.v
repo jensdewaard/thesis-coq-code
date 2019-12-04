@@ -715,12 +715,11 @@ Definition StateT (S : Type) (M : Type -> Type) (A : Type) : Type :=
 Section Functor_StateT.
   Context {M : Type -> Type} `{Monad M}.
 
-  Definition fmap_stateT (S : Type) {A B} (f : A -> B) (m : StateT S M A)
+  Definition fmap_stateT {S A B : Type} (f : A -> B) (m : StateT S M A)
     : StateT S M B :=
     fun s : S => bindM (m s) 
       (fun x => let (a, s') := x : (A*S)%type in pure (f a, s')).
   Hint Unfold fmap_stateT : soundness.
-  Arguments fmap_stateT [_].
 
   Global Instance functor_stateT (S : Type) : Functor (StateT S M) :=
   {
@@ -732,11 +731,11 @@ Hint Unfold fmap_stateT : soundness.
 Section Applicative_StateT.
   Context {M : Type -> Type} `{Monad M}.
 
-  Definition pure_stateT (S : Type) {A : Type} (x : A) : StateT S M A :=
+  Definition pure_stateT {S A : Type} (x : A) : StateT S M A :=
     fun s => pure (x, s).
 
   Definition app_stateT
-    (S : Type) {A B : Type}
+    {S A B : Type}
     (sf : StateT S M (A -> B)) (sa : StateT S M A) : StateT S M B :=
     fun st : S =>
     bindM (sf st) (fun '(f, stf) =>
@@ -755,7 +754,7 @@ Hint Unfold pure_stateT app_stateT : soundness.
 Section Monad_StateT.
   Context {M : Type -> Type} `{Monad M}.
 
-  Definition bind_stateT (S : Type) {A B : Type} 
+  Definition bind_stateT {S A B : Type} 
     (MA : StateT S M A) (f : A -> StateT S M B) : StateT S M B :=
     fun st => bindM (MA st) 
       (fun p : (A*S)%type => let (a,st') := p in f a st').
@@ -771,7 +770,7 @@ Hint Unfold bind_stateT : soundness.
 Section MonadT_StateT.
   Context {M : Type -> Type} `{Monad M}.
 
-  Definition lift_stateT {S : Type} {A : Type} (MA : M A) : StateT S M A :=
+  Definition lift_stateT {S A : Type} (MA : M A) : StateT S M A :=
     fun st => bindM MA (fun a => pure (a, st)).
   Hint Unfold lift_stateT : soundness.
 
