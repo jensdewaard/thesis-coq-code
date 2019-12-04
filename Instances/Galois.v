@@ -254,3 +254,11 @@ Proof.
   eapply widen. apply H3. apply H4. apply H5.
 Defined.
 
+Instance galois_state_monad {S S' A A' : Type} `{Galois S S', Galois A A'} :
+  Galois (State S A) (State S' A') :=
+  {
+    gamma := gamma_fun;
+    gamma_monotone := gamma_fun_monotone;
+  }.
+
+
