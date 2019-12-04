@@ -178,7 +178,6 @@ End joinable_maybeAT_state.
 
 Section joinable_abstract_state.
   Context {A} `{Joinable A}.
-  Compute (AbstractState A).
   
   Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A :=
     λ st, join_op (st1 st) (st2 st).
