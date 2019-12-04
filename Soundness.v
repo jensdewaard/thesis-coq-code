@@ -62,7 +62,8 @@ Proof.
 Qed.
 Hint Resolve fmap_maybe_sound : soundness.
 
-Lemma pure_maybe_sound {A A'} `{Galois A A'} : gamma Just Just.
+Lemma pure_maybe_sound {A A'} `{Galois A A'} : 
+  gamma (pure (F:=Maybe) (A:=A')) pure.
 Proof.
   eauto with soundness.
 Qed.
