@@ -3,7 +3,6 @@ Require Import Classes.Monad.
 Require Import Classes.Functor.
 Require Import Classes.Applicative.
 Require Import Classes.Galois.
-Require Import Instances.Monad.
 Require Import Instances.Galois.
 
 Section monad_sound. 
@@ -14,12 +13,12 @@ Section monad_sound.
 
   Class SoundMonads : Type :=
   {
-    fmap_sound : gamma (Galois:=GFun) (B:=(A' → B') → M' A' → M' B')
+    fmap_sound : gamma (B:=(A' → B') → M' A' → M' B')
                   fmap fmap;
-    pure_sound : gamma (Galois:=GFun) (B:=A' → M' A') pure pure;
-    app_sound  : gamma (Galois:=GFun) (B:=M' (A' → B') → M' A' → M' B')
+    pure_sound : gamma (B:=A' → M' A') pure pure;
+    app_sound  : gamma (B:=M' (A' → B') → M' A' → M' B')
                   app app; 
-    bind_sound : gamma (Galois:=GFun) (B:=M' A' → (A' → M' B') → M' B')
+    bind_sound : gamma (B:=M' A' → (A' → M' B') → M' B')
                   bindM bindM;
   }.
 End monad_sound.
