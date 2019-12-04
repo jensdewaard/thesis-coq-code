@@ -169,7 +169,7 @@ Proof.
   destruct H7. eauto with soundness. 
 Qed.
 
-Instance state_sound : SoundMonads (State store) (State abstract_store) :=
+Instance state_sound {S S' : Type} `{Galois S S'} : SoundMonads (State S) (State S') :=
   {
     fmap_sound := fmap_state_sound;
     pure_sound := pure_state_sound;
