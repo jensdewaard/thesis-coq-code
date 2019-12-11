@@ -78,8 +78,7 @@ Hint Unfold gamma_fun : soundness.
 Lemma gamma_fun_monotone :
   monotone gamma_fun.
 Proof.
-  simple_solve.
-  apply widen with (f:= a a0). apply H3. auto.
+  simple_solve. eapply widen. apply H3. auto.
 Qed.
 
 Global Instance GFun : 

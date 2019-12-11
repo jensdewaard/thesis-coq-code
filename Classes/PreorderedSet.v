@@ -8,8 +8,6 @@ Class PreorderedSet (X : Type) : Type :=
 }.
 Hint Resolve preorder_refl preorder_trans : soundness.
 
-Arguments Build_PreorderedSet X {_ _ _}.
-
 Definition monotone {A A'} `{PreorderedSet A, PreorderedSet A'} :
   (A -> A') -> Prop :=
   fun f => forall (a a': A), preorder a a' -> preorder (f a) (f a').

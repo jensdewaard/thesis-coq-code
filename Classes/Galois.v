@@ -2,8 +2,9 @@ Require Export Base.
 Require Import PreorderedSet.
 Require Import Instances.Preorder.
 
-Class Galois (A B : Type) 
-`{PreorderedSet B} : Type :=
+Implicit Type A B : Type.
+
+Class Galois A B `{PreorderedSet B} : Type :=
 {
   gamma : B -> A -> Prop;
   gamma_monotone : monotone gamma;
@@ -17,9 +18,8 @@ Ltac gamma_destruct := repeat
   | x : gamma _  _ |- _ => inv x
   end.
 
-Lemma widen {A B : Type} `{Galois B A}:
-  forall (f f' : A) (b : B),
-  preorder f f' -> gamma f b -> gamma f' b.
+Lemma widen {A B} `{Galois B A}: forall (a a' : A) (b : B), 
+    preorder a a' -> gamma a b -> gamma a' b.
 Proof.
   intros.
   pose proof gamma_monotone.

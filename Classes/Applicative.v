@@ -2,7 +2,10 @@ Require Export Base.
 Require Import Classes.Functor.
 Require Import Coq.Program.Basics.
 
-Class Applicative (F : Type -> Type) `{Functor F} : Type :=
+Implicit Type F : Type → Type.
+Implicit Type A B C : Type.
+
+Class Applicative F `{Functor F} : Type :=
 {
   pure : forall {A}, A -> F A;
   app : forall {A B}, F (A -> B) -> F A -> F B;
@@ -13,7 +16,7 @@ Class Applicative (F : Type -> Type) `{Functor F} : Type :=
     app u (pure y) = app (pure (fun f => f y)) u;
   app_compose : forall {A B C} (u : F (B -> C)) (v : F (A -> B)) (w : F A),
     app u (app v w) = app (app (app (pure compose) u) v) w;
-  app_fmap : forall (A B : Type) (f : A -> B) (x : F A), 
+  app_fmap : forall {A B} (f : A -> B) (x : F A), 
     fmap f x = app (pure f) x;
 }.
 
@@ -23,7 +26,7 @@ Hint Rewrite @app_homomorphism @app_compose @app_interchange : soundness.
 Hint Rewrite @app_fmap : soundness.
 
 Section laws_and_methods.
-  Context {F : Type -> Type} `{Applicative F}.
+  Context {F} `{Applicative F}.
 
   Definition pass {A B} (fa : F A) (fb : F B) : F B := 
     (id <$ fa) <*> fb.
@@ -35,7 +38,7 @@ Section laws_and_methods.
   Notation "x << y" := (keep x y) (right associativity, at level 41).
   Hint Unfold keep : soundness.
 
-  Lemma pass_right : forall {A B : Type} (x : A) (y : F B), 
+  Lemma pass_right : forall {A B} (x : A) (y : F B), 
     pure x >> y = y.
   Proof. 
     intros. unfold pass. unfold fmap_replace_left. unfold compose. 

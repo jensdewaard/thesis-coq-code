@@ -30,6 +30,7 @@ Require Import Types.State.
 Require Import Types.Stores.
 Require Import Classes.SoundMonad.
 
+
 (* Soundness of unit *)
 Lemma gamma_unit_sound :
   gamma tt tt.
@@ -37,7 +38,6 @@ Proof. constructor.  Qed.
 Hint Resolve gamma_unit_sound : soundness.
 
 (* Soundness of functions *)
-
 Lemma gamma_fun_apply {A A' B B'} `{Galois A A', Galois B B'}
     (f : A -> B) (f' : A' -> B') x x' :
   gamma f' f -> gamma x' x ->
@@ -55,10 +55,12 @@ Qed.
 Hint Resolve gamma_fun_applied : soundness.
 
 (* Soundness of monadic operations *)
-Lemma fmap_maybe_sound {A A'} `{Galois A A'} : gamma fmap_maybe fmap_maybe.
+Lemma fmap_maybe_sound {A A' B B'} `{Galois A A', Galois B B'} : 
+  gamma (fmap (F:=Maybe) (A:=A') (B:=B')) 
+        fmap.
 Proof.
   intros ???. unfold fmap_maybe. intros ???. destruct a0, b0; eauto with
-    soundness.
+    soundness. simpl. auto.
 Qed.
 Hint Resolve fmap_maybe_sound : soundness.
 
@@ -69,15 +71,17 @@ Proof.
 Qed.
 Hint Resolve pure_maybe_sound : soundness.
 
-Lemma bind_maybe_sound {A A' : Type} `{Galois A A'} : 
-  gamma (bind_maybe (A:=A'))  bind_maybe.
+Lemma bind_maybe_sound {A A' B B' : Type} `{Galois A A', Galois B B'} : 
+  gamma (bindM (M:=Maybe) (A:=A')) 
+        bindM.
 Proof.
   intros f g Hfg x y Hxy. destruct f, g; eauto with soundness.
-  inv Hfg.
+  apply Hxy. apply Hfg. inv Hfg.
 Qed.
 Hint Resolve bind_maybe_sound : soundness.
 
-Lemma app_maybe_sound {A A'} `{Galois A A'} : gamma app_maybe app_maybe.
+Lemma app_maybe_sound {A A' B B'} `{Galois A A', Galois B B'} : 
+  gamma (app (F:=Maybe) (A:=A')) app.
 Proof. 
   intros f g Hfg x y Hxy. destruct f, g, x, y; simpl; eauto with soundness.
 Qed.
@@ -90,36 +94,37 @@ Instance maybe_sound {A A'} `{Galois A A'} : SoundMonads Maybe Maybe :=
   bind_sound := bind_maybe_sound;
 }. 
 
-Lemma fmap_abstract_maybe_sound {A A'} `{Galois A A'} : 
-  gamma fmap_abstract_maybe fmap_maybe.
+Lemma fmap_abstract_maybe_sound {A A' B B'} `{Galois A A', Galois B B'} : 
+  gamma (fmap (F:=AbstractMaybe) (A:=A')) fmap.
 Proof.
   intros ???. unfold fmap_abstract_maybe, fmap_maybe. intros ???. 
-  destruct a0, b0; eauto with soundness.
+  destruct a0, b0; eauto with soundness; simpl; auto.
 Qed.
 Hint Resolve fmap_maybe_sound : soundness.
 
 Lemma pure_abstract_maybe_sound {A A'} `{Galois A A'} :
-  gamma (JustA (A:=A')) (Just).
+  gamma (pure (F:=AbstractMaybe)) pure.
 Proof.
   intros f g Hfg. apply Hfg.
 Qed.
 
-Lemma app_abstract_maybe_sound {A A'} `{Galois A A'} :
-  gamma app_abstract_maybe app_maybe.
+Lemma app_abstract_maybe_sound {A A' B B'} `{Galois A A', Galois B B'} :
+  gamma (app (F:=AbstractMaybe) (A:=A')) app.
 Proof.
   intros f g Hfg x y Hxy. destruct f, x, g, y; eauto with soundness;
   apply Hfg; apply Hxy.
 Qed.
 
-Lemma bind_abstract_maybe_sound {A A'} `{Galois A A'} :
-  gamma (bind_maybeA (A:=A')) bind_maybe.
+Lemma bind_abstract_maybe_sound {A A' B B'} `{Galois A A', Galois B B'} :
+  gamma (bindM (M:=AbstractMaybe) (A:=A')) bindM.
 Proof.
   intros f g Hfg x y Hxy. destruct f, g; eauto with soundness.
+  apply Hxy; apply Hfg.
   inv Hfg. simpl in *. apply Hxy in Hfg. destruct (x a), (y a0);
   eauto with soundness. simpl. destruct (x a); reflexivity.
 Qed.
 
-Instance maybeA_sound {A A'} `{Galois A A'} : 
+Instance maybeA_sound {A A' B B'} `{Galois A A', Galois B B'} : 
   SoundMonads Maybe AbstractMaybe :=
 {
   fmap_sound := fmap_abstract_maybe_sound;
@@ -183,20 +188,6 @@ Hint Resolve fmap_state_sound pure_state_sound app_state_sound
 Instance composed_monad_sound {S S' A A'} `{Galois S S', Galois A A'} : 
   SoundMonads ConcreteState AbstractState.
 Proof. 
-  split.
-  - simpl in *. unfold fmap_maybeAT, fmap_maybeT.
-    intros ???. intros ???. simpl. unfold fmap_stateT. intros ???.
-    simpl. apply bind_maybe_sound. auto. intros ???. destruct a2, b2.
-    apply gamma_fun_apply. apply pure_maybe_sound.
-    destruct H6. split; eauto with soundness.
-  - simpl in *. unfold pure_maybeAT, pure_maybeT. intros ???.
-    apply gamma_fun_apply; auto. simpl. unfold pure_stateT.
-    intros ??????. apply pure_maybe_sound. split; auto.
-  - simpl in *. unfold app_maybeAT, app_maybeT. simpl.
-    intros ??????. unfold bind_stateT. intros ???.
-    apply gamma_fun_apply; eauto with soundness. 
-    apply gamma_fun_apply; eauto with soundness. 
-    unfold bind_maybe.
 Admitted.
 Transparent composed_monad_sound.
 
@@ -641,13 +632,13 @@ Proof.
     destruct a. 
     + apply H0. 
     + unfold gamma in H; simpl in H. contradiction.
-    + unfold eval_if_abstract, eval_if. apply widen with (f:=a0).
+    + unfold eval_if_abstract, eval_if. eapply widen. 
       apply join_upper_bound_left. apply H0.
     + unfold gamma in H; simpl in H. contradiction.
   - destruct a; simpl.
     + unfold gamma in H; simpl in H; contradiction.
     + apply H1.
-    + eapply widen with (f:=a1). apply join_abstract_store_right. auto.
+    + eapply widen. apply join_abstract_store_right. auto.
     + unfold gamma in H; simpl in H; contradiction.
 Qed.
 Hint Resolve sound_if_op : soundness.

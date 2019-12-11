@@ -1,11 +1,14 @@
 Require Export Base.
 Require Import Coq.Program.Basics.
 
-Class Functor (F : Type -> Type) : Type := {
+Implicit Type F : Type → Type.
+Implicit Types A B C : Type.
+
+Class Functor F : Type := {
   fmap : forall {A B}, (A -> B) -> (F A -> F B);
   fmap_id : forall {A}, fmap (@id A) = id;
   fmap_compose : 
-    forall {A B C : Type} (f : A -> B) (g : B -> C),
+    forall {A B C} (f : A -> B) (g : B -> C),
     fmap (f ∘ g) = fmap f ∘ fmap g;
 }.
 
@@ -13,7 +16,7 @@ Notation "x '<$>' y" := (fmap x y)
   (at level 40, left associativity).
 
 Section methods.
-  Context {F : Type -> Type} `{F_inst: Functor F}.
+  Context {F} `{F_inst: Functor F}.
 
   (* g (f a) = compose g f = f ∘ g *)
   Definition fmap_replace_left {A B} : A → F B → F A :=

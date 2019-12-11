@@ -2,7 +2,10 @@ Require Export Base.
 Require Import Classes.Applicative.
 Require Import Classes.Monad.
 
-Class Except (M : Type -> Type) `{Monad M} := {
+Implicit Type M : Type → Type.
+Implicit Type A : Type.
+
+Class Except M `{Monad M} := {
   throw    : forall {A}, M A;
   trycatch : forall {A}, M A -> M A -> M A;
   trycatch_throw_left : forall {A} (x : M A), 
