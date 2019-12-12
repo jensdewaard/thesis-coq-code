@@ -198,10 +198,9 @@ Section stateT_sound.
   Context `{Galois (M (B*S)) (M' (B'*S'))}.
   Context `{SoundMonads M M'}.
 
-  Lemma foobar : ∀ n, n. Admitted.
   Lemma fmap_stateT_sound : ∀ f' f k' k,
-    gamma (@fmap_stateT M' _ _ _ S' A' B' f' k') (
-           @fmap_stateT M _ _ _ S A B f k).
+    gamma (@fmap_stateT M' _ S' A' B' f' k') (
+           @fmap_stateT M _ S A B f k).
   Proof.
     intros. unfold fmap_stateT. 
   Admitted.
@@ -263,6 +262,7 @@ Lemma lift_maybeAT_sound {A A'} `{Galois A A'} :
 Proof.
   unfold lift_maybeAT, lift_maybeT.
   intros ??????. simpl. apply H1 in H2. 
+  unfold fmap; simpl.
   destruct (a a0), (b b0); eauto with soundness.
   destruct p, p0. apply H2. inv H2.
 Qed.
@@ -298,8 +298,8 @@ Lemma extract_parM_sound :  forall n,
 Proof. 
   intros. unfold extract_parM, extract_natM.  apply gamma_fun_apply.
   apply lift_maybeAT_sound. apply gamma_fun_apply; eauto with soundness.
-  simpl. unfold pure_stateT. intros ???. intros ???. apply gamma_fun_apply.
-  simpl. intros ???. auto. split; auto.
+  simpl. unfold pure_stateT. intros ???. intros ???. apply gamma_fun_apply;
+  auto. intros ???. split; auto.
 Qed.
 Hint Resolve extract_parM_sound : soundness.
 
@@ -311,13 +311,9 @@ Proof.
   unfold pplusM, plusM. apply gamma_fun_apply. 
   apply lift_maybeAT_sound.
   eauto with soundness. apply gamma_fun_apply; eauto with soundness.
-  simpl. unfold pure_stateT. intros ??????. apply gamma_fun_apply.
-  eauto with soundness. split; auto.
+  simpl. unfold pure_stateT. intros ??????. apply gamma_fun_apply; auto.
+  split; auto.
 Qed.
-(*  repeat constructor; simpl; eauto with soundness.
-
-  destruct H2. apply H2. destruct H1. apply H1.
-Qed.*)
 Hint Resolve pplusM_sound : soundness.
 
 Lemma pmultM_sound :
@@ -339,7 +335,7 @@ Proof.
   simpl; unfold gamma_fun; intros.
   unfold peqM, eqbM. apply gamma_fun_apply. apply lift_maybeAT_sound.
   apply gamma_fun_apply. simpl. unfold pure_stateT. intros ??????.
-  apply gamma_fun_apply. simpl. eauto with soundness. split; auto.
+  apply gamma_fun_apply; auto. simpl. split; auto.
   eauto with soundness.
 Qed.
 Hint Resolve peqM_sound : soundness.
@@ -351,7 +347,7 @@ Proof.
   simpl; unfold gamma_fun; intros.
   unfold pleM, lebM. apply gamma_fun_apply. apply lift_maybeAT_sound.
   apply gamma_fun_apply. simpl. unfold pure_stateT. intros ??????.
-  apply gamma_fun_apply. simpl. eauto with soundness. split; auto.
+  apply gamma_fun_apply; auto. split; auto.
   reflexivity. 
 Qed.
 Hint Resolve pleM_sound : soundness.
@@ -361,9 +357,10 @@ Lemma build_parity_sound :
 Proof.
   intros ???. 
   unfold build_parity, build_natural. apply gamma_fun_apply.
-  apply lift_maybeAT_sound. apply gamma_fun_apply. simpl; unfold pure_stateT.
-  intros ??????. apply gamma_fun_apply. simpl. eauto with soundness. split;
-  auto. auto.
+  apply lift_maybeAT_sound. apply gamma_fun_apply; auto. 
+  simpl; unfold pure_stateT. intros ??????. 
+  apply gamma_fun_apply; auto. split;
+  auto. 
 Qed.
 Hint Resolve build_parity_sound : soundness.
 
@@ -373,9 +370,9 @@ Lemma iplusM_sound :
   gamma iplusM plusM.
 Proof. 
   intros ???. intros ???. unfold iplusM, plusM. apply gamma_fun_apply;
-  eauto with soundness. apply gamma_fun_apply. simpl. unfold pure_stateT.
+  eauto with soundness. apply gamma_fun_apply; eauto with soundness.
   intros ??????. apply gamma_fun_apply; eauto with soundness. 
-  simpl. unfold gamma_interval. split.
+  split; auto. simpl. unfold gamma_interval; simpl. split.
   - rewrite interval_min_plus. destruct H0, H. simpl in *. omega.
   - rewrite interval_max_plus. destruct H0, H. simpl in *. omega.
 Qed.
@@ -384,11 +381,11 @@ Hint Resolve iplusM_sound : soundness.
 Lemma imultM_sound :
   gamma imultM multM.
 Proof.
-  intros ???. intros ???. unfold imultM, multM. apply gamma_fun_apply;
+  intros ??????. unfold imultM, multM. apply gamma_fun_apply;
   eauto with soundness. apply gamma_fun_apply; eauto with soundness.
   simpl. unfold pure_stateT. intros ??????. apply gamma_fun_apply; eauto
     with soundness. split; auto.
-  simpl. unfold gamma_interval. 
+  simpl. unfold gamma_interval. split.
   - rewrite interval_min_mult. destruct H, H0; simpl in *. 
     apply Coq.Arith.Mult.mult_le_compat; auto.
   - rewrite interval_max_mult. destruct H, H0; simpl in *.
@@ -401,7 +398,8 @@ Lemma ileqb_sound :
 Proof.
   intros ???. intros ???. unfold ileM, lebM. apply gamma_fun_apply; eauto with
     soundness.
-  apply gamma_fun_apply; eauto with soundness. simpl. unfold pure_stateT.
+  apply gamma_fun_apply; eauto with soundness. unfold pure; simpl. 
+  unfold pure_stateT.
   intros ??????. apply gamma_fun_apply; eauto with soundness. 
   unfold ileqb. destruct H, H0. simpl in *. unfold Galois.gamma_bool.
   destruct (max a <? min a0) eqn:Hcompa, (b <=? b0) eqn:Hcompb.
@@ -422,7 +420,8 @@ Lemma build_interval_sound :
 Proof.
   intros ???. unfold build_interval, build_natural.
   apply gamma_fun_apply; eauto with soundness. 
-  apply gamma_fun_apply; eauto with soundness. simpl. unfold pure_stateT.
+  apply gamma_fun_apply; eauto with soundness. unfold pure; simpl. 
+  unfold pure_stateT.
   intros ??????. apply gamma_fun_apply; eauto with soundness.
 Qed.
 Hint Resolve build_interval_sound : soundness.
@@ -488,7 +487,8 @@ Proof.
   intros ???. unfold ensure_abool, ensure_bool. 
   destruct a, b; eauto with soundness; try contradiction;
   try apply gamma_fun_apply; eauto with soundness. apply lift_stateT_sound.
-  simpl. unfold pure_stateT. intros ???. apply gamma_fun_apply; eauto with
+  unfold pure; simpl. unfold pure_stateT. 
+  intros ???. apply gamma_fun_apply; eauto with
     soundness. apply lift_stateT_sound. apply lift_stateT_sound.
   simpl. unfold lift_stateT. intros ???. simpl. auto.
 Qed.

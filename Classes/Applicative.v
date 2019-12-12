@@ -5,8 +5,9 @@ Require Import Coq.Program.Basics.
 Implicit Type F : Type → Type.
 Implicit Type A B C : Type.
 
-Class Applicative F `{Functor F} : Type :=
+Class Applicative F : Type :=
 {
+  is_functor :> Functor F;
   pure : forall {A}, A -> F A;
   app : forall {A B}, F (A -> B) -> F A -> F B;
   app_id : forall {A} (x : F A), app (pure id) x = x;
@@ -19,6 +20,8 @@ Class Applicative F `{Functor F} : Type :=
   app_fmap : forall {A B} (f : A -> B) (x : F A), 
     fmap f x = app (pure f) x;
 }.
+Arguments pure : simpl never.
+Arguments app : simpl never.
 
 Infix "<*>" := app (left associativity, at level 40).
 

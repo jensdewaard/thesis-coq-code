@@ -1,15 +1,19 @@
+Require Import Classes.Applicative.
 Require Import Classes.Except.
 Require Import Classes.Joinable.
+Require Import Classes.Monad.
+Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
-Require Import Types.Stores.
+Require Import Instances.Monad.
 Require Import Types.Result.
 Require Import Types.State.
-Require Import Instances.Monad.
-Require Import Classes.Monad.
-Require Import Classes.Applicative.
+Require Import Types.Stores.
+
+Implicit Type A : Type.
+Implicit Type M : Type → Type.
 
 Section except_maybe.
-  Definition trycatch_maybe {A : Type} (x y : Maybe A) : Maybe A :=
+  Definition trycatch_maybe {A} (x y : Maybe A) : Maybe A :=
     match x with
     | None => y
     | _ => x
@@ -23,14 +27,14 @@ Section except_maybe.
 End except_maybe.
 
 Section except_maybeT.
-  Context {M : Type -> Type} `{Applicative M} {inst : Monad M}.
+  Context {M} {inst : Monad M}.
 
-  Definition throw_maybeT (A : Type) : MaybeT M A :=
-    @pure M _ H0 _ (@None A).
+  Definition throw_maybeT {A} : MaybeT M A :=
+    pure (F:=M) (@None A).
   Hint Unfold throw_maybeT : soundness.
 
   Definition trycatch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
-    @bindM M _ _ inst _ _ mx (fun x : Maybe A =>
+    @bindM M _ _ _ mx (fun x : Maybe A =>
       match x with
       | None => my
       | Just a => pure (Just a)
@@ -40,12 +44,11 @@ Section except_maybeT.
 
   Instance except_maybeT : Except (MaybeT M) :=
   {
-    throw := throw_maybeT;
+    throw := @throw_maybeT;
     trycatch := trycatch_maybeT;
-  }. all: solve_monad. Defined.
+  }. all: unfold pure; solve_monad. Defined.
 
 End except_maybeT.
-Require Import Classes.PreorderedSet.
 Section except_maybeAT.
   Context {M : Type -> Type} `{inst : Monad M}.
 
@@ -53,7 +56,7 @@ Section except_maybeAT.
 
   Definition trycatch_maybeAT {A}
     (mx my : MaybeAT M A) : MaybeAT M A :=
-    @bindM _ _ _ inst _ _ mx (fun x : AbstractMaybe A =>
+    @bindM _ inst _ _ mx (fun x : AbstractMaybe A =>
       match x with
       | JustA a => pure (JustA a)
       | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
@@ -69,13 +72,13 @@ Section except_maybeAT.
       trycatch := trycatch_maybeAT;
     }. 1,3: solve_monad.
       intros. unfold trycatch_maybeAT. 
-      rewrite <- (@bind_id_right M H H0 inst). f_equal. simple_solve.
+      rewrite <- (@bind_id_right M inst). f_equal. simple_solve.
     Defined.
 End except_maybeAT.
 
 Section except_stateT.
   Context {M : Type -> Type} `{inst_m : Monad M} 
-    `{inst_e : @Except M _ _ inst_m}.
+    `{inst_e : @Except M inst_m}.
 
   Definition throw_stateT {S} A : StateT S M A := fun _ => throw.
 
