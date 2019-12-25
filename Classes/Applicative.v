@@ -20,8 +20,6 @@ Class Applicative F : Type :=
   app_fmap : forall {A B} (f : A -> B) (x : F A), 
     fmap f x = app (pure f) x;
 }.
-Arguments pure : simpl never.
-Arguments app : simpl never.
 
 Infix "<*>" := app (left associativity, at level 40).
 

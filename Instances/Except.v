@@ -42,11 +42,28 @@ Section except_maybeT.
   Hint Unfold trycatch_maybeT : soundness.
   Arguments trycatch_maybeT [_].
 
+  Lemma trycatch_maybeT_throw_left : ∀ (A : Type) (x : MaybeT M A), 
+    trycatch_maybeT throw_maybeT x = x.
+  Proof.
+    autounfold with soundness. intros.
+    autorewrite with soundness. reflexivity.
+  Qed.
+
+  Lemma trycatch_maybeT_throw_right : ∀ (A : Type) (x : MaybeT M A), 
+    trycatch_maybeT x throw_maybeT = x.
+  Proof.
+    autounfold with soundness. intros.
+    rewrite <- (bind_id_right (M:=M)). f_equal.
+    ext. destruct x0; reflexivity.
+  Qed.
+
   Instance except_maybeT : Except (MaybeT M) :=
   {
     throw := @throw_maybeT;
     trycatch := trycatch_maybeT;
-  }. all: unfold pure; solve_monad. Defined.
+    trycatch_throw_left := @trycatch_maybeT_throw_left;
+    trycatch_throw_right := @trycatch_maybeT_throw_right;
+  }. 
 
 End except_maybeT.
 Section except_maybeAT.

@@ -11,7 +11,6 @@ Class Functor F : Type := {
     forall {A B C} (f : A -> B) (g : B -> C),
     fmap (f ∘ g) = fmap f ∘ fmap g;
 }.
-Arguments fmap : simpl never.
 
 Notation "x '<$>' y" := (fmap x y)
   (at level 40, left associativity).

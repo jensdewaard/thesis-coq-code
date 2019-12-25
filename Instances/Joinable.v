@@ -24,11 +24,13 @@ Proof. simple_solve. Qed.
 
 Lemma abstract_store_join_upperbound_left :
     forall s s', preorder s (abstract_store_join s s').
-Proof. simple_solve. Qed.
+Proof. 
+  eauto with soundness.
+Qed.
 
 Lemma abstract_store_join_upperbound_right : 
   forall s s', preorder s' (abstract_store_join s s').
-Proof. simple_solve. Qed.
+Proof. eauto with soundness. Qed.
 
 Global Instance abstract_store_joinable : Joinable abstract_store := {
   join_op := abstract_store_join;
@@ -61,14 +63,22 @@ Section state_joinable.
   Definition state_join (st st' : State S A) : State S A :=
     fun x => ((join_op (fst (st x)) (fst (st' x)), 
               (join_op (snd (st x)) (snd (st' x))))).
+  Hint Unfold state_join : soundness.
   
   Lemma state_join_upper_bound_left :
     forall st st', preorder st (state_join st st').
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros st st'. unfold state_join.
+    simpl. constructor. intro x. destruct (st x). 
+    constructor; eauto with soundness.
+  Qed.
 
   Lemma state_join_upper_bound_right :
     forall st st', preorder st' (state_join st st').
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros st st'. unfold state_join. constructor.
+    intro x. destruct (st' x). constructor; eauto with soundness.
+  Qed.
 
 Global Instance state_joinable : Joinable (State S A) := {
   join_op := state_join;
@@ -147,14 +157,12 @@ Section joinable_pairs.
 
   Lemma join_pair_left : ∀ p q, preorder p (join_pair p q).
   Proof.
-    intros. simpl. unfold join_pair, preorder_pair_le. destruct p.
-    simpl. auto with soundness.
+    destruct p, q. eauto with soundness.
   Qed.
 
   Lemma join_pair_right : ∀ p q, preorder q (join_pair p q).
   Proof.
-    intros. simpl. unfold join_pair, preorder_pair_le. destruct q.
-    simpl. auto with soundness.
+    destruct p, q. eauto with soundness.
   Qed.
 
   Global Instance joinable_pairs : Joinable (A*B) :=
@@ -181,21 +189,18 @@ Section joinable_abstract_state.
   
   Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A :=
     λ st, join_op (st1 st) (st2 st).
+  Hint Unfold join_abstract_state : soundness.
 
   Lemma join_abstract_state_left : ∀ st st', 
     preorder st (join_abstract_state st st').
   Proof.
-    intros. unfold join_abstract_state. simpl.
-    unfold pointwise_ordering. intros. simpl. unfold maybe_le, join_maybe.
-    destruct (st x), (st' x); auto with soundness.
+    eauto with soundness.
   Qed.
 
   Lemma join_abstract_store_right : ∀ st st',
     preorder st' (join_abstract_state st st').
   Proof. 
-    intros. unfold join_abstract_state; simpl. unfold pointwise_ordering.
-    intros. simpl. unfold maybe_le, join_maybe. destruct (st' x), (st x);
-    auto with soundness.
+    eauto with soundness.
   Qed.
   
   Global Instance abstract_state_joinable : Joinable (AbstractState A) :=
