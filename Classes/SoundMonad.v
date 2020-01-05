@@ -13,7 +13,7 @@ Section monad_sound.
     fmap_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'}, 
       gamma (B:=(A' → B') → M' A' → M' B') fmap fmap;
     pure_sound : ∀ {A A': Type} `{Galois A A'},
-      gamma (B:= (A' → M' A')) (A:=A → M A) pure pure;
+      gamma (B:= (A' → M' A')) pure pure;
     app_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'}, 
       gamma (B:=M' (A' → B') → M' A' → M' B') app app;
     bind_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'},

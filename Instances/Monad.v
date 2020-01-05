@@ -13,8 +13,8 @@ Implicit Type M : Type → Type.
 Inductive Maybe A : Type :=
     | Just : A -> Maybe A
     | None : Maybe A.
-Arguments Just {_}.
-Arguments None {_}.
+Arguments Just [_].
+Arguments None [_].
 
 Section Maybe_Functor.
   Definition fmap_maybe {A B} (f : A → B) ma : Maybe B :=
@@ -30,6 +30,7 @@ Section Maybe_Functor.
     unfold fmap_maybe. ext. destruct x; reflexivity.
   Qed.
   Arguments fmap_maybe_id [A].
+  About fmap_maybe_id.
 
   Lemma fmap_maybe_compose : ∀ {A B C} (f : A → B) (g : B → C),
     fmap_maybe (f ∘ g) = fmap_maybe f ∘ fmap_maybe g.
@@ -335,6 +336,7 @@ End AbstractMaybe_Monad.
 Hint Rewrite @bind_maybeA_id_left @bind_maybeA_id_right : soundness.
 
 Definition MaybeT M A: Type := M (Maybe A).
+Global Opaque MaybeT.
 
 Section MaybeT_Functor.
   Context {M} `{Monad M}.
@@ -441,7 +443,7 @@ Section MaybeT_Applicative.
   Proof.
     Set Printing Implicit.
     intros. unfold pure_maybeT in H. 
-    apply pure_inj with (x0:=Just x) in H.
+    apply (@pure_inj M is_applicative (Maybe A)) in H.
     inv H. reflexivity.
   Qed.
 
@@ -471,13 +473,14 @@ Section maybeT_laws.
   Lemma justT_eq_noneT_false : ∀ x : A, JustT x ≠ NoneT.
   Proof.
     unfold not. intros. unfold JustT, NoneT in H0.
-    apply pure_inj with (x0:=Just x) in H0.
+    apply (@pure_inj M is_applicative (Maybe A)) in H0.
     inv H0.
   Qed.
 
   Lemma justT_inj : ∀ x y: A, JustT x = JustT y → x = y.
   Proof.
-    intros. unfold JustT in H0. apply pure_inj with (x0:=Just x) in H0.
+    intros. unfold JustT in H0. 
+    apply (@pure_inj M is_applicative (Maybe A)) in H0.
     inv H0. reflexivity.
   Qed.
 End maybeT_laws.
@@ -487,7 +490,7 @@ Section MaybeT_Monad.
 
   Definition bind_maybeT {A B} (x : MaybeT M A)
     (f : A -> MaybeT M B) : MaybeT M B :=
-    @bindM M _ (Maybe A) (Maybe B) x (fun v =>
+    @bindM M _ (Maybe A) (Maybe B) x (λ v,
       match v with
       | None => NoneT
       | Just a => f a
@@ -507,7 +510,8 @@ Section MaybeT_Monad.
   Lemma bind_maybeT_id_right : ∀ {A} (MA : MaybeT M A),
     bind_maybeT MA pure = MA.
   Proof. 
-    intros. unfold bind_maybeT.
+    intros. unfold bind_maybeT. 
+    rewrite <- bind_id_right.
     rewrite <- (bind_id_right (M:=M)). f_equal. 
     ext; destruct x; reflexivity.
   Qed.
@@ -690,8 +694,8 @@ Section MaybeAT_Applicative.
   Lemma pure_maybeAT_inj : ∀ (A : Type) (x y : A),
     pure_maybeAT x = pure_maybeAT y → x = y.
   Proof.
-    intros. unfold pure_maybeAT in H.
-    apply (pure_inj (JustA x)) in H.
+    intros. unfold pure_maybeAT in H. Transparent MaybeT.
+    apply (@pure_inj M is_applicative (AbstractMaybe A)) in H.
     inv H. reflexivity.
   Qed.
 

@@ -224,14 +224,31 @@ Hint Unfold gamma_unit : soundness.
 
 Section galois_maybeT.
   Context {M M' : Type → Type} `{Monad M, Monad M'}.
-  Hypothesis M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A').
+  Context {A A'} `{Galois A A'}.
 
-  Global Instance galois_maybeT {A A'} `{Galois A A'} : 
-    Galois (MaybeT M A) (MaybeT M' A') := {
-    gamma := gamma (Galois:=M_galois (Maybe A) (Maybe A') galois_maybe_maybe);
-    gamma_monotone := gamma_monotone;
+  Inductive gamma_maybeT : MaybeT M' A' → MaybeT M A → Prop :=
+    | gamma_noneT : ∀ m, gamma_maybeT NoneT m
+    | gamma_justT : ∀ a a', gamma a' a → gamma_maybeT (JustT a') (JustT a).
+
+  Lemma gamma_maybeT_monotone : monotone gamma_maybeT.
+  Proof.
+    constructor. intros. inv H3.
+    - simpl in H2. inv H2.
+      + constructor.
+      + apply justT_eq_noneT_false in H3. inv H3.
+      + constructor.
+    - inv H2.
+      + constructor.
+      + constructor. apply justT_inj in H3; subst. apply_widen.
+      + constructor. apply H4.
+  Qed.
+
+  Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A') := {
+    gamma := gamma_maybeT;
+    gamma_monotone := gamma_maybeT_monotone;
   }.
 End galois_maybeT.
+
 
 Section galois_maybeAT.
   Context {M M' : Type → Type} `{Monad M, Monad M'}.

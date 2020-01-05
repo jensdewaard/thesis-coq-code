@@ -276,6 +276,32 @@ Section maybe_preorder.
 End maybe_preorder.
 Hint Constructors maybe_le : soundness.
 
+Section maybeT_preorder.
+  Context {A} `{PreorderedSet A}.
+  Context {M : Type → Type} `{Monad M}.
+
+  Inductive maybeT_le : MaybeT M A → MaybeT M A → Prop :=
+    | maybeT_le_noneT : ∀ m, maybeT_le m NoneT
+    | maybeT_le_justT : ∀ x y, preorder x y → maybeT_le (JustT x) (JustT y)
+    | maybeT_le_refl : ∀ x, maybeT_le x x.
+  Hint Constructors maybeT_le : soundness.
+
+  Lemma maybeT_le_trans : Transitive maybeT_le.
+  Proof.
+    unfold Transitive. intros x y z Hxy Hyz. inv Hxy; inv Hyz; eauto with
+      soundness. exfalso. eapply justT_eq_noneT_false.
+      apply H1. apply justT_inj in H2. subst.
+      constructor. pre_trans.
+  Qed.
+
+  Global Instance maybeT_preorder : PreorderedSet (MaybeT M A) :=
+  {
+    preorder := maybeT_le;
+    preorder_trans := maybeT_le_trans;
+    preorder_refl := maybeT_le_refl;
+  }.
+End maybeT_preorder.
+
 Section maybea_preorder.
   Context {A : Type} `{PreorderedSet A}.
 

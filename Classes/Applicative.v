@@ -9,7 +9,7 @@ Class Applicative F : Type :=
 {
   is_functor :> Functor F;
   pure : forall {A}, A -> F A;
-  pure_inj : ∀ {A} (x y : A), pure x = pure y → x = y;
+  pure_inj : ∀ {A} {x y : A}, pure x = pure y → x = y;
   app : forall {A B}, F (A -> B) -> F A -> F B;
   app_id : forall {A} (x : F A), app (pure id) x = x;
   app_homomorphism : forall {A B} (f:A -> B) (x:A), 

@@ -220,27 +220,59 @@ Hint Resolve fmap_state_sound pure_state_sound app_state_sound
 Section maybeT_sound.
   Context {M M' : Type → Type} `{SoundMonad M M'}.
 
-  Hint Transparent MaybeT : soundness.
-  Lemma fmap_maybeT_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'}, 
-    gamma (fmap (F:=MaybeT M') (A:=A') (B:=B')) fmap.
+  Opaque MaybeT.
+  Lemma fmap_maybeT_sound : ∀ (A A' B B' : Type) `(Galois A A', Galois B B'),
+    gamma (fmap (F:=MaybeT M') (A:=A') (B:=B')) 
+          (fmap (F:=MaybeT M) (A:=A) (B:=B)).
   Proof.
-    repeat constructor. intros.
+    constructor. intros f g Hfg. constructor. intros ma ma' Hma.
     simpl. unfold fmap_maybeT.
-    repeat apply gamma_fun_apply; eauto with soundness.
-    unfold MaybeT.
-    eauto with soundness.
+    eapply (gamma_fun_apply (H:=galois_maybeT)); eauto with soundness.
+    repeat eapply gamma_fun_apply; eauto with soundness. 
+    Set Printing Implicit.
+    Transparent MaybeT.
+    apply (fmap_sound (M:=M)).
   Qed.
 
   Lemma pure_maybeT_sound : ∀ {A A' : Type} `{Galois A A'},
-    gamma (pure (F:=MaybeT M') (A:=A')) pure.
+    gamma (pure (F:=MaybeT M')) (pure (F:=MaybeT M)).
   Proof.
-    repeat constructor. intros. simpl. unfold pure_maybeT.
+    simpl.  unfold pure_maybeT.
+    repeat constructor. intros. 
+    unfold MaybeT.
     repeat apply gamma_fun_apply; eauto with soundness.
-    unfold MaybeT. 
+  Qed.
+
+  Lemma app_maybeT_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'},
+    gamma (app (F:=MaybeT M') (A:=A') (B:=B')) (app (F:=MaybeT M)).
+  Proof.
+    intros. simpl. unfold app_maybeT. constructor.
+    intros Mf Mg Hfg. constructor.
+    intros Ma Mb Hab. 
+    repeat eapply gamma_fun_apply; eauto with soundness.
+    unfold MaybeT. apply bind_sound; auto.
+    repeat constructor. intros.
+    destruct a, b.
+    - repeat eapply gamma_fun_apply; eauto with soundness.
+      constructor. intros. destruct a, b1; eauto 8 with soundness.
+    - inv H3.
+    - unfold gamma in Hab. simpl.
+    - eauto with soundness.
+  Admitted.
+
+  Lemma bind_maybeT_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'},
+    gamma (bindM (M:=MaybeT M') (A:=A') (B:=B')) (bindM (M:=MaybeT M)).
+  Proof.
+    unfold MaybeT. simpl. unfold bind_maybeT. repeat constructor.
+    intros. repeat eapply gamma_fun_apply; eauto with soundness.
+    repeat constructor. intros. destruct a1, b1; eauto with soundness.
   Admitted.
 
   Global Instance maybeT_sound : 
-    SoundMonad (MaybeT M) (MaybeT M').
+    SoundMonad (M_galois:=galois_maybeT M_galois) (MaybeT M) (MaybeT M') :=
+    {
+      fmap_sound := fmap_maybeT_sound;
+    }.
   Proof.
     constructor.
   Admitted.
@@ -264,9 +296,7 @@ Admitted.
 
 Section stateT_sound.
   Context {S S' A A' B B'} `{Galois S S', Galois A A', Galois B B'}.
-  Context {M M' : Type → Type} `{Monad M, Monad M'}.
-  Hypothesis M_has_galois : ∀ A A', Galois A A' → Galois (M A) (M' A').
-  Hypothesis M_sound : SoundMonad M M'.
+  Context {M M' : Type → Type} `{SoundMonad M M'}.
 
   Lemma fmap_stateT_sound : ∀ f' f k' k,
     gamma f' f → gamma k' k →
@@ -277,7 +307,14 @@ Section stateT_sound.
     repeat eapply gamma_fun_apply; eauto with soundness.
     constructor. intros. destruct a0, b0. 
     eapply gamma_fun_apply.
-    apply pure_sound. apply M_sound.
+    apply pure_sound. apply H4.
+    eauto with soundness.
+  Qed.
+
+  Lemma pure_stateT_sound : 
+    gamma (pure (F:=StateT S' M')) (pure (F:=StateT S M)).
+  Proof.
+    simpl. unfold pure_stateT. repeat constructor; intros.
     eauto with soundness.
   Qed.
 
