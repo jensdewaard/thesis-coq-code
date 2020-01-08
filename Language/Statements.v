@@ -3,6 +3,8 @@ Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Parity.
 
+Declare Scope com_scope.
+
 Inductive cvalue : Type :=
   | VNat : nat -> cvalue
   | VBool : bool -> cvalue.

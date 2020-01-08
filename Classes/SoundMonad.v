@@ -7,7 +7,7 @@ Require Import Instances.Galois.
 
 Section monad_sound. 
   Context M M' `{Monad M, Monad M'}.
-  Hypothesis M_galois : ∀ A A' : Type, Galois A A' → Galois (M A) (M' A').
+  Context {M_galois : ∀ A A' : Type, Galois A A' → Galois (M A) (M' A')}.
 
   Class SoundMonad : Type := {
     fmap_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'}, 
@@ -20,5 +20,4 @@ Section monad_sound.
       gamma (B:=M' A' → (A' → M' B') → M' B') bindM bindM;
   }.
 End monad_sound.
-Arguments SoundMonad M M' [H H0 M_galois].
 Hint Resolve fmap_sound pure_sound app_sound bind_sound : soundness.

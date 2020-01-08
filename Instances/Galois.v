@@ -282,16 +282,21 @@ Instance galois_state_monad {S S' A A' : Type} `{Galois S S', Galois A A'} :
   }.
 
 Section galois_state.
-Context {A A'} `{Galois A A'}.
+  Context {A A'} `{Galois A A'}.
+  
+  Definition gamma_abstract_state : 
+    AbstractState A' → ConcreteState A → Prop := gamma_fun.
 
-Global Instance galois_state :
-  Galois (ConcreteState A) (AbstractState A') :=
-  {
-    gamma := gamma (Galois:=GFun);
-  }.
+  Lemma gamma_abstract_state_monotone : monotone gamma_abstract_state.
   Proof.
-    unfold monotone. repeat constructor. intros. 
-    inv H0. eapply widen. apply H3. destruct H2.
-    destruct H1. eauto with soundness.
-  Defined.
+    constructor. intros. unfold gamma_abstract_state in *.
+    constructor. destruct H1. intros. inv H0.
+    eapply widen. apply H3. apply H1. apply H2.
+  Qed.
+
+  Global Instance galois_state : Galois (ConcreteState A) (AbstractState A') :=
+  {
+    gamma := gamma_abstract_state;
+    gamma_monotone := gamma_abstract_state_monotone;
+  }.
 End galois_state.

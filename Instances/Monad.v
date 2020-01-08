@@ -13,8 +13,8 @@ Implicit Type M : Type → Type.
 Inductive Maybe A : Type :=
     | Just : A -> Maybe A
     | None : Maybe A.
-Arguments Just [_].
-Arguments None [_].
+Arguments Just {_}.
+Arguments None {_}.
 
 Section Maybe_Functor.
   Definition fmap_maybe {A B} (f : A → B) ma : Maybe B :=
@@ -25,12 +25,10 @@ Section Maybe_Functor.
   Arguments fmap_maybe [A B] f ma.
   Hint Unfold fmap_maybe : soundness.
 
-  Lemma fmap_maybe_id A : (fmap_maybe (B:=A)) id = id.
+  Lemma fmap_maybe_id {A} : (fmap_maybe (B:=A)) id = id.
   Proof. 
     unfold fmap_maybe. ext. destruct x; reflexivity.
   Qed.
-  Arguments fmap_maybe_id [A].
-  About fmap_maybe_id.
 
   Lemma fmap_maybe_compose : ∀ {A B C} (f : A → B) (g : B → C),
     fmap_maybe (f ∘ g) = fmap_maybe f ∘ fmap_maybe g.
@@ -185,7 +183,7 @@ Section AbstractMaybe_Functor.
 
   Lemma fmap_abstract_maybe_id : ∀ {A}, fmap_abstract_maybe (@id A) = id.
   Proof. simple_solve. Qed.
-  Arguments fmap_abstract_maybe_id [A].
+  Arguments fmap_abstract_maybe_id {A}.
 
   Lemma fmap_abstract_maybe_compose : ∀ {A B C : Type} (f : A → B) (g : B → C),
   fmap_abstract_maybe (f ∘ g) = fmap_abstract_maybe f ∘ fmap_abstract_maybe g.
@@ -336,7 +334,6 @@ End AbstractMaybe_Monad.
 Hint Rewrite @bind_maybeA_id_left @bind_maybeA_id_right : soundness.
 
 Definition MaybeT M A: Type := M (Maybe A).
-Global Opaque MaybeT.
 
 Section MaybeT_Functor.
   Context {M} `{Monad M}.
@@ -348,7 +345,6 @@ Section MaybeT_Functor.
 
   Lemma fmap_maybeT_id : ∀ {A}, fmap_maybeT (@id A) = id.
   Proof. simple_solve. Qed.
-  Arguments fmap_maybeT_id [A].
 
   Lemma fmap_maybeT_compose : ∀ {A B C} (f : A → B) (g : B → C),
   fmap_maybeT (f ∘ g) = fmap_maybeT f ∘ fmap_maybeT g.
@@ -441,7 +437,6 @@ Section MaybeT_Applicative.
   Lemma pure_maybeT_inj : ∀ (A : Type) (x y : A),
     pure_maybeT x = pure_maybeT y → x = y.
   Proof.
-    Set Printing Implicit.
     intros. unfold pure_maybeT in H. 
     apply (@pure_inj M is_applicative (Maybe A)) in H.
     inv H. reflexivity.
@@ -511,9 +506,9 @@ Section MaybeT_Monad.
     bind_maybeT MA pure = MA.
   Proof. 
     intros. unfold bind_maybeT. 
-    rewrite <- bind_id_right.
+    replace (MA) with (bindM (M:=M) MA pure) at 2.
+    f_equal. ext; destruct x; reflexivity.
     rewrite <- (bind_id_right (M:=M)). f_equal. 
-    ext; destruct x; reflexivity.
   Qed.
   Arguments bind_maybeT_id_right [A] MA.
 
@@ -582,10 +577,20 @@ Section MaybeT_MonadT.
   Hint Unfold lift_maybeT : soundness.
   Hint Rewrite @fmap_bind @bind_fmap : soundness.
 
+  Lemma lift_maybeT_pure : ∀ (A : Type) (x : A),
+    lift_maybeT (pure (F:=M) x) = pure x.
+  Proof. solve_monad. Qed.
+
+  Lemma lift_maybeT_bind : ∀ (A B : Type) (x : M A) (f : A → M B),
+  lift_maybeT (x >>= f) = lift_maybeT x >>= (f ∘ (lift_maybeT (A:=B))).
+  Proof. solve_monad. Qed.
+
   Global Instance monadT_maybeT : MonadT (MaybeT) :=
   {
     liftT := lift_maybeT;
-  }. all: solve_monad. Defined.
+    lift_pure := lift_maybeT_pure;
+    lift_bind := lift_maybeT_bind;
+  }. 
 End MaybeT_MonadT.
 
 Definition MaybeAT M A : Type := M (AbstractMaybe A).
@@ -599,16 +604,25 @@ Section MaybeAT_Functor.
   Arguments fmap_maybeAT [A B] f Ma.
   Hint Unfold fmap_maybeAT : soundness.
 
+  Lemma fmap_maybeAT_id : ∀ A, fmap_maybeAT (@id A) = id.
+  Proof.
+    unfold fmap_maybeAT. intros. ext. rewrite fmap_abstract_maybe_id.
+    simple_solve.
+  Qed.
+
+  Lemma fmap_maybeAT_compose : ∀ (A B C : Type) (f : A → B) (g : B → C),
+    fmap_maybeAT (f ∘ g) = fmap_maybeAT f ∘ fmap_maybeAT g.
+  Proof.
+    intros. unfold fmap_maybeAT. ext. rewrite fmap_abstract_maybe_compose.
+    simple_solve.
+  Qed.
+
   Global Instance functor_maybeAT : Functor (MaybeAT M) :=
   {
     fmap := fmap_maybeAT;
+    fmap_id := fmap_maybeAT_id;
+    fmap_compose := fmap_maybeAT_compose;
   }. 
-  Proof.
-    - unfold fmap_maybeAT. intros. ext. rewrite fmap_abstract_maybe_id.
-      simple_solve.
-    - intros. unfold fmap_maybeAT. ext.
-      rewrite fmap_abstract_maybe_compose. simple_solve.
-  Defined.
 End MaybeAT_Functor.
 Hint Unfold fmap_maybeAT : soundness.
 
@@ -861,57 +875,129 @@ Section State_Functor.
   Arguments fmap_state [S A B] f Fa.
   Hint Unfold fmap_state : soundness.
 
+  Lemma fmap_state_id {S} : ∀ A, fmap_state (S:=S) (@id A) = id.
+  Proof. simple_solve. Qed. 
+
+  Lemma fmap_state_compose {S} : ∀ (A B C : Type) (f : A → B) (g : B → C),
+    fmap_state (S:=S) (f ∘ g) = fmap_state (S:=S) f ∘ fmap_state (S:=S) g.
+  Proof. solve_monad. Qed.
+
   Global Instance functor_state {S} : Functor (State S) :=
   {
     fmap := @fmap_state S;
-  }. all: solve_monad. Defined.
+    fmap_id := @fmap_state_id S;
+    fmap_compose := @fmap_state_compose S;
+  }. 
 
 End State_Functor.
 Hint Unfold fmap_state : soundness.
 
 Section State_Applicative.
-  Definition pure_state {S A} (a : A) : State S A :=
-    fun st => (a, st).
-  Arguments pure_state [S A] a.
+  Context {S : Type}. 
 
-  Definition app_state {S A B} 
+  Definition pure_state {A} (a : A) : State S A :=
+    fun st => (a, st).
+  Arguments pure_state [A] a.
+
+  Definition app_state {A B} 
     (Mf : State S (A -> B)) (Ma : State S A) : State S B :=
     fun st => let (f, st') := Mf st in 
               let (a, st'') := Ma st' in (f a, st'').
-  Arguments app_state [S A B] Mf Ma.
+  Arguments app_state [A B] Mf Ma.
   Hint Unfold pure_state app_state : soundness.
 
-  Definition pure_state_inj S : ∀ (A : Type) (x y : A),
-    @pure_state S A x = @pure_state S A y → x = y.
+  Definition pure_state_inj : ∀ (A : Type) (x y : A),
+    @pure_state A x = @pure_state A y → x = y.
   Proof.
     unfold pure_state. intros A x y. simpl. 
     intros. 
   Admitted.
-  Arguments pure_state_inj {S}.
 
-  Global Instance applicative_state S : Applicative (State S) :=
+  Lemma app_state_id : ∀ (A : Type) (x : State S A),
+    app_state (B:=A) (pure_state (@id A)) x = x.
+  Proof. simple_solve. Qed.
+  
+  Lemma app_state_homomorphism : ∀ (A B : Type) (f : A → B) (x : A),
+    app_state (pure_state f) (pure_state x) = pure_state (f x).
+  Proof. simple_solve. Qed.
+
+  Lemma app_state_interchange : ∀ (A B : Type) (u : State S (A → B)) (y : A),
+  app_state u (pure_state y) = 
+  app_state (pure_state (λ f : A → B, f y)) u.
+  Proof. simple_solve. Qed.
+
+  Lemma app_state_compose : ∀ (A B C : Type) (u : State S (B → C)) 
+    (v : State S (A → B)) (w : State S A),
+    app_state u (app_state v w) =
+    app_state (app_state (app_state (pure_state compose) u) v) w.
+  Proof. simple_solve. Qed.
+
+  Lemma app_state_fmap : ∀ (A B : Type) (f : A → B) (x : State S A),
+    f <$> x = app_state (pure_state f) x.
+  Proof. simple_solve. Qed.
+
+  Global Instance applicative_state : Applicative (State S) :=
   {
-    pure := @pure_state S;
-    pure_inj := @pure_state_inj S;
-    app := @app_state S;
-  }. all: unfold fmap; solve_monad. 
-  Defined.
+    pure := pure_state;
+    pure_inj := pure_state_inj;
+    app := app_state;
+    app_id := app_state_id;
+    app_homomorphism := app_state_homomorphism;
+    app_interchange := app_state_interchange;
+    app_compose := app_state_compose;
+    app_fmap := app_state_fmap;
+  }. 
 End State_Applicative.
 Hint Unfold app_state : soundness.
 
 Section State_Monad.
-  Definition bind_state {S A B} 
+  Context {S : Type}.
+  Definition bind_state {A B} 
     (p : State S A) (k : A -> State S B) : State S B :=
     fun st => match (p st) with
               | (x, st') => k x st'
               end.
-  Arguments bind_state [S A B] p k.
+  Arguments bind_state [A B] p k.
   Hint Unfold bind_state : soundness.
 
-  Global Instance monad_state (S : Type) :  Monad (State S) :=
+  Lemma bind_state_id_left : ∀ (A B : Type) (f : A → State S B) (a : A),
+    bind_state (pure a) f = f a.
+  Proof. simple_solve. Qed.
+
+  Lemma bind_state_id_right : ∀ (A : Type) (MA : State S A),
+    bind_state MA pure = MA.
+  Proof. simple_solve. Qed.
+
+  Lemma bind_state_assoc : ∀ (A B C : Type) (MA : State S A) 
+    (f : A → State S B) (g : B → State S C),
+    bind_state (bind_state MA f) g =
+    bind_state MA (λ a : A, bind_state (f a) g).
+  Proof. simple_solve. Qed.
+  
+  Lemma bind_state_app : ∀ (A B : Type) (mf : State S (A → B)) (ma : State S A),
+    mf <*> ma = 
+    bind_state mf (λ f : A → B, bind_state ma (λ a : A, (f ∘ pure) a)).
+  Proof. solve_monad. Qed.
+
+  Lemma bind_state_fmap : ∀ (A B C : Type) (f : A → B) (x : State S A) 
+    (g : B → State S C),
+    bind_state (f <$> x) g = bind_state x (f ∘ g).
+  Proof. solve_monad. Qed.
+
+  Lemma bind_state_pass : ∀ (A B : Type) (ma : State S A) (mb : State S B),
+    ma >> mb = bind_state ma (λ _ : A, mb).
+  Proof. simple_solve. Qed.
+
+  Global Instance monad_state : Monad (State S) :=
   {
-    bindM := @bind_state S;
-  }. all: unfold fmap, app; solve_monad. Defined.
+    bindM := bind_state;
+    bind_id_left := bind_state_id_left;
+    bind_id_right := bind_state_id_right;
+    bind_assoc := bind_state_assoc;
+    bind_app := bind_state_app;
+    bind_fmap := bind_state_fmap;
+    bind_pass := bind_state_pass;
+  }. 
 End State_Monad.
 Hint Unfold bind_state : soundness.
 
@@ -933,7 +1019,6 @@ Section Functor_StateT.
     rewrite <- bind_id_right. f_equal; ext. destruct x1.
     reflexivity.
   Qed.
-  Arguments fmap_stateT_id [S A].
 
   Lemma fmap_stateT_compose {S} : ∀ {A B C : Type} (f : A → B) (g : B → C),
   fmap_stateT (S:=S) (f ∘ g) = fmap_stateT f ∘ fmap_stateT g.
@@ -955,48 +1040,48 @@ Hint Unfold fmap_stateT : soundness.
 
 Section Applicative_StateT.
   Context {M} `{Monad M}.
+  Context {S : Type}.
 
-  Definition pure_stateT {S A} (x : A) : StateT S M A :=
+  Definition pure_stateT {A} (x : A) : StateT S M A :=
     fun s => pure (x, s).
-  Arguments pure_stateT [S A] x.
+  Arguments pure_stateT [A] x.
 
-  Definition app_stateT
-    {S A B}
+  Definition app_stateT {A B}
     (sf : StateT S M (A -> B)) (sa : StateT S M A) : StateT S M B :=
     fun st : S =>
     bindM (sf st) (fun '(f, stf) =>
       bindM (sa stf) (fun '(a, sta) =>
         pure (f a, sta))).
-  Arguments app_stateT [S A B] sf sa.
+  Arguments app_stateT [A B] sf sa.
   Hint Unfold pure_stateT app_stateT : soundness.
 
-  Lemma app_stateT_id {S} : ∀ (A : Type) (x : StateT S M A), 
+  Lemma app_stateT_id : ∀ (A : Type) (x : StateT S M A), 
     app_stateT (pure_stateT (id (A:=A))) x = x.
   Proof.
     intros. unfold app_stateT, pure_stateT.
     ext. autorewrite with soundness. rewrite <- bind_id_right.
     f_equal. ext. destruct x1. reflexivity.
   Qed.
-  Arguments app_stateT_id [S A] x.
+  Arguments app_stateT_id [A] x.
 
-  Lemma app_stateT_homomorphism {S} : ∀ (A B : Type) (f : A → B) (x : A),
-  app_stateT (S:=S) (pure_stateT f) (pure_stateT x) = pure_stateT (f x).
+  Lemma app_stateT_homomorphism : ∀ (A B : Type) (f : A → B) (x : A),
+  app_stateT (pure_stateT f) (pure_stateT x) = pure_stateT (f x).
   Proof.
     intros. unfold app_stateT, pure_stateT. ext. autorewrite with soundness.
     reflexivity.
   Qed.
-  Arguments app_stateT_homomorphism [S A B] f x.
+  Arguments app_stateT_homomorphism [A B] f x.
 
-  Lemma app_stateT_interchange {S} : ∀ (A B : Type) 
+  Lemma app_stateT_interchange : ∀ (A B : Type) 
     (u : StateT S M (A → B)) (y : A),
   app_stateT u (pure_stateT y) = app_stateT (pure_stateT (λ f : A → B, f y)) u.
   Proof.
     intros. autounfold with soundness. ext. autorewrite with soundness.
     f_equal; ext. destruct x0. autorewrite with soundness. reflexivity.
   Qed.
-  Arguments app_stateT_interchange [S A B] u y.
+  Arguments app_stateT_interchange [A B] u y.
 
-  Lemma app_stateT_compose {S} :  ∀ (A B C : Type) (u : StateT S M (B → C)) 
+  Lemma app_stateT_compose : ∀ (A B C : Type) (u : StateT S M (B → C)) 
     (v : StateT S M (A → B)) (w : StateT S M A),
   app_stateT u (app_stateT v w) =
   app_stateT (app_stateT (app_stateT (pure_stateT compose) u) v) w.
@@ -1007,56 +1092,63 @@ Section Applicative_StateT.
     f_equal; ext. destruct x0. autorewrite with soundness. unfold compose.
     reflexivity.
   Qed.
-  Arguments app_stateT_compose [S A B C] u v w.
+  Arguments app_stateT_compose [A B C] u v w.
 
-  Lemma pure_stateT_inj {S} : ∀ (A : Type) (x y : A),
-    pure_stateT (S:=S) x = pure_stateT y → x = y.
+  Lemma app_stateT_fmap : ∀ (A B : Type) (f : A → B) (x : StateT S M A),
+    fmap f x = app_stateT (pure_stateT f) x.
   Proof.
-    intros. unfold pure_stateT in H0. 
+    simple_solve.
+  Qed.
+
+  Lemma pure_stateT_inj : ∀ (A : Type) (x y : A),
+    pure_stateT x = pure_stateT y → x = y.
+  Proof. 
+    simple_solve.
   Admitted.
 
-  Global Instance applicative_stateT S : Applicative (StateT S M) :=
+  Global Instance applicative_stateT : Applicative (StateT S M) :=
   {
-    pure := @pure_stateT S;
-    pure_inj := @pure_stateT_inj S;
-    app := @app_stateT S;
-    app_id := @app_stateT_id S;
-    app_homomorphism := @app_stateT_homomorphism S;
-    app_interchange := @app_stateT_interchange S;
-    app_compose := @app_stateT_compose S;
-  }. all: solve_monad. Defined.
+    pure := pure_stateT;
+    pure_inj := pure_stateT_inj;
+    app := app_stateT;
+    app_id := app_stateT_id;
+    app_homomorphism := app_stateT_homomorphism;
+    app_interchange := app_stateT_interchange;
+    app_compose := app_stateT_compose;
+    app_fmap := app_stateT_fmap;
+  }. 
 End Applicative_StateT.
 Hint Unfold pure_stateT app_stateT : soundness.
 
 Section Monad_StateT.
   Context {M} `{Monad M}.
+  Context {S : Type}.
 
-  Definition bind_stateT {S A B} 
-    (MA : StateT S M A) (f : A -> StateT S M B) : StateT S M B :=
+  Definition bind_stateT {A B} (MA : StateT S M A) 
+    (f : A -> StateT S M B) : StateT S M B :=
     fun st => bindM (MA st) 
       (fun p : (A*S)%type => let (a,st') := p in f a st').
-  Arguments bind_stateT [S A B] MA f.
+  Arguments bind_stateT [A B] MA f.
   Hint Unfold bind_stateT : soundness.
 
-  Lemma bind_stateT_id_left {S} : ∀ (A B : Type) (f : A → StateT S M B) 
-    (a : A), 
+  Lemma bind_stateT_id_left : ∀ (A B : Type) (f : A → StateT S M B) (a : A), 
     bind_stateT (pure_stateT a) f = f a.
   Proof.
     autounfold with soundness. intros. ext. 
     rewrite bind_id_left. reflexivity.
   Qed.
-  Arguments bind_stateT_id_left [S A B] f a.
+  Arguments bind_stateT_id_left [A B] f a.
 
-  Lemma bind_stateT_id_right {S} : ∀ (A : Type) (MA : StateT S M A), 
+  Lemma bind_stateT_id_right : ∀ (A : Type) (MA : StateT S M A), 
     bind_stateT MA pure_stateT = MA.
   Proof.
     intros. autounfold with soundness. ext.
     rewrite <- bind_id_right. f_equal. ext. destruct x0.
     reflexivity.
   Qed.
-  Arguments bind_stateT_id_right [S A] MA.
+  Arguments bind_stateT_id_right [A] MA.
 
-  Lemma bind_stateT_assoc {S} : ∀ (A B C : Type) (MA : StateT S M A) 
+  Lemma bind_stateT_assoc : ∀ (A B C : Type) (MA : StateT S M A) 
     (f : A → StateT S M B) (g : B → StateT S M C),
     bind_stateT (bind_stateT MA f) g =
     bind_stateT MA (λ a : A, bind_stateT (f a) g).
@@ -1065,9 +1157,9 @@ Section Monad_StateT.
     autorewrite with soundness. f_equal. ext.
     destruct x0. reflexivity.
   Qed.
-  Arguments bind_stateT_assoc [S A B C] MA f g.
+  Arguments bind_stateT_assoc [A B C] MA f g.
   
-  Lemma bind_stateT_app {S} : ∀ (A B : Type) (mf : StateT S M (A → B)) 
+  Lemma bind_stateT_app : ∀ (A B : Type) (mf : StateT S M (A → B)) 
     (ma : StateT S M A), 
     app_stateT mf ma =
   bind_stateT mf (λ f : A → B,  bind_stateT ma (λ a : A, (f ∘ pure_stateT) a)).
@@ -1075,9 +1167,9 @@ Section Monad_StateT.
     autounfold with soundness. intros.
     ext. f_equal.
   Qed.
-  Arguments bind_stateT_app [S A B] mf ma.
+  Arguments bind_stateT_app [A B] mf ma.
 
-  Lemma bind_stateT_fmap {S} :  ∀ (A B C : Type) (f : A → B) (x : StateT S M A) 
+  Lemma bind_stateT_fmap :  ∀ (A B C : Type) (f : A → B) (x : StateT S M A) 
     (g : B → StateT S M C),
     bind_stateT (fmap_stateT f x) g = bind_stateT x (f ∘ g).
   Proof.
@@ -1085,9 +1177,9 @@ Section Monad_StateT.
     f_equal; ext. destruct x1. autorewrite with soundness.
     reflexivity.
   Qed.
-  Arguments bind_stateT_fmap [S A B C] f x g.
+  Arguments bind_stateT_fmap [A B C] f x g.
 
-  Lemma bind_stateT_pass {S} :  ∀ (A B : Type) (ma : StateT S M A) 
+  Lemma bind_stateT_pass : ∀ (A B : Type) (ma : StateT S M A) 
     (mb : StateT S M B),
   ma >> mb = bind_stateT ma (λ _ : A, mb).
   Proof.
@@ -1096,50 +1188,51 @@ Section Monad_StateT.
     ext. destruct x0. autorewrite with soundness. rewrite <- bind_id_right.
     f_equal. ext. destruct x0. unfold const. reflexivity.
   Qed.
-  Arguments bind_stateT_pass [S A B ma mb].
+  Arguments bind_stateT_pass [A B] ma mb.
 
-  Global Instance monad_stateT S : Monad (StateT S M) :=
+  Global Instance monad_stateT : Monad (StateT S M) :=
   {
-    bindM := @bind_stateT S;
-    bind_id_left := @bind_stateT_id_left S;
-    bind_id_right := @bind_stateT_id_right S;
-    bind_assoc := @bind_stateT_assoc S;
-    bind_app := @bind_stateT_app S;
-    bind_fmap := @bind_stateT_fmap S;
-    bind_pass := @bind_stateT_pass S;
+    bindM := bind_stateT;
+    bind_id_left := bind_stateT_id_left;
+    bind_id_right := bind_stateT_id_right;
+    bind_assoc := bind_stateT_assoc;
+    bind_app := bind_stateT_app;
+    bind_fmap := bind_stateT_fmap;
+    bind_pass := bind_stateT_pass;
   }. 
 End Monad_StateT.
 Hint Unfold bind_stateT : soundness.
 
 Section MonadT_StateT.
   Context {M} `{Monad M}.
+  Context {S : Type}.
 
-  Definition lift_stateT {S A} (MA : M A) : StateT S M A :=
+  Definition lift_stateT {A} (MA : M A) : StateT S M A :=
     fun st => bindM MA (fun a => pure (a, st)).
-  Arguments lift_stateT [S A] MA.
+  Arguments lift_stateT [A] MA.
   Hint Unfold lift_stateT : soundness.
   
-  Lemma lift_stateT_pure {S} : ∀ (A : Type) (x : A), 
-    lift_stateT (S:=S) (pure x) = pure_stateT x.
+  Lemma lift_stateT_pure : ∀ (A : Type) (x : A), 
+    lift_stateT (pure x) = pure_stateT x.
   Proof.
     intros. autounfold with soundness. ext.
     autorewrite with soundness. reflexivity.
   Qed.
-  Arguments lift_stateT_pure [S A] x.
+  Arguments lift_stateT_pure [A] x.
 
-  Lemma lift_stateT_bind {S} : ∀ (A B : Type) (x : M A) (f : A → M B),
-    lift_stateT (S:=S) (x >>= f) = lift_stateT x >>= (f ∘ lift_stateT (A:=B)).
+  Lemma lift_stateT_bind : ∀ (A B : Type) (x : M A) (f : A → M B),
+    lift_stateT (x >>= f) = lift_stateT x >>= (f ∘ lift_stateT (A:=B)).
   Proof.
     intros. simpl.
     autounfold with soundness. ext. autorewrite with soundness.
     f_equal. ext. autorewrite with soundness. reflexivity.
   Qed.
-  Arguments lift_stateT_bind [S A B] x f.
+  Arguments lift_stateT_bind [A B] x f.
 
-  Global Instance monadT_stateT S : MonadT (StateT S) :=
+  Global Instance monadT_stateT : MonadT (StateT S) :=
   {
-    liftT := @lift_stateT S;
-    lift_pure := @lift_stateT_pure S;
-    lift_bind := @lift_stateT_bind S;
+    liftT := lift_stateT;
+    lift_pure := lift_stateT_pure;
+    lift_bind := lift_stateT_bind;
   }. 
 End MonadT_StateT.
