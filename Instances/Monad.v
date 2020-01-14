@@ -727,6 +727,56 @@ Section MaybeAT_Applicative.
 End MaybeAT_Applicative.
 Hint Unfold pure_maybeAT app_maybeAT : soundness.
 
+Definition NoneAT {M A} `{Monad M} : MaybeAT M A := pure NoneA.
+Hint Unfold NoneAT : soundness.
+Definition JustAT {M A} `{Monad M} (a : A) : MaybeAT M A := pure (JustA a).
+Hint Unfold JustAT : soundness.
+Definition JustOrNoneAT {M A} `{Monad M} (a : A) : MaybeAT M A := 
+  pure (JustOrNoneA a).
+Hint Unfold JustOrNoneAT : soundness.
+
+Section MaybeAT_laws.
+  Context {M : Type → Type} `{Monad M}.
+  Context {A}.
+
+  Lemma noneAT_neq_justAT : ∀ (a : A), NoneAT ≠ JustAT a.
+  Proof.
+    intros. unfold NoneAT, JustAT. unfold not. intros.
+    apply (@pure_inj M is_applicative (AbstractMaybe A)) in H0.
+    inv H0.
+  Qed.
+
+  Lemma noneAT_neq_justornoneAT : ∀ (a : A), NoneAT ≠ JustOrNoneAT a.
+  Proof.
+    intros. unfold NoneAT, JustOrNoneAT. unfold not. intros.
+    apply (@pure_inj M is_applicative (AbstractMaybe A)) in H0.
+    inv H0.
+  Qed.
+
+  Lemma justAT_neq_justornoneAT : ∀ (a a' : A), 
+    JustAT a ≠ JustOrNoneAT a'.
+  Proof.
+    intros. unfold JustAT, JustOrNoneAT. unfold not. intros.
+    apply (@pure_inj M is_applicative (AbstractMaybe A)) in H0.
+    inv H0.
+  Qed.
+
+  Lemma justAT_inj : ∀ (x y : A), JustAT x = JustAT y → x = y.
+  Proof.
+    intros. unfold JustAT in H0. 
+    apply (@pure_inj M is_applicative (AbstractMaybe A)) in H0.
+    inj H0. reflexivity.
+  Qed.
+
+  Lemma justOrNoneAT_inj : ∀ (x y : A),
+    JustOrNoneAT x = JustOrNoneAT y → x = y.
+  Proof.
+    intros. unfold JustOrNoneAT in H0. 
+    apply (@pure_inj M is_applicative (AbstractMaybe A)) in H0.
+    inv H0. reflexivity.
+  Qed.
+End MaybeAT_laws.
+
 Section MaybeAT_Monad.
   Context {M} `{inst : Monad M}.
 

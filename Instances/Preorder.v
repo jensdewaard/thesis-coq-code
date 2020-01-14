@@ -336,16 +336,43 @@ Hint Constructors maybea_le : soundness.
 
 Section maybeAT_preorder.
   Context {A : Type} `{PreorderedSet A}.
-  Context {M : Type -> Type} `{inst : Monad} 
+  Context {M : Type -> Type} `{inst : Monad M} 
     {M_preserves_order : forall A, PreorderedSet A -> PreorderedSet (M A)}.
+
+  Inductive maybeat_le : MaybeAT M A → MaybeAT M A → Prop :=
+    | maybeat_le_none : ∀ m, maybeat_le m NoneAT
+    | maybeat_le_just : ∀ x y, 
+        preorder x y → maybeat_le (JustAT x) (JustAT y)
+    | maybeat_le_justornone_r : ∀ x y, preorder x y →
+        maybeat_le (JustAT x) (JustOrNoneAT y)
+    | maybeat_le_justornone : ∀ x y, preorder x y →
+        maybeat_le (JustOrNoneAT x) (JustOrNoneAT y)
+    | maybeat_le_refl : ∀ x, maybeat_le x x.
+  Hint Constructors maybeat_le : soundness.
+
+  Lemma maybeat_le_trans : ∀ x y z, 
+    maybeat_le x y → maybeat_le y z → maybeat_le x z.
+  Proof.
+    intros x y z Hxy Hyz. inv Hxy; inv Hyz; eauto with soundness.
+    1-2: symmetry in H0; eapply noneAT_neq_justAT in H0; inv H0.
+    symmetry in H0. eapply noneAT_neq_justornoneAT in H0. inv H0.
+    1-2: apply justAT_inj in H1; subst; constructor; pre_trans.
+    symmetry in H1. apply justAT_neq_justornoneAT in H1. inv H1.
+    apply justAT_neq_justornoneAT in H1. inv H1.
+    apply justAT_neq_justornoneAT in H1. inv H1.
+    apply justOrNoneAT_inj in H1; subst. constructor. pre_trans.
+    apply justAT_neq_justornoneAT in H1. inv H1.
+    apply justAT_neq_justornoneAT in H1. inv H1.
+    apply justOrNoneAT_inj in H1; subst. constructor. pre_trans.
+  Qed.
+
 
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=
   {
-    preorder := preorder (X:=(M (AbstractMaybe A)));
-    preorder_refl := preorder_refl;
-    preorder_trans := preorder_trans;
+    preorder := maybeat_le;
+    preorder_refl := maybeat_le_refl;
+    preorder_trans := maybeat_le_trans;
   }.
-
 End maybeAT_preorder.
 
 Section statet_preorder.

@@ -140,26 +140,26 @@ Global Instance galois_store : Galois store abstract_store :=
 }.
 
 Section galois_pairs.
-Context {A B C D} `{Galois B A} `{Galois D C}.
+  Context {A B C D} `{Galois B A} `{Galois D C}.
 
-Inductive gamma_pairs : prod A C → prod B D → Prop :=
-  | gamma_pairs_cons : ∀ (p : (A*C)%type) (q : (B*D)%type), 
-      gamma (fst p) (fst q) → gamma (snd p) (snd q) → gamma_pairs p q.
+  Inductive gamma_pairs : prod A C → prod B D → Prop :=
+    | gamma_pairs_cons : ∀ (p : (A*C)%type) (q : (B*D)%type), 
+        gamma (fst p) (fst q) → gamma (snd p) (snd q) → gamma_pairs p q.
 
-Lemma gamma_pairs_monotone :
-  monotone gamma_pairs.
-Proof.
-  constructor. intros. inv H2; inv H1. destruct x.
-  simpl in H4. simpl in H3.
-  constructor; simpl; apply_widen. 
-Qed.
+  Lemma gamma_pairs_monotone :
+    monotone gamma_pairs.
+  Proof.
+    constructor. intros. inv H2; inv H1. destruct x.
+    simpl in H4. simpl in H3.
+    constructor; simpl; apply_widen. 
+  Qed.
 
-Global Instance galois_pairs :
+  Global Instance galois_pairs :
   Galois (B*D) (A*C) :=
-{
-  gamma := gamma_pairs;
-  gamma_monotone := gamma_pairs_monotone;
-}.
+  {
+    gamma := gamma_pairs;
+    gamma_monotone := gamma_pairs_monotone;
+  }.
 End galois_pairs.
 Hint Constructors gamma_pairs : soundness.
 
@@ -192,111 +192,94 @@ Section galois_maybe.
     unfold monotone. intros. constructor. intros.
     inv H0; inv H1; try constructor; apply_widen.
   Qed.
-
-  Global Instance galois_maybe_maybeA : Galois (Maybe A) (AbstractMaybe A') :=
-  {
-    gamma := gamma_maybeA;
-    gamma_monotone := gamma_maybeA_monotone;
-  }.
-
-  Global Instance galois_maybe_maybe : Galois (Maybe A) (Maybe A') :=
-  {
-    gamma := gamma_maybe;
-    gamma_monotone := gamma_maybe_monotone;
-  }.
 End galois_maybe.
-Hint Constructors gamma_maybeA gamma_maybe : soundness.
 
+Instance galois_maybe_maybeA : ∀ A A', 
+Galois A A' → Galois (Maybe A) (AbstractMaybe A') :=
+{
+  gamma := gamma_maybeA;
+  gamma_monotone := gamma_maybeA_monotone;
+}.
+
+Instance galois_maybe_maybe : ∀ A A',
+Galois A A' → Galois (Maybe A) (Maybe A') :=
+{
+  gamma := gamma_maybe;
+  gamma_monotone := gamma_maybe_monotone;
+  }.
+Hint Constructors gamma_maybeA gamma_maybe : soundness.
 
 Section galois_unit.
   Definition gamma_unit (u v : unit) : Prop := True.
 
-Lemma gamma_unit_monotone : monotone gamma_unit.
-Proof. simple_solve. Qed.
+  Lemma gamma_unit_monotone : monotone gamma_unit.
+  Proof. constructor. reflexivity. Qed.
 
-Global Instance galois_unit : Galois unit unit := 
-{
-  gamma := gamma_unit;
-  gamma_monotone := gamma_unit_monotone;
-}. 
+  Global Instance galois_unit : Galois unit unit := 
+  {
+    gamma := gamma_unit;
+    gamma_monotone := gamma_unit_monotone;
+  }. 
 End galois_unit.
 Hint Unfold gamma_unit : soundness.
 
 Section galois_maybeT.
   Context {M M' : Type → Type} `{Monad M, Monad M'}.
-  Context {A A'} `{Galois A A'}.
+  Context {M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
 
-  Inductive gamma_maybeT : MaybeT M' A' → MaybeT M A → Prop :=
-    | gamma_noneT : ∀ m, gamma_maybeT NoneT m
-    | gamma_justT : ∀ a a', gamma a' a → gamma_maybeT (JustT a') (JustT a).
-
-  Lemma gamma_maybeT_monotone : monotone gamma_maybeT.
-  Proof.
-    constructor. intros. inv H3.
-    - simpl in H2. inv H2.
-      + constructor.
-      + apply justT_eq_noneT_false in H3. inv H3.
-      + constructor.
-    - inv H2.
-      + constructor.
-      + constructor. apply justT_inj in H3; subst. apply_widen.
-      + constructor. apply H4.
-  Qed.
-
-  Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A') := {
-    gamma := gamma_maybeT;
-    gamma_monotone := gamma_maybeT_monotone;
+  Global Instance galois_maybeT : ∀ A A', Galois A A' →
+  Galois (MaybeT M A) (MaybeT M' A') :=
+  {
+    gamma := gamma (Galois:=M_galois (Maybe A) (Maybe A') _);
+    gamma_monotone := gamma_monotone;
   }.
 End galois_maybeT.
 
-
 Section galois_maybeAT.
   Context {M M' : Type → Type} `{Monad M, Monad M'}.
-  Hypothesis M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A').
-  
-  Global Instance galois_maybeAT {A A'} `{Galois A A'} :
-    Galois (MaybeT M A) (MaybeAT M' A') := {
-      gamma := gamma (Galois:=M_galois (Maybe A) (AbstractMaybe A')
-      galois_maybe_maybeA);
-      gamma_monotone := gamma_monotone;
-    }.
+  Context {M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
+
+  Global Instance galois_maybeAT : ∀ A A', Galois A A' →
+  Galois (MaybeT M A) (MaybeAT M' A') :=
+  {
+    gamma := gamma (Galois:=M_galois (Maybe A) (AbstractMaybe A') _);
+    gamma_monotone := gamma_monotone;
+  }.
 End galois_maybeAT.
 
 Section galois_stateT.
-  Context {M M' : Type → Type}.
-  Hypothesis M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A').
+  Context (S S' : Type) `{Galois S S'}.
+  Context (M M' : Type → Type).
+  Context {M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
 
-  Instance galois_stateT {S S' A A'} `{Galois S S', Galois A A'} :
-    Galois (StateT S M A) (StateT S' M' A') :=
+  Global Instance galois_stateT : ∀ A A', 
+  Galois A A' → Galois (StateT S M A) (StateT S' M' A') :=
   {
     gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;
   }.
 End galois_stateT.
 
-Instance galois_state_monad {S S' A A' : Type} `{Galois S S', Galois A A'} :
-  Galois (State S A) (State S' A') :=
+Instance galois_state_monad (S S' : Type) `{Galois S S'} 
+  (A A' : Type) `{Galois A A'} : Galois (State S A) (State S' A') :=
   {
     gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;
   }.
 
 Section galois_state.
-  Context {A A'} `{Galois A A'}.
-  
-  Definition gamma_abstract_state : 
-    AbstractState A' → ConcreteState A → Prop := gamma_fun.
+  Definition gamma_abstract_state := gamma_fun. 
 
   Lemma gamma_abstract_state_monotone : monotone gamma_abstract_state.
   Proof.
     constructor. intros. unfold gamma_abstract_state in *.
-    constructor. destruct H1. intros. inv H0.
-    eapply widen. apply H3. apply H1. apply H2.
+    constructor. destruct H. intros. constructor.
   Qed.
 
-  Global Instance galois_state : Galois (ConcreteState A) (AbstractState A') :=
-  {
-    gamma := gamma_abstract_state;
-    gamma_monotone := gamma_abstract_state_monotone;
-  }.
+  Global Instance galois_state : ∀ A A',
+  Galois A A' → Galois (ConcreteState A) (AbstractState A').
+  Proof. 
+    intros. unfold ConcreteState, AbstractState.
+    apply galois_maybeAT. apply X.
+  Qed.
 End galois_state.
