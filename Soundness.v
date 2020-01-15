@@ -279,30 +279,20 @@ Section maybeT_sound.
       constructor; intros.
       destruct a1, b3; eauto with soundness.
       repeat eapply gamma_fun_apply; eauto with soundness.
-    - simpl. SearchAbout bindM. rewrite bind_id_left.
-    - repeat eapply gamma_fun_apply; eauto with soundness.
-      constructor. intros. destruct a, b1; eauto 8 with soundness.
-    - inv H4.
-    - simpl.
-    - eauto with soundness.
+    - simpl. SearchAbout bindM. admit.
   Admitted.
-  (* comment *)
+
   Lemma bind_maybeT_sound : ∀ {A A' B B' : Type} `{Galois A A', Galois B B'},
     gamma (bindM (M:=MaybeT M') (A:=A') (B:=B')) (bindM (M:=MaybeT M)).
   Proof.
-    unfold MaybeT. simpl. unfold bind_maybeT. repeat constructor.
+    intros. simpl. unfold bind_maybeT. repeat constructor.
     intros. repeat eapply gamma_fun_apply; eauto with soundness.
-    repeat constructor. intros. destruct a1, b1; eauto with soundness.
+    destruct H1. apply bind_sound. constructor. intros.
+    destruct a1, b1; eauto with soundness; unfold NoneT.
+    admit.
+    eapply gamma_fun_apply; eauto with soundness.
   Admitted.
 
-  Global Instance maybeT_sound : 
-    SoundMonad (M_galois:=galois_maybeT M_galois) (MaybeT M) (MaybeT M') :=
-    {
-      fmap_sound := fmap_maybeT_sound;
-    }.
-  Proof.
-    constructor.
-  Admitted.
 End maybeT_sound.
 
 Section maybeAT_sound.
