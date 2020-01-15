@@ -1,15 +1,15 @@
 Require Export Base.
 Require Import Classes.Functor.
 Require Import Coq.Program.Basics.
+Require Import Coq.Logic.FinFun.
 
 Implicit Type F : Type → Type.
 Implicit Type A B C : Type.
 
-Class Applicative F : Type :=
+Class Applicative F `{Functor F} : Type :=
 {
-  is_functor :> Functor F;
   pure : forall {A}, A -> F A;
-  pure_inj : ∀ {A} {x y : A}, pure x = pure y → x = y;
+  pure_inj : ∀ {A}, Injective (A:=A) pure;
   app : forall {A B}, F (A -> B) -> F A -> F B;
   app_id : forall {A} (x : F A), app (pure id) x = x;
   app_homomorphism : forall {A B} (f:A -> B) (x:A), 

@@ -288,10 +288,12 @@ Section maybeT_preorder.
 
   Lemma maybeT_le_trans : Transitive maybeT_le.
   Proof.
-    unfold Transitive. intros x y z Hxy Hyz. inv Hxy; inv Hyz; eauto with
-      soundness. exfalso. eapply justT_eq_noneT_false.
-      apply H1. apply justT_inj in H2. subst.
-      constructor. pre_trans.
+    unfold Transitive. intros x y z Hxy Hyz. 
+    inversion Hxy as [m Hm Heq | m n Hpre Hm Hn | m Hm Heq]; subst;
+    inversion Hyz as [p Hp Hz | p q Hp Hq Hz | p Hp Hz ]; eauto with soundness.
+    exfalso. eapply justT_eq_noneT_false. apply Hq.
+    apply justT_inj in Hq. subst.
+    constructor. pre_trans.
   Qed.
 
   Global Instance maybeT_preorder : PreorderedSet (MaybeT M A) :=
@@ -354,16 +356,16 @@ Section maybeAT_preorder.
     maybeat_le x y → maybeat_le y z → maybeat_le x z.
   Proof.
     intros x y z Hxy Hyz. inv Hxy; inv Hyz; eauto with soundness.
-    1-2: symmetry in H0; eapply noneAT_neq_justAT in H0; inv H0.
-    symmetry in H0. eapply noneAT_neq_justornoneAT in H0. inv H0.
-    1-2: apply justAT_inj in H1; subst; constructor; pre_trans.
-    symmetry in H1. apply justAT_neq_justornoneAT in H1. inv H1.
-    apply justAT_neq_justornoneAT in H1. inv H1.
-    apply justAT_neq_justornoneAT in H1. inv H1.
-    apply justOrNoneAT_inj in H1; subst. constructor. pre_trans.
-    apply justAT_neq_justornoneAT in H1. inv H1.
-    apply justAT_neq_justornoneAT in H1. inv H1.
-    apply justOrNoneAT_inj in H1; subst. constructor. pre_trans.
+    1-2: symmetry in H2; eapply noneAT_neq_justAT in H2; inv H2.
+    symmetry in H2; eapply noneAT_neq_justornoneAT in H2; inv H2.
+    1-2: apply justAT_inj in H3; subst; constructor; pre_trans.
+    symmetry in H3. apply justAT_neq_justornoneAT in H3. inv H3.
+    apply justAT_neq_justornoneAT in H3; inv H3.
+    apply justAT_neq_justornoneAT in H3; inv H3.
+    apply justOrNoneAT_inj in H3; subst; constructor; pre_trans.
+    apply justAT_neq_justornoneAT in H3; inv H3.
+    apply justAT_neq_justornoneAT in H3; inv H3.
+    apply justOrNoneAT_inj in H3; subst; constructor; pre_trans.
   Qed.
 
 
@@ -385,12 +387,3 @@ Section statet_preorder.
     preorder_trans := pointwise_ordering_trans;
   }.
 End statet_preorder.
-
-Section preorder.
-  Context {A} `{PreorderedSet A}.
-
-  Global Instance preorder_abstract_state : PreorderedSet (AbstractState A).
-  Proof.
-    apply statet_preorder.
-  Defined.
-End preorder.

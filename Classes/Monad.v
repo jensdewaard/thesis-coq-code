@@ -7,12 +7,11 @@ Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.
 Implicit Type A B C D : Type.
 
-Class Monad M : Type :=
+Class Monad M `{Applicative M}: Type :=
 {
-  is_applicative :> Applicative M;
   bindM : ∀ {A B}, M A  → (A → M B) → M B;
   bind_id_left : ∀ {A B} (f : A → M B) (a : A), 
-    bindM (@pure M is_applicative A a) f = f a;
+    bindM (pure a) f = f a;
   bind_id_right : ∀ {A} (MA : M A),
     bindM MA pure = MA;
   bind_assoc : ∀ {A B C} (MA : M A) (f : A → M B) (g : B → M C),

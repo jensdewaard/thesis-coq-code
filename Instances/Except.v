@@ -38,14 +38,14 @@ Section except_maybe.
 End except_maybe.
 
 Section except_maybeT.
-  Context {M} {inst : Monad M}.
+  Context {M} `{inst : Monad M}.
 
   Definition throw_maybeT {A} : MaybeT M A :=
     pure (F:=M) (@None A).
   Hint Unfold throw_maybeT : soundness.
 
   Definition trycatch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
-    @bindM M _ _ _ mx (fun x : Maybe A =>
+    @bindM M _ _ _ _ _ mx (fun x : Maybe A =>
       match x with
       | None => my
       | Just a => pure (Just a)
@@ -85,7 +85,7 @@ Section except_maybeAT.
 
   Definition trycatch_maybeAT {A}
     (mx my : MaybeAT M A) : MaybeAT M A :=
-    @bindM _ inst _ _ mx (fun x : AbstractMaybe A =>
+    @bindM _ _ _ inst _ _ mx (fun x : AbstractMaybe A =>
       match x with
       | JustA a => pure (JustA a)
       | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
@@ -101,7 +101,7 @@ Section except_maybeAT.
   Lemma trycatch_maybeAT_throw_right : ∀ A (x : MaybeAT M A),
     trycatch_maybeAT x throw_maybeAT = x.
   Proof. 
-    intros. unfold trycatch_maybeAT. rewrite <- (@bind_id_right M inst).
+    intros. unfold trycatch_maybeAT. rewrite <- (bind_id_right (M:=M)).
     f_equal; ext. destruct x0; reflexivity.
   Qed.
 
@@ -116,7 +116,7 @@ End except_maybeAT.
 
 Section except_stateT.
   Context {M : Type -> Type} `{inst_m : Monad M} 
-    `{inst_e : @Except M inst_m}.
+    `{inst_e : Except (M:=M)}.
   Context {S : Type}.
 
   Definition throw_stateT {A} : StateT S M A := fun _ => throw.
