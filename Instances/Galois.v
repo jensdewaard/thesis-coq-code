@@ -225,7 +225,7 @@ Section galois_maybeT.
 
   Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A') :=
   {
-    gamma := gamma (Galois:=M_galois (Maybe A) (Maybe A') _);
+    gamma := gamma;
     gamma_monotone := gamma_monotone;
   }.
 End galois_maybeT.

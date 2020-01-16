@@ -371,6 +371,8 @@ End MaybeT_Functor.
 Hint Unfold fmap_maybeT : soundness.
 Hint Rewrite @fmap_maybeT_id @fmap_maybeT_compose : soundness.
 
+
+  
 Section MaybeT_Applicative.
   Context {M} `{inst : Monad M}.
 
@@ -384,10 +386,10 @@ Section MaybeT_Applicative.
     bindM (M:=M) (A:=(Maybe (A → B))) Mmf (λ mf : Maybe (A → B),
       match mf with
       | Just f =>
-          bindM (M:=M) (A:=(Maybe A)) Mma (λ ma : Maybe A,
-            match ma with
-            | Just a => pure (Just (f a))
-            | None => pure None
+          bindM (M:=M) (A:=(Maybe A)) Mma (λ m,
+            match m with
+            | Just a => pure (F:=M) (Just (f a))
+            | None => pure (F:=M) None
             end)
       | None => pure None
       end).

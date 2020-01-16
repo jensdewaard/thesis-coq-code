@@ -28,7 +28,6 @@ Instances/Except.v
 Instances/IsBool/Boolean.v
 Instances/IsBool/AbstractBoolean.v
 Classes/Galois.v
-Classes/SoundMonad.v
 Instances/Galois.v
 SharedInterpreter.v
 Soundness.v
