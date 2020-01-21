@@ -378,8 +378,9 @@ Section maybeAT_preorder.
 End maybeAT_preorder.
 
 Section statet_preorder.
-  Context {S A : Type}.
-  Context {M : Type -> Type} `{PreorderedSet (M (A*S)%type)}.
+  Context {S A : Type} `{PreorderedSet A, PreorderedSet S}.
+  Context {M : Type -> Type} 
+    {M_preserves_order : forall A, PreorderedSet A -> PreorderedSet (M A)}.
   Global Instance statet_preorder : PreorderedSet (StateT S M A) :=
   {
     preorder := pointwise_ordering;

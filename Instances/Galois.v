@@ -79,8 +79,12 @@ Inductive gamma_fun : (A' → B') → (A → B) → Prop :=
   Lemma gamma_fun_monotone :
     monotone gamma_fun.
   Proof.
-    constructor. intros. inv H2; inv H1. 
-    constructor. intros. eapply widen; eauto. 
+    unfold monotone. intros f f' Hf.
+    constructor. intros x Hx.
+    constructor. intros a a' Ha. 
+    inversion Hf as [? ? Hfx]; subst.
+    inversion Hx as [?]; subst.
+    apply (gamma_preorder (f a')); auto. 
   Qed.
 
   Global Instance GFun : 
@@ -126,8 +130,7 @@ Hint Constructors gamma_store : soundness.
 Lemma gamma_store_monotone : monotone gamma_store.
 Proof. 
   constructor. intros x Hgamma. inv Hgamma; inv H. 
-  constructor. intros. eapply widen. apply H1.
-  apply H0.
+  constructor. intros. eapply gamma_preorder; auto.
 Qed.
 
 Global Instance galois_store : Galois store abstract_store :=
@@ -146,9 +149,11 @@ Section galois_pairs.
   Lemma gamma_pairs_monotone :
     monotone gamma_pairs.
   Proof.
-    constructor. intros. inv H2; inv H1. destruct x.
-    simpl in H4. simpl in H3.
-    constructor; simpl; apply_widen. 
+    unfold monotone. intros f f' Hf.
+    constructor. intros p Hfp.
+    inversion Hf as [a b c d Hac Hbd]; subst.
+    inversion Hfp as [? ? Hfp1 Hfp2];subst. destruct p as [a' b'].
+    constructor; simpl in *; apply_widen.
   Qed.
 
   Global Instance galois_pairs :
@@ -180,14 +185,14 @@ Section galois_maybe.
 
   Lemma gamma_maybeA_monotone : monotone gamma_maybeA.
   Proof.
-    unfold monotone. intros. constructor. intros.
-    inv H0; inv H1; try constructor; apply_widen.
+    unfold monotone. intros a a' Ha. constructor. intros m Hm.
+    inv Ha; inv Hm; try constructor; apply_widen.
   Qed.
 
   Lemma gamma_maybe_monotone : monotone gamma_maybe.
   Proof.
-    unfold monotone. intros. constructor. intros.
-    inv H0; inv H1; try constructor; apply_widen.
+    unfold monotone. intros a a' Ha. constructor; intros m Hm.
+    inv Ha; inv Hm; try constructor; apply_widen.
   Qed.
 
   Global Instance galois_maybeA : Galois (Maybe A) (AbstractMaybe A') :=
@@ -221,7 +226,9 @@ Hint Unfold gamma_unit : soundness.
 Section galois_maybeT.
   Context {A A' : Type} `{Galois A A'}.
   Context {M M' : Type → Type} `{Monad M, Monad M'}
-    {M_galois : ∀ T T', Galois T T' → Galois (M T) (M' T')}.
+    {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
+      {HM : PreorderedSet (M' T')}, 
+      @Galois T T' HT → @Galois (M T) (M' T') HM}.
 
   Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A') :=
   {
@@ -233,11 +240,13 @@ End galois_maybeT.
 Section galois_maybeAT.
   Context {A A' : Type} `{Galois A A'}.
   Context {M M' : Type → Type} `{Monad M, Monad M'} 
-    {M_galois : ∀ T T', Galois T T' → Galois (M T) (M' T')}.
+    {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
+      {HM : PreorderedSet (M' T')}, 
+      @Galois T T' HT → @Galois (M T) (M' T') HM}.
 
   Global Instance galois_maybeAT : Galois (MaybeT M A) (MaybeAT M' A') :=
   {
-    gamma := gamma (Galois:=M_galois (Maybe A) (AbstractMaybe A') _);
+    gamma := gamma (Galois:=M_galois (Maybe A) (AbstractMaybe A') _ _ _);
     gamma_monotone := gamma_monotone;
   }.
 End galois_maybeAT.
@@ -245,7 +254,11 @@ End galois_maybeAT.
 Section galois_stateT.
   Context {A A': Type} `{Galois A A'}.
   Context {S S' : Type} {M M' : Type → Type} `{Galois S S'} 
-    `{Monad M, Monad M'} {M_galois : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
+    `{Monad M, Monad M'} 
+    {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
+      {HM : PreorderedSet (M' T')}, 
+      @Galois T T' HT → @Galois (M T) (M' T') HM}.
+  Context {HMpre: PreorderedSet (M' (A' * S')%type)}.
 
   Global Instance galois_stateT : Galois (StateT S M A) (StateT S' M' A') :=
   {

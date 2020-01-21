@@ -1,15 +1,12 @@
 Require Export Base.
-Require Import PreorderedSet.
+Require Import Classes.Joinable.
 Require Import Instances.Preorder.
+Require Import PreorderedSet.
 
-Implicit Type A B : Type.
-
-Class Galois A B : Type :=
+Class Galois (A A' : Type) `{PreorderedSet A'} : Type :=
 {
-  galois_preorder :> PreorderedSet B;
-  gamma : B -> A -> Prop;
+  gamma : A' -> A -> Prop;
   gamma_monotone : monotone gamma;
-
 }.
 Arguments gamma : simpl never.
 Hint Extern 10 (gamma _ _) => constructor : soundness.
@@ -19,7 +16,7 @@ Ltac gamma_destruct := repeat
   | x : gamma _  _ |- _ => inv x
   end.
 
-Lemma widen {A B} `{Galois B A}: forall (a a' : A) (b : B), 
+Lemma gamma_preorder {A B} `{Galois B A}: forall (a a' : A) (b : B), 
     preorder a a' -> gamma a b -> gamma a' b.
 Proof.
   intros a a' b Hpre Hgamma.
@@ -28,8 +25,22 @@ Proof.
   destruct Hpre. auto with soundness.
 Qed.
 
+Lemma gamma_join_left {A A'} `{Joinable A'} `{_ : @Galois A A' H} : ∀ (a : A) (a'1 a'2 : A'),
+  gamma a'1 a → gamma (join_op a'1 a'2) a.
+Proof. 
+  intros. apply (gamma_preorder a'1). 
+  apply join_upper_bound_left. assumption.
+Qed.
+
+Lemma gamma_join_right {A A'} `{Joinable A'} `{_ : @Galois A A' H} : ∀ (a : A) (a'1 a'2 : A'),
+  gamma a'2 a → gamma (join_op a'1 a'2) a.
+Proof. 
+  intros. apply (gamma_preorder a'2). apply join_upper_bound_right.
+  assumption.
+Qed.
+
 Ltac apply_widen :=
   match goal with
   | H : preorder ?a ?b, I : gamma ?a ?c |- gamma ?b ?c =>
-      eapply widen; apply H + apply I
+      eapply gamma_preorder; apply H + apply I
   end.
