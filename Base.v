@@ -59,4 +59,4 @@ Ltac simple_solve := autounfold with soundness; intros;
 (* We have some recursive typeclasses instances, for example Monad M -> 
  * Monad (MaybeT M). As typeclass instances search by default is depth first 
  * and unbounded, we set an upperbound here to avoid infinite loops *)
-Global Set Typeclasses Depth 5.
+Global Set Typeclasses Depth 10.
