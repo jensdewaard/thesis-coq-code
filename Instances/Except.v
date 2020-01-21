@@ -1,7 +1,9 @@
 Require Import Classes.Applicative.
-Require Import Classes.Except.
+Require Import Classes.Monad.MonadExcept.
+Require Import Classes.Monad.MonadFail.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
+Require Import Classes.Functor.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
 Require Import Instances.Monad.
@@ -12,78 +14,151 @@ Require Import Types.Stores.
 Implicit Type A : Type.
 Implicit Type M : Type → Type.
 
+Section fail_maybe.
+  Lemma none_left : ∀ {A B} (f : A → Maybe B), bind_maybe (@None A) f = None.
+  Proof.
+    reflexivity.
+  Qed.
+      
+  Global Instance fail_maybe : MonadFail Maybe :=
+  {
+    fail := @None;
+    fail_left := @none_left;
+  }.
+End fail_maybe.
+
 Section except_maybe.
-  Definition trycatch_maybe {A} (x y : Maybe A) : Maybe A :=
+  Definition catch_maybe {A} (x y : Maybe A) : Maybe A :=
     match x with
     | None => y
     | _ => x
     end.
-  Hint Unfold trycatch_maybe : soundness.
+  Hint Unfold catch_maybe : soundness.
 
-  Lemma trycatch_maybe_throw_left : ∀ A (x : Maybe A),
-    trycatch_maybe None x = x.
+  Lemma catch_maybe_throw_left : ∀ A (x : Maybe A),
+    catch_maybe None x = x.
   Proof. simple_solve. Qed.
 
-  Lemma trycatch_maybe_throw_right : ∀ A (x : Maybe A),
-    trycatch_maybe x None = x.
+  Lemma catch_maybe_throw_right : ∀ A (x : Maybe A),
+    catch_maybe x None = x.
   Proof. simple_solve. Qed.
 
-  Instance except_maybe : Except Maybe :=
+  Lemma catch_maybe_assoc  : ∀ (A : Type) (x y z : Maybe A),
+    catch_maybe x (catch_maybe y z) = catch_maybe (catch_maybe x y) z.
+  Proof.
+    intros. destruct_all (Maybe A); reflexivity.
+  Qed.
+
+  Lemma catch_maybe_pure : ∀ (A : Type) (x : Maybe A) (a : A),
+    catch_maybe (pure a) x = pure a.
+  Proof.
+    reflexivity. 
+  Qed.
+
+  Global Instance except_maybe : MonadExcept Maybe :=
   {
-    throw := @None;
-    trycatch := @trycatch_maybe;
-    trycatch_throw_left := trycatch_maybe_throw_left;
-    trycatch_throw_right := trycatch_maybe_throw_right;
+    catch := @catch_maybe;
+    catch_left := catch_maybe_throw_left;
+    catch_right := catch_maybe_throw_right;
+    catch_assoc := catch_maybe_assoc;
+    catch_pure := catch_maybe_pure;
   }.
 End except_maybe.
+
+Section fail_maybeT.
+  Context {M} `{inst : Monad M}.
+
+  Definition fail_maybeT {A} : MaybeT M A := pure None.
+
+  Lemma fail_maybeT_left : ∀ (A B : Type) (m : A → MaybeT M B), 
+    bind_maybeT fail_maybeT m = fail_maybeT.
+  Proof.
+    intros. unfold bind_maybeT, fail_maybeT, NoneT. autorewrite with soundness.
+    reflexivity.
+  Qed.
+
+  Global Instance monad_fail_maybeT : MonadFail (MaybeT M) :=
+  {
+    fail := @fail_maybeT;
+    fail_left := @fail_maybeT_left;
+  }.
+End fail_maybeT.
 
 Section except_maybeT.
   Context {M} `{inst : Monad M}.
 
-  Definition throw_maybeT {A} : MaybeT M A :=
-    pure (F:=M) (@None A).
-  Hint Unfold throw_maybeT : soundness.
-
-  Definition trycatch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
+  Definition catch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
     @bindM M _ _ _ _ _ mx (fun x : Maybe A =>
       match x with
       | None => my
       | Just a => pure (Just a)
       end).
-  Hint Unfold trycatch_maybeT : soundness.
-  Arguments trycatch_maybeT [_].
+  Hint Unfold catch_maybeT : soundness.
 
-  Lemma trycatch_maybeT_throw_left : ∀ (A : Type) (x : MaybeT M A), 
-    trycatch_maybeT throw_maybeT x = x.
+  Lemma catch_maybeT_throw_left : ∀ (A : Type) (x : MaybeT M A), 
+    catch_maybeT fail_maybeT x = x.
   Proof.
-    autounfold with soundness. intros.
+    intros. unfold catch_maybeT, fail_maybeT.
     autorewrite with soundness. reflexivity.
   Qed.
 
-  Lemma trycatch_maybeT_throw_right : ∀ (A : Type) (x : MaybeT M A), 
-    trycatch_maybeT x throw_maybeT = x.
+  Lemma catch_maybeT_throw_right : ∀ (A : Type) (x : MaybeT M A), 
+    catch_maybeT x fail_maybeT = x.
   Proof.
-    autounfold with soundness. intros.
+    unfold catch_maybeT, fail_maybeT. intros.
     replace x with (bindM (M:=M) x pure) at 2.
     f_equal; ext; destruct x0; reflexivity.
     rewrite <- (bind_id_right (M:=M)). f_equal.
   Qed.
 
-  Instance except_maybeT : Except (MaybeT M) :=
-  {
-    throw := @throw_maybeT;
-    trycatch := trycatch_maybeT;
-    trycatch_throw_left := @trycatch_maybeT_throw_left;
-    trycatch_throw_right := @trycatch_maybeT_throw_right;
-  }. 
+  Lemma catch_maybeT_assoc : ∀ (A : Type) (x y z : MaybeT M A),
+    catch_maybeT x (catch_maybeT y z) = catch_maybeT (catch_maybeT x y) z.
+  Proof.
+    intros. unfold catch_maybeT. autorewrite with soundness. f_equal. 
+    extensionality m. destruct m; autorewrite with soundness. reflexivity.
+    f_equal.
+  Qed.
 
+  Lemma catch_maybeT_pure : ∀ (A : Type) (x : MaybeT M A) (a : A),
+    catch_maybeT (pure a) x = pure a.
+  Proof.
+    unfold catch_maybeT. intros. unfold pure; simpl; unfold pure_maybeT. 
+    rewrite bind_id_left. reflexivity.
+  Qed.
+
+  Global Instance except_maybeT : MonadExcept (MaybeT M) :=
+  {
+    catch := @catch_maybeT;
+    catch_left := @catch_maybeT_throw_left;
+    catch_right := @catch_maybeT_throw_right;
+    catch_assoc := catch_maybeT_assoc;
+    catch_pure := catch_maybeT_pure;
+  }. 
 End except_maybeT.
+
+Section fail_maybeAT.
+  Context {M : Type → Type} `{Monad M}.
+
+  Definition fail_maybeAT {A} : MaybeAT M A := pure NoneA.
+
+  Lemma fail_maybeAT_left : ∀ (A B : Type) (m : A → MaybeAT M B), 
+    bind_maybeAT (A:=A) (B:=B) fail_maybeAT m = fail_maybeAT (A:=B).
+  Proof. 
+    unfold bind_maybeAT, fail_maybeAT; simpl. intros. 
+    autorewrite with soundness. reflexivity.
+  Qed.
+
+  Global Instance monad_fail_maybeAT : MonadFail (MaybeAT M) :=
+  {
+     fail := @fail_maybeAT;
+     fail_left := @fail_maybeAT_left;
+  }.
+End fail_maybeAT.
+
 Section except_maybeAT.
   Context {M : Type -> Type} `{inst : Monad M}.
 
-  Definition throw_maybeAT {A : Type} : MaybeAT M A := pure (@NoneA A).
-
-  Definition trycatch_maybeAT {A}
+  Definition catch_maybeAT {A}
     (mx my : MaybeAT M A) : MaybeAT M A :=
     @bindM _ _ _ inst _ _ mx (fun x : AbstractMaybe A =>
       match x with
@@ -91,60 +166,109 @@ Section except_maybeAT.
       | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
       | NoneA => my
       end).
-  Arguments trycatch_maybeAT [_].
-  Hint Unfold throw_maybeAT trycatch_maybeAT : soundness.
 
-  Lemma trycatch_maybeAT_throw_left : ∀ A (x : MaybeAT M A),
-    trycatch_maybeAT throw_maybeAT x = x.
-  Proof. simple_solve. Qed.
-  
-  Lemma trycatch_maybeAT_throw_right : ∀ A (x : MaybeAT M A),
-    trycatch_maybeAT x throw_maybeAT = x.
+  Lemma catch_maybeAT_throw_left : ∀ A (x : MaybeAT M A),
+    catch_maybeAT fail_maybeAT x = x.
   Proof. 
-    intros. unfold trycatch_maybeAT. rewrite <- (bind_id_right (M:=M)).
-    f_equal; ext. destruct x0; reflexivity.
+    intros. unfold catch_maybeAT, fail_maybeAT. autorewrite with soundness.
+    reflexivity.
   Qed.
 
-  Instance except_maybeAT : Except (MaybeAT M) :=
+  Lemma catch_maybeAT_throw_right : ∀ A (x : MaybeAT M A),
+    catch_maybeAT x fail_maybeAT = x.
+  Proof. 
+    intros. unfold catch_maybeAT, fail_maybeAT. rewrite <- (bind_id_right (M:=M)).
+    f_equal; extensionality m. destruct m; reflexivity.
+  Qed.
+
+  Lemma catch_maybeAT_assoc : ∀ (A : Type) (x y z : MaybeAT M A),
+    catch_maybeAT x (catch_maybeAT y z) = catch_maybeAT (catch_maybeAT x y) z.
+  Proof.
+    intros. unfold catch_maybeAT. rewrite bind_assoc. f_equal. 
+    extensionality m. destruct m. 1-2: rewrite bind_id_left; reflexivity.
+    f_equal.
+  Qed.
+
+  Lemma catch_maybeAT_pure : ∀ (A : Type) (x : MaybeAT M A) (a : A),
+    catch_maybeAT (pure a) x = pure a.
+  Proof.
+    unfold catch_maybeAT. intros. unfold pure; simpl; unfold pure_maybeAT. 
+    rewrite bind_id_left. reflexivity.
+  Qed.
+
+  Global Instance except_maybeAT : MonadExcept (MaybeAT M) :=
     {
-      throw := @throw_maybeAT;
-      trycatch := trycatch_maybeAT;
-      trycatch_throw_left := trycatch_maybeAT_throw_left;
-      trycatch_throw_right := trycatch_maybeAT_throw_right;
+      catch := @catch_maybeAT;
+      catch_left := catch_maybeAT_throw_left;
+      catch_right := catch_maybeAT_throw_right;
+      catch_assoc := catch_maybeAT_assoc;
+      catch_pure := catch_maybeAT_pure;
     }. 
 End except_maybeAT.
 
-Section except_stateT.
-  Context {M : Type -> Type} `{inst_m : Monad M} 
-    `{inst_e : Except (M:=M)}.
+Section fail_stateT.
+  Context {M : Type -> Type} `{MonadFail M}.
   Context {S : Type}.
 
-  Definition throw_stateT {A} : StateT S M A := fun _ => throw.
+  Definition fail_stateT {A} : StateT S M A := lift_stateT fail.
 
-  Definition trycatch_stateT {A} (a b : StateT S M A) : StateT S M A := 
-    fun s => trycatch (a s) (b s).
-  Hint Unfold throw_stateT trycatch_stateT : soundness.
+  Lemma fail_stateT_left : ∀ (A B : Type) (s : A → StateT S M B),
+    fail_stateT (A:=A) >>= s = fail_stateT.
+  Proof.
+    intros. unfold fail_stateT, lift_stateT. ext. 
+    autorewrite with soundness. unfold app_stateT, fmap_stateT. 
+    unfold bindM; simpl; unfold bind_stateT. 
+    autorewrite with soundness. reflexivity.
+  Qed.
 
-  Lemma trycatch_stateT_throw_left : ∀ A (x : StateT S M A),
-    trycatch_stateT throw_stateT x = x.
-  Proof. simple_solve. Qed.
-
-  Lemma trycatch_stateT_throw_right : ∀ A (x : StateT S M A),
-    trycatch_stateT x throw_stateT = x.
-  Proof. simple_solve. Qed.
-
-  Instance except_stateT : Except (StateT S M) :=
+  Global Instance monad_fail_stateT : MonadFail (StateT S M) :=
   {
-    throw := @throw_stateT;
-    trycatch := @trycatch_stateT;
-    trycatch_throw_left := trycatch_stateT_throw_left;
-    trycatch_throw_right := trycatch_stateT_throw_right;
+    fail := @fail_stateT;
+    fail_left := fail_stateT_left;
+  }.
+End fail_stateT.
+
+Section except_stateT.
+  Context {M : Type → Type} `{MonadExcept M}.
+  Context {S : Type}.
+
+  Definition catch_stateT {A} (a b : StateT S M A) : StateT S M A := 
+    fun s => catch (a s) (b s).
+  Hint Unfold fail_stateT catch_stateT : soundness.
+
+  Lemma catch_stateT_throw_left : ∀ A (x : StateT S M A),
+    catch_stateT fail_stateT x = x.
+  Proof. 
+    intros. unfold catch_stateT, fail_stateT, lift_stateT.
+    ext. autorewrite with soundness. reflexivity.
+  Qed.
+
+  Lemma catch_stateT_throw_right : ∀ A (x : StateT S M A),
+    catch_stateT x fail_stateT = x.
+  Proof. 
+    intros. unfold catch_stateT, fail_stateT, lift_stateT.
+    ext. autorewrite with soundness. reflexivity.
+  Qed.
+
+  Lemma catch_stateT_assoc : ∀ A (x y z: StateT S M A),
+    catch_stateT x (catch_stateT y z) = catch_stateT (catch_stateT x y) z.
+  Proof.
+    intros. unfold catch_stateT. ext. rewrite catch_assoc. reflexivity.
+  Qed.
+
+  Lemma catch_stateT_pure : ∀ A (x : StateT S M A) (a : A),
+    catch_stateT (pure a) x = pure a.
+  Proof.
+    intros. unfold catch_stateT. ext. unfold pure. simpl. unfold pure_stateT.
+    rewrite catch_pure. reflexivity.
+  Qed.
+
+  Instance except_stateT : MonadExcept (StateT S M) :=
+  {
+    catch := @catch_stateT;
+    catch_left := catch_stateT_throw_left;
+    catch_right := catch_stateT_throw_right;
+    catch_assoc := catch_stateT_assoc;
+    catch_pure := catch_stateT_pure;
   }. 
 End except_stateT.
-
-Global Instance except_abstract_state : Except AbstractState.
-Proof. apply except_maybeAT. Defined.
-
-Require Import Classes.Except.
-Instance except_conc : Except ConcreteState. 
-Proof. apply except_maybeT. Defined.

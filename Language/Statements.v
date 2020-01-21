@@ -43,7 +43,7 @@ Notation "c1 ;c; c2" :=
     (CSeq c1 c2) (at level 80, right associativity) : com_scope.
 Notation "x '::=' a" :=
     (CAss x a) (at level 60) : com_scope.
-Notation "'try' c1 'catch' c2" :=
+Notation "'TRY' c1 'CATCH' c2" :=
     (CTryCatch c1 c2) (at level 70) : com_scope.
 Notation "'IF2' b 'THEN' c1 'ELSE' c2" :=
     (CIf b c1 c2) (at level 70) : com_scope.

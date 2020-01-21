@@ -5,11 +5,12 @@ Classes/PreorderedSet.v
 Classes/Functor.v
 Classes/Applicative.v
 Classes/Monad.v
+Classes/Monad/MonadFail.v
+Classes/Monad/MonadExcept.v
 Classes/Joinable.v
 Classes/IsNat.v
 Classes/IsBool.v
 Classes/Store.v
-Classes/Except.v
 Types/AbstractBool.v
 Types/Parity.v
 Types/Interval.v

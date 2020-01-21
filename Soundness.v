@@ -125,7 +125,7 @@ Lemma bind_abstract_maybe_sound (A A' B B' : Type) `{Galois A A', Galois B B'} :
 Proof.
   unfold bindM; simpl.
   constructor; intros ma ma' Hma. constructor; intros mf mf' Hmf.
-  destruct ma as [a|a], ma' as [?|a'|a']; simpl; eauto with soundness.
+  destruct ma, ma' as [|a'|]; simpl; eauto with soundness.
   inversion Hma as [?|?|?|?? Ha ];subst.
   inversion Hmf as [?? Hf]; subst.
   apply Hf in Ha. all: destruct (mf' a'); eauto with soundness.

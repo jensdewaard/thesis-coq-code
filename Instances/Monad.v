@@ -780,8 +780,8 @@ Section MaybeAT_Monad.
   Context {M} `{inst : Monad M}.
 
   Definition bind_maybeAT {A B} 
-    (Mma : M (AbstractMaybe A))
-    (f : A -> M (AbstractMaybe B)) : M (AbstractMaybe B) :=
+    (Mma : MaybeAT M A)
+    (f : A -> MaybeAT M B) : MaybeAT M B :=
   @bindM M _ _ _ (AbstractMaybe A) (AbstractMaybe B) Mma (fun ma =>
     match ma with
     | NoneA => pure NoneA
@@ -794,7 +794,6 @@ Section MaybeAT_Monad.
                        | JustOrNoneA b => pure (JustOrNoneA b)
                        end)
     end).
-  Arguments bind_maybeAT [A B] Mma f.
   Hint Unfold bind_maybeAT : soundness.
 
   Lemma bind_maybeAT_id_left : ∀ {A B} (f : A → MaybeAT M B) (a : A), 
@@ -807,7 +806,7 @@ Section MaybeAT_Monad.
   Lemma bind_maybeAT_id_right : ∀ {A} (MA : MaybeAT M A), 
     bind_maybeAT MA pure_maybeAT = MA.
   Proof. 
-    unfold bind_maybeAT. intros. rewrite <- bind_id_right.
+    unfold bind_maybeAT. intros. rewrite <- (bind_id_right (M:=M)).
     f_equal. ext. destruct x; unfold pure_maybeAT. reflexivity.
     autorewrite with soundness. reflexivity. reflexivity.
   Qed.
@@ -870,7 +869,7 @@ Section MaybeAT_Monad.
   Global Instance monad_maybeAT 
   : Monad (MaybeAT M) :=
   {
-    bindM := bind_maybeAT;
+    bindM := @bind_maybeAT;
     bind_id_left := bind_maybeAT_id_left;
     bind_id_right := bind_maybeAT_id_right;
     bind_assoc := bind_maybeAT_assoc;

@@ -10,7 +10,7 @@ Require Import Types.State.
 Require Import Types.Stores.
 Require Import Instances.Monad.
 Require Import Classes.Applicative.
-Require Import Classes.Except.
+Require Import Classes.Monad.MonadFail.
 
 Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
   match v with
@@ -29,7 +29,7 @@ Definition eval_if_abstract (b : abstr_bool) (st1 st2 : AbstractState unit)
   | ab_true   => st1
   | ab_false  => st2
   | ab_top    => join_op st1 st2
-  | ab_bottom => throw
+  | ab_bottom => fail
   end.
 
 Definition extract_ab (b : bool) : abstr_bool := 

@@ -3,7 +3,8 @@ Require Import Classes.Monad.
 Require Import Classes.IsNat.
 Require Import Classes.IsBool.
 Require Import Classes.Store.
-Require Import Classes.Except.
+Require Import Classes.Monad.MonadFail.
+Require Import Classes.Monad.MonadExcept.
 Require Import Classes.Applicative.
 
 Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type}
@@ -71,7 +72,7 @@ Open Scope com_scope.
 
 Fixpoint shared_ceval 
   {M : Type -> Type} {S valType natType boolType : Type}
-  `{Monad M, Store S M valType, Except M, 
+  `{Monad M, Store S M valType, MonadExcept M, 
     A : IsNat M valType boolType natType, IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
@@ -86,7 +87,7 @@ Fixpoint shared_ceval
       v <- shared_eval_expr b ;
       b' <- ensure_bool v ;
       if_op b' (shared_ceval c1) (shared_ceval c2)
-  | try c1 catch c2 => 
-      trycatch (shared_ceval c1) (shared_ceval c2)
-  | CFail => throw
+  | TRY c1 CATCH c2 => 
+      catch (shared_ceval c1) (shared_ceval c2)
+  | CFail => fail
   end.
