@@ -8,7 +8,6 @@ Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Parity.
-Require Import Types.State.
 Require Import Types.Stores.
 
 Hint Unfold Reflexive Transitive : soundness.

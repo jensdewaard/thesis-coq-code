@@ -2,12 +2,13 @@
 Base.v
 Types/Maps.v
 Classes/PreorderedSet.v
+Classes/Joinable.v
+Classes/Galois.v
 Classes/Functor.v
 Classes/Applicative.v
 Classes/Monad.v
 Classes/Monad/MonadFail.v
 Classes/Monad/MonadExcept.v
-Classes/Joinable.v
 Classes/IsNat.v
 Classes/IsBool.v
 Classes/Store.v
@@ -16,7 +17,6 @@ Types/Parity.v
 Types/Interval.v
 Language/Statements.v
 Types/Stores.v
-Types/Result.v
 Instances/Preorder.v
 Instances/Joinable.v
 Instances/Monad.v
@@ -28,7 +28,6 @@ Instances/IsNat/Interval.v
 Instances/Except.v
 Instances/IsBool/Boolean.v
 Instances/IsBool/AbstractBoolean.v
-Classes/Galois.v
 Instances/Galois.v
 SharedInterpreter.v
 Soundness.v
