@@ -1,36 +1,41 @@
 Require Import Classes.IsNat.
 Require Import Classes.Monad.
+Require Import Classes.Monad.MonadFail.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
-Require Import Types.Result.
-Require Import Types.State.
 Require Import Instances.Monad.
 Require Import Classes.Applicative.
 
-Definition extract_interval (n : nat) : AbstractState interval := 
-  liftT (pure (n, n)).
+Implicit Type M : Type → Type.
+Generalizable Variable M.
 
-Definition ensure_interval (v : avalue) : AbstractState interval :=
+Definition extract_interval `{Monad M} (n : nat) : M interval := 
+  pure (n, n).
+
+Definition ensure_interval `{MonadFail M} (v : avalue) : M interval :=
   match v with
-  | VInterval i => liftT (pure i)
-  | _ => liftT (pure NoneA)
+  | VInterval i => pure i
+  | _ => fail
   end.
 
-Definition iplusM (i j : interval) : AbstractState interval := 
-  liftT (pure (iplus i j)).
-Definition imultM (i j : interval) : AbstractState interval :=
-  liftT (pure (imult i j)).
-Definition ieqM (i j : interval) : AbstractState abstr_bool :=
-  liftT (pure (ieqb i j)).
-Definition ileM (i j : interval) : AbstractState abstr_bool := 
-  liftT (pure (ileqb i j)).
+Definition iplusM `{Monad M} (i j : interval) : M interval := 
+  pure (iplus i j).
 
-Definition build_interval (i : interval) : AbstractState avalue :=
-  liftT (pure (VInterval i)).  
+Definition imultM `{Monad M} (i j : interval) : M interval :=
+  pure (imult i j).
 
-Global Instance isnat_interval : 
-  IsNat AbstractState avalue abstr_bool interval := 
+Definition ieqM `{Monad M} (i j : interval) : M abstr_bool :=
+  pure (ieqb i j).
+
+Definition ileM `{Monad M} (i j : interval) : M abstr_bool := 
+  pure (ileqb i j).
+
+Definition build_interval `{Monad M} (i : interval) : M avalue :=
+  pure (VInterval i).  
+
+Global Instance isnat_interval `{MonadFail M} :
+  IsNat M avalue abstr_bool interval :=
 {
   extract_nat := extract_interval;
   ensure_nat := ensure_interval;

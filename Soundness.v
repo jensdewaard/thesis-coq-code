@@ -28,7 +28,6 @@ Require Import Types.AbstractBool.
 Require Import Types.Maps.
 Require Import Types.Parity.
 Require Import Types.Interval.
-Require Import Types.State.
 Require Import Types.Stores.
 
 Hint Extern 0 (gamma _ _) => progress gamma_destruct : soundness.
@@ -466,8 +465,6 @@ Lemma ensure_par_sound :
   gamma ensure_par ensure_nat.
 Proof.
   repeat constructor; intros. destruct a, a'; eauto with soundness.
-  unfold ensure_par, ensure_nat. simpl. 
-  repeat eapply gamma_fun_apply; eauto with soundness.
 Qed.
 Hint Resolve ensure_par_sound : soundness.
 
@@ -476,6 +473,7 @@ Lemma extract_parM_sound : forall n,
 Proof. 
   intros. unfold extract_parM, extract_natM. simpl. 
   repeat eapply gamma_fun_apply; eauto with soundness. 
+  unfold pure; simpl.
   eapply fmap_stateT_sound.
   Unshelve. all: eauto with soundness. 
 Qed. 
@@ -710,6 +708,12 @@ Hint Resolve bind_state_sound_fun : soundness.
 *)
 
 (* Soundness of interpreters *)
+
+
+Definition ConcreteState := MaybeT (StateT store Maybe).
+
+Definition AbstractState := 
+  MaybeAT (StateT abstract_store Maybe).
 
 Lemma extract_build_val_sound : forall v,
   gamma (extract_build_val (M:=AbstractState) (A:=isnat_parity) v) 

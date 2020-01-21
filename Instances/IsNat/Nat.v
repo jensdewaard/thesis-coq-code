@@ -1,37 +1,39 @@
 Require Import Classes.IsNat.
 Require Import Classes.Monad.
+Require Import Classes.Monad.MonadFail.
 Require Import Types.Stores.
 Require Import Language.Statements.
-Require Import Types.State.
-Require Import Types.Result.
 Require Import Instances.Monad.
 Require Import Classes.Applicative.
 
-Definition ensure_nat (v : cvalue) : ConcreteState nat :=
+Implicit Type M : Type → Type.
+Generalizable Variable M.
+
+Definition ensure_nat `{MonadFail M} (v : cvalue) : M nat :=
   match v with
-  | VNat x => liftT (pure x)
-  | _ => liftT (pure None)
+  | VNat x => pure x
+  | _ => fail
   end.
 
-Definition extract_natM (n : nat) : ConcreteState nat :=
-  liftT (pure n).
+Definition extract_natM `{Monad M} (n : nat) : M nat :=
+  pure n.
 
-Definition plusM (n m : nat) : ConcreteState nat := 
-  liftT (pure (plus n m)).
+Definition plusM `{Monad M} (n m : nat) : M nat := 
+  pure (plus n m).
 
-Definition multM (n m : nat) : ConcreteState nat := 
-  liftT (pure (mult n m)).
+Definition multM `{Monad M} (n m : nat) : M nat := 
+  pure (mult n m).
 
-Definition eqbM (n m : nat) : ConcreteState bool := 
-  liftT (pure (Nat.eqb n m)).
+Definition eqbM `{Monad M} (n m : nat) : M bool := 
+  pure (Nat.eqb n m).
 
-Definition lebM (n m : nat) : ConcreteState bool := 
-  liftT (pure (Nat.leb n m)).
+Definition lebM `{Monad M} (n m : nat) : M bool := 
+  pure (Nat.leb n m).
 
-Definition build_natural (n : nat) : ConcreteState cvalue := 
-  liftT (pure (VNat n)).
+Definition build_natural `{Monad M} (n : nat) : M cvalue := 
+  pure (VNat n).
 
-Global Instance nat_numerical : IsNat ConcreteState cvalue bool nat :=
+Global Instance nat_numerical `{MonadFail M} : IsNat M cvalue bool nat :=
 {
   ensure_nat := ensure_nat;
   build_nat := build_natural;

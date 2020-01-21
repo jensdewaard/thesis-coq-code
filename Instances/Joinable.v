@@ -7,7 +7,6 @@ Require Import Instances.Monad.
 Require Import Instances.Preorder.
 Require Import Language.Statements.
 Require Import Types.Stores.
-Require Import Types.State.
 
 Definition abstract_store_join
   (ast1 ast2 : abstract_store) : abstract_store :=
@@ -183,30 +182,3 @@ Section joinable_maybeAT_state.
     join_upper_bound_right := state_join_upper_bound_right;
   }.
 End joinable_maybeAT_state.
-
-Section joinable_abstract_state.
-  Context {A} `{Joinable A}.
-  
-  Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A :=
-    λ st, join_op (st1 st) (st2 st).
-  Hint Unfold join_abstract_state : soundness.
-
-  Lemma join_abstract_state_left : ∀ st st', 
-    preorder st (join_abstract_state st st').
-  Proof.
-    eauto with soundness.
-  Qed.
-
-  Lemma join_abstract_store_right : ∀ st st',
-    preorder st' (join_abstract_state st st').
-  Proof. 
-    eauto with soundness.
-  Qed.
-  
-  Global Instance abstract_state_joinable : Joinable (AbstractState A) :=
-  {
-    join_op := join_abstract_state;
-    join_upper_bound_left := join_abstract_state_left;
-    join_upper_bound_right := join_abstract_store_right;
-  }.
-End joinable_abstract_state.

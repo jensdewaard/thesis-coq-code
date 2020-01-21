@@ -20,7 +20,6 @@ Types/Stores.v
 Instances/Preorder.v
 Instances/Joinable.v
 Instances/Monad.v
-Types/State.v
 Instances/Store.v
 Instances/IsNat/Parity.v
 Instances/IsNat/Nat.v

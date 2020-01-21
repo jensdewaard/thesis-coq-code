@@ -4,16 +4,18 @@ Require Import Classes.IsNat.
 Require Import Classes.Monad.
 Require Import Coq.Arith.Arith.
 Require Import Instances.Monad.
-Require Import Instances.Monad.
+Require Import Classes.Monad.MonadFail.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Parity.
-Require Import Types.State.
 
-Definition ensure_par (v : avalue) : AbstractState parity :=
+Implicit Type M : Type → Type.
+Generalizable Variable M.
+
+Definition ensure_par `{MonadFail M} (v : avalue) : M parity :=
   match v with
-  | VParity x => liftT (pure x)
-  | _ => liftT (pure NoneA)
+  | VParity x => pure x
+  | _ => fail
   end.
 
 Definition extract_par (n : nat) : parity :=
@@ -58,26 +60,26 @@ Qed.
 Hint Rewrite <- even_extract_pareven_equiv odd_extract_parodd_equiv :
   soundness.
 
-Definition extract_parM (n : nat) : AbstractState parity :=
-  liftT (pure (extract_par n)).
+Definition extract_parM `{Monad M} (n : nat) : M parity :=
+  pure (extract_par n).
 
-Definition pplusM (n m : parity) : AbstractState parity :=
-  liftT (pure (parity_plus n m)).
+Definition pplusM `{Monad M} (n m : parity) : M parity :=
+  pure (parity_plus n m).
 
-Definition pmultM (n m : parity) : AbstractState parity :=
-  liftT (pure (parity_mult n m )).
+Definition pmultM `{Monad M} (n m : parity) : M parity :=
+  pure (parity_mult n m ).
 
-Definition peqM (n m : parity) : AbstractState abstr_bool :=
-  liftT (pure (parity_eq n m)).
+Definition peqM `{Monad M} (n m : parity) : M abstr_bool :=
+  pure (parity_eq n m).
 
-Definition pleM (n m : parity) : AbstractState abstr_bool :=
-  liftT (pure ab_top).
+Definition pleM `{Monad M} (n m : parity) : M abstr_bool :=
+  pure ab_top.
 
-Definition build_parity (p : parity) : AbstractState avalue :=
-  liftT (pure (VParity p)).
+Definition build_parity `{Monad M} (p : parity) : M avalue :=
+  pure (VParity p).
 
-Global Instance isnat_parity : 
-  IsNat AbstractState avalue abstr_bool parity :=
+Global Instance isnat_parity M `{MonadFail M} : 
+  IsNat M avalue abstr_bool parity :=
 {
   ensure_nat := ensure_par;
   extract_nat := extract_parM;

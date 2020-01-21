@@ -7,8 +7,6 @@ Require Import Classes.Functor.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
 Require Import Instances.Monad.
-Require Import Types.Result.
-Require Import Types.State.
 Require Import Types.Stores.
 
 Implicit Type A : Type.

@@ -1,30 +1,32 @@
+Require Import Classes.Applicative.
 Require Import Classes.IsBool.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
+Require Import Classes.Monad.MonadFail.
 Require Import Instances.Except.
 Require Import Instances.Joinable.
+Require Import Instances.Monad.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
-Require Import Types.Result.
-Require Import Types.State.
 Require Import Types.Stores.
-Require Import Instances.Monad.
-Require Import Classes.Applicative.
-Require Import Classes.Monad.MonadFail.
 
-Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
+Generalizable Variable M.
+
+Definition ensure_abool `{MonadFail M} (v : avalue) : M abstr_bool :=
   match v with
-  | VAbstrBool b => liftT (pure b)
-  | _ => liftT (pure NoneA)
+  | VAbstrBool b => pure b
+  | _ => fail
   end.
 
-Definition and_abM (b c : abstr_bool) : AbstractState abstr_bool := 
-  liftT (pure (and_ab b c)).
-Definition neg_abM (b : abstr_bool) : AbstractState abstr_bool := 
-  liftT (pure (neg_ab b)).
+Definition and_abM `{Monad M} (b c : abstr_bool) : M abstr_bool := 
+  pure (and_ab b c).
 
-Definition eval_if_abstract (b : abstr_bool) (st1 st2 : AbstractState unit) 
-  : AbstractState unit := 
+Definition neg_abM `{Monad M} (b : abstr_bool) : M abstr_bool := 
+  pure (neg_ab b).
+
+Definition eval_if_abstract `{MonadFail M} `{Joinable (M (unit))}
+  (b : abstr_bool) (st1 st2 : M unit) 
+  : M unit := 
   match b with
   | ab_true   => st1
   | ab_false  => st2
@@ -38,13 +40,14 @@ Definition extract_ab (b : bool) : abstr_bool :=
   | false => ab_false
   end.
 
-Definition extract_abM (b : bool) : AbstractState abstr_bool :=
-  liftT (pure (extract_ab b)).
+Definition extract_abM `{Monad M} (b : bool) : M abstr_bool :=
+  pure (extract_ab b).
 
-Definition build_abool (b : abstr_bool) : AbstractState avalue :=
-  liftT (pure (VAbstrBool b)).
+Definition build_abool `{Monad M} (b : abstr_bool) : M avalue :=
+  pure (VAbstrBool b).
 
-Instance abstract_boolean_type : IsBool AbstractState avalue abstr_bool :=
+Instance abstract_boolean_type `{MonadFail M} `{Joinable (M (unit))} : 
+IsBool M avalue abstr_bool :=
 {
   ensure_bool := ensure_abool;
   extract_bool := extract_abM;

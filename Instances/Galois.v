@@ -12,8 +12,6 @@ Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Parity.
-Require Import Types.Result.
-Require Import Types.State.
 Require Import Types.Stores.
 
 Inductive gamma_par : parity → nat → Prop :=
@@ -273,21 +271,3 @@ Instance galois_state_monad (S S' : Type) `{Galois S S'}
     gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;
   }.
-
-Section galois_state.
-  Context {A A' B B'} `{Galois A A', Galois B B'}.
-
-  Definition gamma_abstract_state : AbstractState A' → ConcreteState A → Prop
-    := gamma_fun.
-
-  Definition gamma_abstract_state_monotone : monotone gamma_abstract_state.
-  Proof.
-    unfold gamma_abstract_state. apply gamma_fun_monotone.
-  Qed.
-
-  Global Instance galois_state : Galois (ConcreteState A) (AbstractState A') 
-  := {
-    gamma := gamma_fun;
-    gamma_monotone := gamma_fun_monotone;
-  }.
-End galois_state.
