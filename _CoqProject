@@ -1,6 +1,9 @@
 -R . Thesis 
 Base.v
 Types/Maps.v
+Types/AbstractBool.v
+Types/Parity.v
+Types/Interval.v
 Classes/PreorderedSet.v
 Classes/Joinable.v
 Classes/Galois.v
@@ -12,9 +15,6 @@ Classes/Monad/MonadExcept.v
 Classes/IsNat.v
 Classes/IsBool.v
 Classes/Store.v
-Types/AbstractBool.v
-Types/Parity.v
-Types/Interval.v
 Language/Statements.v
 Types/Stores.v
 Instances/Preorder.v
