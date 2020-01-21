@@ -26,6 +26,8 @@ Hint Unfold bindM : soundness.
 
 Hint Rewrite @bind_id_left @bind_id_right @bind_assoc @bind_app : soundness.
 
+Definition skip {M} `{Monad M} := pure tt.
+
 Definition composeM {M : Type → Type} `{Monad M}
   {A B C} (f : A → M B) (g : B → M C) (x : A) : M C :=
   bindM (f x) g.
