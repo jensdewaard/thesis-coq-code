@@ -22,6 +22,7 @@ Class Monad M `{Applicative M}: Type :=
     bindM (f <$> x) g = bindM x (f ∘ g);
   bind_pass : ∀ {A B} (ma : M A) (mb : M B), ma >> mb = bindM ma (λ _, mb);
 }.
+Arguments bindM : simpl never.
 Hint Unfold bindM : soundness.
 
 Hint Rewrite @bind_id_left @bind_id_right @bind_assoc @bind_app : soundness.

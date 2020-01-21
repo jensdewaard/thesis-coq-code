@@ -13,5 +13,6 @@ Class Except M `{Monad M} := {
   trycatch_throw_right : forall {A} (x : M A),
     trycatch x throw = x;
 }.
+Arguments throw : simpl never.
 
 Hint Rewrite @trycatch_throw_left @trycatch_throw_right : soundness.

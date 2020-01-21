@@ -67,8 +67,8 @@ Qed.
 
 (* Soundness of monadic operations *)
 Lemma fmap_maybe_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
-  gamma (fmap (F:=Maybe) (A:=A') (B:=B')) 
-        (fmap (F:=Maybe) (A:=A) (B:=B)).
+  gamma (fmap_maybe (A:=A') (B:=B')) 
+        (fmap_maybe (A:=A) (B:=B)).
 Proof.
   eauto 10 with soundness.
 Qed.
@@ -85,9 +85,9 @@ Lemma bind_maybe_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
   gamma (bindM (M:=Maybe) (A:=A') (B:=B')) 
         bindM.
 Proof.
+  unfold bindM; simpl.
   repeat constructor. intros.
   destruct a', a; eauto with soundness.
-  simpl; eauto with soundness.
 Qed.
 Hint Resolve bind_maybe_sound : soundness.
 
@@ -123,6 +123,7 @@ Qed.
 Lemma bind_abstract_maybe_sound (A A' B B' : Type) `{Galois A A', Galois B B'} :
   gamma (bindM (M:=AbstractMaybe) (A:=A') (B:=B')) bindM.
 Proof.
+  unfold bindM; simpl.
   constructor; intros ma ma' Hma. constructor; intros mf mf' Hmf.
   destruct ma as [a|a], ma' as [?|a'|a']; simpl; eauto with soundness.
   inversion Hma as [?|?|?|?? Ha ];subst.
