@@ -8,7 +8,8 @@ Require Import Classes.Monad.MonadExcept.
 Require Import Classes.Applicative.
 
 Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type}
-    `{Monad M, A : IsNat M valType boolType natType, IsBool M valType boolType}
+    `{Monad M, nat_inst : IsNat M valType boolType natType, 
+               bool_inst : IsBool M valType boolType}
     (v : cvalue) : M valType :=
   match v with
   | VNat n => n' <- extract_nat n; build_nat n'
@@ -17,8 +18,9 @@ Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type
 
 Fixpoint shared_eval_expr 
     {M : Type -> Type} {S valType boolType natType : Type}
-    `{Monad M, Store S M valType,
-      A: IsNat M valType boolType natType, IsBool M valType boolType}
+    `{Monad M, store_inst : Store S M valType,
+      nat_inst  : IsNat M valType boolType natType, 
+      bool_inst : IsBool M valType boolType}
     (e : expr) : M valType :=
   match e with
   | EVal v =>
