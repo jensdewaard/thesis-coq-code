@@ -35,6 +35,7 @@ Global Instance abstract_store_joinable : Joinable abstract_store := {
   join_op := abstract_store_join;
   join_upper_bound_left := abstract_store_join_upperbound_left;
   join_upper_bound_right := abstract_store_join_upperbound_right;
+  join_assoc := abstract_store_join_assoc;
 }.
 
 Definition unit_join : unit -> unit -> unit :=
@@ -49,11 +50,18 @@ Lemma unit_join_upperbound_right : forall (u u' : unit),
   preorder u' (unit_join u u').
 Proof. simple_solve. Qed.
 
+Lemma unit_join_assoc : ∀ x y z,
+  unit_join x (unit_join y z) = unit_join (unit_join x y) z.
+Proof.
+  reflexivity.
+Qed.
+
 Global Instance unit_joinable : Joinable unit :=
 {
   join_op := unit_join;
   join_upper_bound_left := unit_join_upperbound_left;
-  join_upper_bound_right := unit_join_upperbound_right
+  join_upper_bound_right := unit_join_upperbound_right;
+  join_assoc := unit_join_assoc;
 }.
 
 Section state_joinable.
@@ -79,11 +87,20 @@ Section state_joinable.
     intro x. destruct (st' x). constructor; eauto with soundness.
   Qed.
 
-Global Instance state_joinable : Joinable (State S A) := {
-  join_op := state_join;
-  join_upper_bound_left := state_join_upper_bound_left;
-  join_upper_bound_right := state_join_upper_bound_right;
-}.
+  Lemma state_join_assoc : ∀ x y z,
+    state_join x (state_join y z) = state_join (state_join x y) z.
+  Proof.
+    intros. unfold state_join. extensionality a.
+    destruct (x a), (y a), (z a); simpl. repeat rewrite join_assoc. 
+    reflexivity.
+  Qed.
+
+  Global Instance state_joinable : Joinable (State S A) := {
+    join_op := state_join;
+    join_upper_bound_left := state_join_upper_bound_left;
+    join_upper_bound_right := state_join_upper_bound_right;
+    join_assoc := state_join_assoc;
+  }.
 End state_joinable.
 
 Section maybe_joinable.
@@ -164,21 +181,91 @@ Section joinable_pairs.
     destruct p, q. eauto with soundness.
   Qed.
 
+  Lemma join_pair_assoc : ∀ x y z, 
+    join_pair x (join_pair y z) = join_pair (join_pair x y) z.
+  Proof.
+    intros. destruct x as [x1 x2], y as [y1 y2], z as [z1 z2]. 
+    unfold join_pair; simpl. repeat rewrite join_assoc.
+    reflexivity.
+  Qed.
+
   Global Instance joinable_pairs : Joinable (A*B) :=
   {
     join_op := join_pair;
     join_upper_bound_left := join_pair_left;
     join_upper_bound_right := join_pair_right;
+    join_assoc := join_pair_assoc;
   }.
 End joinable_pairs.
 
-Section joinable_maybeAT_state.
-  Context {S A} `{Joinable A, Joinable S}.
+Section joinable_maybeT.
+  Context {M : Type → Type} `{Monad M}.
+  Context {M_preorder : ∀ T, PreorderedSet (M T)}.
+  Context {M_joinable : ∀ T {T_preorder : PreorderedSet T}, 
+    Joinable (M T)}.
 
-  Global Instance maybeAT_state_joinable : Joinable (MaybeAT (State S) A) :=
+  Global Instance maybeT_joinable {A} `{Joinable A} :
+    Joinable (MaybeT M A) :=
   {
-    join_op := state_join;
-    join_upper_bound_left := state_join_upper_bound_left;
-    join_upper_bound_right := state_join_upper_bound_right;
+    join_op := join_op;
+    join_upper_bound_left := join_upper_bound_left;
+    join_upper_bound_right := join_upper_bound_right;
+    join_assoc := join_assoc;
   }.
-End joinable_maybeAT_state.
+End joinable_maybeT.
+
+Section joinable_maybeAT.
+  Context {M : Type → Type} `{Monad M}.
+  Context {M_preorder : ∀ T, PreorderedSet (M T)}.
+  Context {M_joinable : ∀ T {T_preorder : PreorderedSet T}, 
+    Joinable (M T)}.
+
+  Global Instance maybeAT_joinable {A} `{Joinable A} : 
+    Joinable (MaybeAT M A) :=
+  {
+    join_op := join_op;
+    join_upper_bound_left := join_upper_bound_left;
+    join_upper_bound_right := join_upper_bound_right;
+    join_assoc := join_assoc;
+  }.
+End joinable_maybeAT.
+
+Section joinable_stateT.
+  Context {M : Type → Type} `{Monad M}.
+  Context {M_preorder : ∀ T, PreorderedSet (M T)}.
+  Context {S A : Type} `{Joinable S, Joinable A}.
+  Context {M_joinable : ∀ T {T_preorder : PreorderedSet T},
+    Joinable (M T)}.
+
+  Definition join_stateT (st st' : StateT S M A) : StateT S M A :=
+    λ x, join_op (st x) (st' x).
+
+  Lemma join_stateT_upper_bound_left : ∀ t t' : StateT S M A,
+    preorder t (join_stateT t t').
+  Proof.
+    intros. unfold join_stateT. constructor. intros. 
+    apply join_upper_bound_left.
+  Qed.
+
+  Lemma join_stateT_upper_bound_right : ∀ t t' : StateT S M A, 
+    preorder t' (join_stateT t t').
+  Proof.
+    intros. unfold join_stateT. constructor. intros.
+    apply join_upper_bound_right.
+  Qed.
+
+  Lemma join_stateT_assoc : ∀ x y z,
+    join_stateT x (join_stateT y z) = join_stateT (join_stateT x y) z.
+  Proof.
+    intros. unfold join_stateT. extensionality s.
+    rewrite join_assoc. reflexivity.
+  Qed.
+
+  Global Instance stateT_joinable : Joinable (StateT S M A) :=
+  {
+    join_op := join_stateT;
+    join_upper_bound_left := join_stateT_upper_bound_left;
+    join_upper_bound_right := join_stateT_upper_bound_right;
+    join_assoc := join_stateT_assoc;
+  }.
+End joinable_stateT.
