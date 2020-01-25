@@ -120,11 +120,19 @@ Section maybe_joinable.
   Definition join_maybe_right : ∀ m n, preorder n (join_maybe m n).
   Proof. destruct m, n; simpl; auto with soundness. Qed.
 
+  Definition join_maybe_assoc : ∀ x y z, 
+    join_maybe x (join_maybe y z) = join_maybe (join_maybe x y) z.
+  Proof.
+    intros. destruct x, y, z; try reflexivity.
+    simpl. rewrite join_assoc. reflexivity.
+  Qed.
+
   Global Instance maybe_joinable : Joinable (Maybe A) :=
   {
     join_op := join_maybe;
     join_upper_bound_left := join_maybe_left;
     join_upper_bound_right := join_maybe_right;
+    join_assoc := join_maybe_assoc;
   }.
 End maybe_joinable.
 
