@@ -337,8 +337,7 @@ Hint Constructors maybea_le : soundness.
 
 Section maybeAT_preorder.
   Context {A : Type} `{PreorderedSet A}.
-  Context {M : Type -> Type} `{inst : Monad M} 
-    {M_preserves_order : forall A, PreorderedSet A -> PreorderedSet (M A)}.
+  Context {M : Type -> Type} `{inst : Monad M}.
 
   Inductive maybeat_le : MaybeAT M A → MaybeAT M A → Prop :=
     | maybeat_le_none : ∀ m, maybeat_le m NoneAT
@@ -367,7 +366,6 @@ Section maybeAT_preorder.
     apply justOrNoneAT_inj in H3; subst; constructor; pre_trans.
   Qed.
 
-
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=
   {
     preorder := maybeat_le;
@@ -378,8 +376,8 @@ End maybeAT_preorder.
 
 Section statet_preorder.
   Context {S A : Type} `{PreorderedSet A, PreorderedSet S}.
-  Context {M : Type -> Type} 
-    {M_preserves_order : forall A, PreorderedSet A -> PreorderedSet (M A)}.
+  Context {M : Type -> Type} `{PreorderedSet (M (A*S)%type)}.
+
   Global Instance statet_preorder : PreorderedSet (StateT S M A) :=
   {
     preorder := pointwise_ordering;
