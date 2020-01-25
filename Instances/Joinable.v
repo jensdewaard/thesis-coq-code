@@ -164,11 +164,20 @@ Lemma join_maybe_abstract_upperbound_right : forall st st',
   preorder st' (join_maybe_abstract st st').
 Proof. simple_solve. Qed.
 
+Lemma join_maybe_abstract_assoc : ∀ x y z : AbstractMaybe A,
+  join_maybe_abstract x (join_maybe_abstract y z) =
+  join_maybe_abstract (join_maybe_abstract x y) z.
+Proof.
+  intros. destruct x, y, z; simpl; try reflexivity.
+  all: repeat rewrite join_assoc; reflexivity.
+Qed.
+
 Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) := 
 {
   join_op := join_maybe_abstract;
   join_upper_bound_left := join_maybe_abstract_upperbound_left;
   join_upper_bound_right := join_maybe_abstract_upperbound_right;
+  join_assoc := join_maybe_abstract_assoc;
 }.
 
 End abstract_maybe_joinable.
