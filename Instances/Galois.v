@@ -183,14 +183,14 @@ Section galois_maybe.
 
   Lemma gamma_maybeA_monotone : monotone gamma_maybeA.
   Proof.
-    unfold monotone. intros a a' Ha. constructor. intros m Hm.
-    inv Ha; inv Hm; try constructor; apply_widen.
+    unfold monotone. intros a a' Ha. constructor; intros m Hm.
+    inv Ha; inv Hm; eauto with soundness; constructor; apply_widen.
   Qed.
 
   Lemma gamma_maybe_monotone : monotone gamma_maybe.
   Proof.
     unfold monotone. intros a a' Ha. constructor; intros m Hm.
-    inv Ha; inv Hm; try constructor; apply_widen.
+    inv Ha; inv Hm; eauto with soundness. constructor. apply_widen.
   Qed.
 
   Global Instance galois_maybeA : Galois (Maybe A) (AbstractMaybe A') :=

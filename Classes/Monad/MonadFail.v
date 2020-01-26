@@ -1,6 +1,7 @@
 Require Export Base.
 Require Import Classes.Monad.
 Require Import Classes.Applicative.
+Require Import Classes.Galois.
 
 Class MonadFail M `{Monad M} : Type := {
   fail {A : Type} : M A;

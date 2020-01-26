@@ -74,7 +74,7 @@ Open Scope com_scope.
 
 Fixpoint shared_ceval 
   {M : Type -> Type} {S valType natType boolType : Type}
-  `{Monad M, Store S M valType, MonadExcept M, 
+  `{MonadFail M, Store S M valType, (∀ A, MonadExcept M A), 
     A : IsNat M valType boolType natType, IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
