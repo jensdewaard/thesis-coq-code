@@ -9,8 +9,8 @@ Class PreorderedSet (X : Type) : Type :=
 Hint Resolve preorder_refl preorder_trans : soundness.
 Hint Extern 10 (preorder _ _) => constructor : soundness.
 
-Definition monotone {A A'} `{PreorderedSet A, PreorderedSet A'} :
-  (A -> A') -> Prop :=
+Definition monotone {A B} `{A_pre : PreorderedSet A, B_pre : PreorderedSet B} :
+  (A -> B) -> Prop :=
   fun f => forall (a a': A), preorder a a' -> preorder (f a) (f a').
   
 Hint Unfold monotone : soundness.
