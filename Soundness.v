@@ -35,10 +35,10 @@ Require Import Classes.SoundMonad.
 Hint Extern 0 (gamma _ _) => progress gamma_destruct : soundness.
 
 Axiom gamma_pure_none : ∀ {M M' : Type → Type} `{Monad M, Monad M'} {A A' :
-  Type}  `{Galois (M A) (M' (Maybe A'))} (c : M A), gamma (pure (F:=M') None) c.
+  Type}  `{Galois (M A) (M' (Maybe A'))} (c : M A), gamma (pure (M:=M') None) c.
 Axiom gamma_pure_noneA : ∀ {M M' : Type → Type} `{Monad M, Monad M'} {A A' :
   Type}  `{Galois (M A) (M' (AbstractMaybe A'))} (c : M A), 
-  gamma (pure (F:=M') NoneA) c.
+  gamma (pure (M:=M') NoneA) c.
 Hint Resolve gamma_pure_none gamma_pure_noneA : soundness.
 
 (* Soundness of unit *)
@@ -76,14 +76,14 @@ Qed.
 Hint Resolve fmap_maybe_sound : soundness.
 
 Lemma pure_maybe_sound : ∀ (A A' : Type) `{Galois A A'},
-  gamma (pure (F:=Maybe) (A:=A')) pure.
+  gamma (pure (M:=Maybe) (A:=A')) pure.
 Proof.
   eauto with soundness.
 Qed.
 Hint Resolve pure_maybe_sound : soundness.
 
 Lemma app_maybe_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
-  gamma (app (F:=Maybe) (A:=A') (B:=B')) app.
+  gamma (app (M:=Maybe) (A:=A') (B:=B')) app.
 Proof. 
   constructor. intros f f' Hf. constructor; intros a a' Ha.
   intros. destruct f, f', a, a'; eauto with soundness.
@@ -115,20 +115,20 @@ Instance maybe_sound : SoundMonad Maybe Maybe :=
 }.
 
 Lemma fmap_abstract_maybe_sound (A A' B B' : Type) `{Galois A A', Galois B B'} : 
-  gamma (fmap (F:=AbstractMaybe) (A:=A') (B:=B')) fmap.
+  gamma (fmap (M:=AbstractMaybe) (A:=A') (B:=B')) fmap.
 Proof.
   repeat constructor. intros. destruct a0, a'0; eauto with soundness.
 Qed.
 Hint Resolve fmap_maybe_sound : soundness.
 
 Lemma pure_abstract_maybe_sound (A A' : Type) `{Galois A A'} :
-  gamma (pure (F:=AbstractMaybe)) pure.
+  gamma (pure (M:=AbstractMaybe)) pure.
 Proof.
   eauto with soundness.
 Qed.
 
 Lemma app_abstract_maybe_sound (A A' B B' : Type) `{Galois A A', Galois B B'} :
-  gamma (app (F:=AbstractMaybe) (A:=A') (B:=B')) app.
+  gamma (app (M:=AbstractMaybe) (A:=A') (B:=B')) app.
 Proof.
   constructor; intros mf mf' Hmf. constructor; intros ma ma' Hma. 
   destruct ma, ma'; inv Hmf; inv Hma; eauto with soundness.

@@ -67,7 +67,7 @@ Instance galois_boolean : Galois bool abstr_bool :=
 }.
 
 Section galois_functions.
-Context {A A' B B' : Type}  `{Galois A A', Galois B B'}.
+Context {A A' B B' : Type}  `{A_galois : Galois A A', B_galois : Galois B B'}.
 
 Inductive gamma_fun : (A' → B') → (A → B) → Prop :=
   | gamma_fun_cons : ∀ (f : A' → B') (g : A → B), 
@@ -138,7 +138,7 @@ Global Instance galois_store : Galois store abstract_store :=
 }.
 
 Section galois_pairs.
-  Context {A A' B B'} `{Galois A A'} `{Galois B B'}.
+  Context {A A' B B'} `{A_galois : Galois A A'} `{B_galois : Galois B B'}.
 
   Inductive gamma_pairs : prod A' B' → prod A B → Prop :=
     | gamma_pairs_cons : ∀ (p : (A'*B')%type) (q : (A*B)%type), 
@@ -164,7 +164,7 @@ End galois_pairs.
 Hint Constructors gamma_pairs : soundness.
 
 Section galois_maybe.
-  Context {A A'} `{Galois A A'}.
+  Context {A A'} `{A_galois : Galois A A'}.
 
   Inductive gamma_maybeA : AbstractMaybe A' → Maybe A → Prop :=
     | gamma_noneA : ∀ m, gamma_maybeA NoneA m
@@ -222,8 +222,8 @@ End galois_unit.
 Hint Unfold gamma_unit : soundness.
 
 Section galois_maybeT.
-  Context {A A' : Type} `{Galois A A'}.
-  Context {M M' : Type → Type} `{Monad M, Monad M'}
+  Context {A A' : Type} `{A_galois : Galois A A'}.
+  Context {M M' : Type → Type} `{M_monad : Monad M, M'_monad : Monad M'}
     {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.
@@ -236,8 +236,8 @@ Section galois_maybeT.
 End galois_maybeT.
 
 Section galois_maybeAT.
-  Context {A A' : Type} `{Galois A A'}.
-  Context {M M' : Type → Type} `{Monad M, Monad M'} 
+  Context {A A' : Type} `{A_galois : Galois A A'}.
+  Context {M M' : Type → Type} `{M_monad : Monad M, M'_monad : Monad M'} 
     {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.
@@ -250,9 +250,9 @@ Section galois_maybeAT.
 End galois_maybeAT.
 
 Section galois_stateT.
-  Context {A A': Type} `{Galois A A'}.
-  Context {S S' : Type} {M M' : Type → Type} `{Galois S S'} 
-    `{Monad M, Monad M'} 
+  Context {A A': Type} `{A_galois : Galois A A'}.
+  Context {S S' : Type} {M M' : Type → Type} `{S_galois : Galois S S'} 
+    `{M_monad : Monad M, M'_monad : Monad M'} 
     {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.
@@ -265,8 +265,8 @@ Section galois_stateT.
   }.
 End galois_stateT.
 
-Instance galois_state_monad (S S' : Type) `{Galois S S'} 
-  (A A' : Type) `{Galois A A'} : Galois (State S A) (State S' A') :=
+Instance galois_state_monad (S S' : Type) `{S_galois : Galois S S'} 
+  (A A' : Type) `{A_galois : Galois A A'} : Galois (State S A) (State S' A') :=
   {
     gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;

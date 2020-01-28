@@ -87,7 +87,7 @@ Section Maybe_Applicative.
 
   Lemma just_inj : ∀ (A : Type) (x y : A), Just x = Just y → x = y.
   Proof.
-    intros. inv H. reflexivity.
+    intros A x y Heq. inv Heq. reflexivity.
   Qed.
 
   Global Instance applicative_maybe : Applicative Maybe :=
@@ -248,13 +248,13 @@ Section AbstractMaybe_Applicative.
 
   Lemma justA_inj : ∀ (A : Type) (x y : A), JustA x = JustA y → x = y.
   Proof.
-    intros. inv H. reflexivity.
+    intros A x y Heq. inv Heq. reflexivity.
   Qed.
 
   Lemma justOrNoneA_inj : ∀ (A : Type) (x y : A),
     JustOrNoneA x = JustOrNoneA y → x = y.
   Proof.
-    intros. inv H. reflexivity.
+    intros A x y Heq. inv Heq. reflexivity.
   Qed.
 
   Global Instance applicative_abstract_maybe : Applicative AbstractMaybe :=
@@ -306,24 +306,22 @@ Section AbstractMaybe_Monad.
   Lemma bind_maybeA_fmap : ∀ {A B C} (f : A → B) 
     (x : AbstractMaybe A) (g : B → AbstractMaybe C),
     bind_maybeA (f <$> x) g = bind_maybeA x (f ∘ g).
-  Proof.
-    unfold bind_maybeA; destruct x; unfold compose; reflexivity.
+  Proof. 
+    destruct x; reflexivity.
   Qed.
   Arguments bind_maybeA_fmap [A B C] f x.
 
   Lemma bind_maybeA_app : ∀ {A B} (mf : AbstractMaybe (A → B)) 
     (ma : AbstractMaybe A),
-    mf <*> ma =
+    app_abstract_maybe mf ma =
     bind_maybeA mf (λ f : A → B, bind_maybeA ma (λ a : A, (f ∘ pure) a)).
-  Proof. 
-    intros. unfold app. simpl. simple_solve.
-  Qed.
+  Proof. destruct mf, ma; reflexivity. Qed.
   Arguments bind_maybeA_app [A B] mf ma.
 
   Lemma bind_maybeA_pass : ∀ {A B} (ma : AbstractMaybe A) 
     (mb : AbstractMaybe B),
     ma >> mb = bind_maybeA ma (λ _ : A, mb).
-  Proof. simple_solve. Qed.
+  Proof. destruct ma, mb; reflexivity. Qed.
   Arguments bind_maybeA_pass [A B] ma mb.
 
   Global Instance monad_abstract_maybe : Monad AbstractMaybe :=
@@ -342,10 +340,10 @@ Hint Rewrite @bind_maybeA_id_left @bind_maybeA_id_right : soundness.
 Definition MaybeT M A: Type := M (Maybe A).
 
 Section MaybeT_Functor.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition fmap_maybeT {A B} (f : A -> B)
-    (m : MaybeT M A) : MaybeT M B :=  fmap (fmap (F:=Maybe) f) m. 
+    (m : MaybeT M A) : MaybeT M B :=  fmap (fmap (M:=Maybe) f) m. 
   Arguments fmap_maybeT [_ _] _ _.
   Hint Unfold fmap_maybeT : soundness.
 
@@ -371,10 +369,8 @@ End MaybeT_Functor.
 Hint Unfold fmap_maybeT : soundness.
 Hint Rewrite @fmap_maybeT_id @fmap_maybeT_compose : soundness.
 
-
-  
 Section MaybeT_Applicative.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition pure_maybeT {A} (x : A) : MaybeT M A :=
     pure (Just x).
@@ -388,8 +384,8 @@ Section MaybeT_Applicative.
       | Just f =>
           bindM (M:=M) (A:=(Maybe A)) Mma (λ m,
             match m with
-            | Just a => pure (F:=M) (Just (f a))
-            | None => pure (F:=M) None
+            | Just a => pure (M:=M) (Just (f a))
+            | None => pure (M:=M) None
             end)
       | None => pure None
       end).
@@ -463,13 +459,13 @@ Section MaybeT_Applicative.
 End MaybeT_Applicative.
 Hint Unfold pure_maybeT app_maybeT : soundness.
 Hint Rewrite @app_maybeT_id @app_maybeT_homomorphism : soundness.
-Definition NoneT {M A} `{Monad M} : MaybeT M A := pure None.
+Definition NoneT {M A} `{M_monad : Monad M} : MaybeT M A := pure None.
 Hint Unfold NoneT : soundness.
-Definition JustT {M A} `{Monad M} (a : A) : MaybeT M A := pure (Just a).
+Definition JustT {M A} `{M_monad : Monad M} (a : A) : MaybeT M A := pure (Just a).
 Hint Unfold JustT : soundness.
 
 Section maybeT_laws.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
   Context {A}.
 
   Lemma justT_eq_noneT_false : ∀ x : A, JustT x ≠ NoneT.
@@ -486,7 +482,7 @@ Section maybeT_laws.
 End maybeT_laws.
 
 Section MaybeT_Monad.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition bind_maybeT {A B} (x : MaybeT M A)
     (f : A -> MaybeT M B) : MaybeT M B :=
@@ -574,7 +570,7 @@ Hint Rewrite @bind_maybeT_id_left
              @bind_maybeT_app @bind_maybeT_fmap : soundness.
 
 Section MaybeT_MonadT.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
   
   Definition lift_maybeT {A} (Ma : M A) : MaybeT M A :=
     fmap Just Ma.
@@ -583,7 +579,7 @@ Section MaybeT_MonadT.
   Hint Rewrite @fmap_bind @bind_fmap : soundness.
 
   Lemma lift_maybeT_pure : ∀ (A : Type) (x : A),
-    lift_maybeT (pure (F:=M) x) = pure x.
+    lift_maybeT (pure x) = pure x.
   Proof. solve_monad. Qed.
 
   Lemma lift_maybeT_bind : ∀ (A B : Type) (x : M A) (f : A → M B),
@@ -604,7 +600,7 @@ End MaybeT_MonadT.
 Definition MaybeAT M A : Type := M (AbstractMaybe A).
 
 Section MaybeAT_Functor.
-  Context {M} `{inst : Functor M}.
+  Context {M} `{M_functor : Functor M}.
 
   Definition fmap_maybeAT {A B} 
     (f : A -> B) (Ma : MaybeAT M A) : MaybeAT M B :=
@@ -614,15 +610,14 @@ Section MaybeAT_Functor.
 
   Lemma fmap_maybeAT_id : ∀ A, fmap_maybeAT (@id A) = id.
   Proof.
-    unfold fmap_maybeAT. intros. ext. rewrite fmap_abstract_maybe_id.
-    simple_solve.
+    unfold fmap_maybeAT. intros. ext. autorewrite with soundness.
+    reflexivity.
   Qed.
 
   Lemma fmap_maybeAT_compose : ∀ (A B C : Type) (f : A → B) (g : B → C),
     fmap_maybeAT (f ∘ g) = fmap_maybeAT f ∘ fmap_maybeAT g.
   Proof.
-    intros. unfold fmap_maybeAT. ext. rewrite fmap_abstract_maybe_compose.
-    simple_solve.
+    intros. unfold fmap_maybeAT. ext. autorewrite with soundness. reflexivity.
   Qed.
 
   Global Instance functor_maybeAT : Functor (MaybeAT M) :=
@@ -635,7 +630,7 @@ End MaybeAT_Functor.
 Hint Unfold fmap_maybeAT : soundness.
 
 Section MaybeAT_Applicative.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition pure_maybeAT {A} (x : A) : MaybeAT M A :=
     pure (JustA x).
@@ -650,16 +645,16 @@ Section MaybeAT_Applicative.
       | JustA f => @bindM M _ _ _ _ _ Mma 
           (λ ma : AbstractMaybe A,
           match ma with
-          | JustOrNoneA a => pure (F:=M) (JustOrNoneA (f a))
-          | JustA a => pure (F:=M) (JustA (f a))
-          | NoneA => pure (F:=M) NoneA
+          | JustOrNoneA a => pure (JustOrNoneA (f a))
+          | JustA a => pure (JustA (f a))
+          | NoneA => pure NoneA
           end)
       | JustOrNoneA f => @bindM M _ _ _ _ _ Mma (λ ma : AbstractMaybe A,
           match ma with
-          | JustA a | JustOrNoneA a => pure (F:=M) (JustOrNoneA (f a))
-          | NoneA => pure (F:=M) NoneA
+          | JustA a | JustOrNoneA a => pure (JustOrNoneA (f a))
+          | NoneA => pure NoneA
           end)
-      | NoneA => pure (F:=M) NoneA
+      | NoneA => pure NoneA
       end).
   Arguments app_maybeAT [A B] Mmf Mma.
   Hint Unfold app_maybeAT : soundness.
@@ -668,14 +663,17 @@ Section MaybeAT_Applicative.
     app_maybeAT (pure_maybeAT id) f = f.
   Proof. 
     intros. unfold app_maybeAT, pure_maybeAT. autorewrite with soundness.
-    rewrite <- (bind_id_right (M:=M)). f_equal; ext.
-    destruct x; reflexivity.
+    rewrite <- (bind_id_right (M:=M)). f_equal; ext. 
+    destruct_all (AbstractMaybe A); reflexivity.
   Qed.
   Arguments app_maybeAT_id [A] f.
 
   Lemma app_maybeAT_homomorphism : ∀ {A B} (f : A → B) (x : A),
     app_maybeAT (pure_maybeAT f) (pure_maybeAT x) = pure_maybeAT (f x).
-  Proof. solve_monad. Qed.
+  Proof. 
+    intros. unfold app_maybeAT, pure_maybeAT. autorewrite with soundness.
+    reflexivity.
+  Qed.
   Arguments app_maybeAT_homomorphism [A B] f x.
 
   Lemma app_maybeAT_interchange : ∀ {A B} (u : MaybeAT M (A → B)) (y : A),
@@ -733,16 +731,16 @@ Section MaybeAT_Applicative.
 End MaybeAT_Applicative.
 Hint Unfold pure_maybeAT app_maybeAT : soundness.
 
-Definition NoneAT {M A} `{Monad M} : MaybeAT M A := pure NoneA.
+Definition NoneAT {M A} `{M_monad : Monad M} : MaybeAT M A := pure NoneA.
 Hint Unfold NoneAT : soundness.
-Definition JustAT {M A} `{Monad M} (a : A) : MaybeAT M A := pure (JustA a).
+Definition JustAT {M A} `{M_monad : Monad M} (a : A) : MaybeAT M A := pure (JustA a).
 Hint Unfold JustAT : soundness.
-Definition JustOrNoneAT {M A} `{Monad M} (a : A) : MaybeAT M A := 
+Definition JustOrNoneAT {M A} `{M_monad : Monad M} (a : A) : MaybeAT M A := 
   pure (JustOrNoneA a).
 Hint Unfold JustOrNoneAT : soundness.
 
 Section MaybeAT_laws.
-  Context {M : Type → Type} `{Monad M}.
+  Context {M : Type → Type} `{M_monad : Monad M}.
   Context {A}.
 
   Lemma noneAT_neq_justAT : ∀ (a : A), NoneAT ≠ JustAT a.
@@ -777,7 +775,7 @@ Section MaybeAT_laws.
 End MaybeAT_laws.
 
 Section MaybeAT_Monad.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition bind_maybeAT {A B} 
     (Mma : MaybeAT M A)
@@ -799,7 +797,8 @@ Section MaybeAT_Monad.
   Lemma bind_maybeAT_id_left : ∀ {A B} (f : A → MaybeAT M B) (a : A), 
     bind_maybeAT (pure_maybeAT a) f = f a.
   Proof. 
-    unfold pure; simpl. solve_monad. 
+    unfold pure; simpl. intros. unfold bind_maybeAT, pure_maybeAT. 
+    rewrite bind_id_left. reflexivity.
   Qed.
   Arguments bind_maybeAT_id_left [A B] f a.
 
@@ -807,7 +806,7 @@ Section MaybeAT_Monad.
     bind_maybeAT MA pure_maybeAT = MA.
   Proof. 
     unfold bind_maybeAT. intros. rewrite <- (bind_id_right (M:=M)).
-    f_equal. ext. destruct x; unfold pure_maybeAT. reflexivity.
+    f_equal; extensionality x. destruct x; unfold pure_maybeAT. reflexivity.
     autorewrite with soundness. reflexivity. reflexivity.
   Qed.
   Arguments bind_maybeAT_id_right [A] MA.
@@ -881,7 +880,7 @@ End MaybeAT_Monad.
 Hint Unfold bind_maybeAT : soundness.
 
 Section MaybeAT_MonadT.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition lift_maybeAT {A} (Ma : M A) : MaybeAT M A :=
     fmap JustA Ma.
@@ -916,9 +915,10 @@ End MaybeAT_MonadT.
 Definition State (S A : Type) := S -> (A * S).
 
 Section State_Functor.
+
   Definition fmap_state {S A B} 
-    (f : A -> B) (Fa : State S A) : State S B :=
-  fun st => let (x, s) := Fa st in (f x, s).
+    (f : A -> B) (Fa : State S A) : State S B := 
+    fun st => let (x, s) := Fa st in (f x, s).
   Arguments fmap_state [S A B] f Fa.
   Hint Unfold fmap_state : soundness.
 
@@ -956,8 +956,9 @@ Section State_Applicative.
   Definition pure_state_inj : ∀ (A : Type) (x y : A),
     @pure_state A x = @pure_state A y → x = y.
   Proof.
-    unfold pure_state. intros A x y. simpl. 
-    intros. 
+    unfold pure_state. intros A x y [= Hfun_eq].
+    eapply equal_f in Hfun_eq.
+    inversion Hfun_eq. reflexivity. Unshelve.
   Admitted.
 
   Lemma app_state_id : ∀ (A : Type) (x : State S A),
@@ -1051,7 +1052,7 @@ Hint Unfold bind_state : soundness.
 Definition StateT S M A : Type := S → M (A*S)%type.
 
 Section Functor_StateT.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition fmap_stateT {S A B} (f : A -> B) (m : StateT S M A)
     : StateT S M B :=
@@ -1086,7 +1087,7 @@ End Functor_StateT.
 Hint Unfold fmap_stateT : soundness.
 
 Section Applicative_StateT.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
   Context {S : Type}.
 
   Definition pure_stateT {A} (x : A) : StateT S M A :=
@@ -1150,7 +1151,9 @@ Section Applicative_StateT.
   Lemma pure_stateT_inj : ∀ (A : Type) (x y : A),
     pure_stateT x = pure_stateT y → x = y.
   Proof. 
-    simple_solve.
+    intros A x y Hfun_eq. unfold pure_stateT in Hfun_eq.
+    eapply equal_f in Hfun_eq. apply pure_inj in Hfun_eq.
+    inversion Hfun_eq. reflexivity.
   Admitted.
 
   Global Instance applicative_stateT : Applicative (StateT S M) :=
@@ -1168,7 +1171,7 @@ End Applicative_StateT.
 Hint Unfold pure_stateT app_stateT : soundness.
 
 Section Monad_StateT.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
   Context {S : Type}.
 
   Definition bind_stateT {A B} (MA : StateT S M A) 
@@ -1251,7 +1254,7 @@ End Monad_StateT.
 Hint Unfold bind_stateT : soundness.
 
 Section MonadT_StateT.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad :Monad M}.
   Context {S : Type}.
 
   Definition lift_stateT {A} (MA : M A) : StateT S M A :=

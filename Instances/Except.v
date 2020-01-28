@@ -78,7 +78,7 @@ Section fail_abstract_maybe.
 End fail_abstract_maybe.
 
 Section except_abstract_maybe.
-  Context {A} `{Joinable A}.
+  Context {A} `{A_joinable : Joinable A}.
   Definition catch_abstract_maybe (x y : AbstractMaybe A) : AbstractMaybe A :=
     match x with
     | NoneA => y
@@ -126,7 +126,7 @@ Section except_abstract_maybe.
 End except_abstract_maybe.
 
 Section fail_maybeT.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition fail_maybeT {A} : MaybeT M A := pure None.
 
@@ -145,7 +145,7 @@ Section fail_maybeT.
 End fail_maybeT.
 
 Section except_maybeT.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition catch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
     @bindM M _ _ _ _ _ mx (fun x : Maybe A =>
@@ -197,7 +197,7 @@ Section except_maybeT.
 End except_maybeT.
 
 Section fail_maybeAT.
-  Context {M : Type → Type} `{Monad M}.
+  Context {M : Type → Type} `{M_monad : Monad M}.
 
   Definition fail_maybeAT {A} : MaybeAT M A := pure NoneA.
 
@@ -216,11 +216,11 @@ Section fail_maybeAT.
 End fail_maybeAT.
 
 Section except_maybeAT.
-  Context {M : Type -> Type} `{inst : Monad M}.
+  Context {M : Type -> Type} `{M_monad : Monad M}.
 
   Definition catch_maybeAT {A}
     (mx my : MaybeAT M A) : MaybeAT M A :=
-    @bindM _ _ _ inst _ _ mx (fun x : AbstractMaybe A =>
+    bindM (M:=M) mx (fun x : AbstractMaybe A =>
       match x with
       | JustA a => pure (JustA a)
       | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
@@ -267,7 +267,7 @@ Section except_maybeAT.
 End except_maybeAT.
 
 Section fail_stateT.
-  Context {M : Type -> Type} `{MonadFail M}.
+  Context {M : Type -> Type} `{M_fail : MonadFail M}.
   Context {S : Type}.
 
   Definition fail_stateT {A} : StateT S M A := lift_stateT fail.
@@ -289,7 +289,8 @@ Section fail_stateT.
 End fail_stateT.
 
 Section except_stateT.
-  Context {M : Type → Type} `{MonadFail M} `{∀ A, MonadExcept M A}.
+  Context {M : Type → Type} `{M_fail : MonadFail M} 
+    `{M_except : ∀ A, MonadExcept M A}.
   Context {S : Type}.
 
   Definition catch_stateT {A} (a b : StateT S M A) : StateT S M A := 

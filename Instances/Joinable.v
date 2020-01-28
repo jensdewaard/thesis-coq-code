@@ -65,7 +65,7 @@ Global Instance unit_joinable : Joinable unit :=
 }.
 
 Section state_joinable.
-  Context {S A} `{Joinable S, Joinable A}.
+  Context {S A} `{S_joinable : Joinable S, A_joinable : Joinable A}.
 
   Definition state_join (st st' : State S A) : State S A :=
     fun x => ((join_op (fst (st x)) (fst (st' x)), 
@@ -104,7 +104,7 @@ Section state_joinable.
 End state_joinable.
 
 Section maybe_joinable.
-  Context {A : Type} `{Joinable A}.
+  Context {A : Type} `{A_joinable : Joinable A}.
 
   Definition join_maybe (m n : Maybe A) : Maybe A :=
     match m, n with
@@ -137,7 +137,7 @@ Section maybe_joinable.
 End maybe_joinable.
 
 Section abstract_maybe_joinable.
-Context {A : Type} `{Joinable A}.
+Context {A : Type} `{A_joinable : Joinable A}.
 
 Definition join_maybe_abstract
   (st1 st2 : AbstractMaybe A) : AbstractMaybe A :=
@@ -183,7 +183,7 @@ Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) :=
 End abstract_maybe_joinable.
 
 Section joinable_pairs.
-  Context {A B} `{Joinable A, Joinable B}.
+  Context {A B} `{A_joinable : Joinable A, B_joinable : Joinable B}.
 
   Definition join_pair (p q : (A*B)%type) : (A*B)%type :=
     (join_op (fst p) (fst q), join_op (snd p) (snd q)).
@@ -216,12 +216,12 @@ Section joinable_pairs.
 End joinable_pairs.
 
 Section joinable_maybeT.
-  Context {M : Type → Type} `{Monad M}.
+  Context {M : Type → Type} `{M_monad : Monad M}.
   Context {M_preorder : ∀ T, PreorderedSet (M T)}.
   Context {M_joinable : ∀ T {T_preorder : PreorderedSet T}, 
     Joinable (M T)}.
 
-  Global Instance maybeT_joinable {A} `{Joinable A} :
+  Global Instance maybeT_joinable {A} `{A_joinable : Joinable A} :
     Joinable (MaybeT M A) :=
   {
     join_op := join_op;
@@ -232,12 +232,12 @@ Section joinable_maybeT.
 End joinable_maybeT.
 
 Section joinable_maybeAT.
-  Context {M : Type → Type} `{Monad M}.
+  Context {M : Type → Type} `{M_monad : Monad M}.
   Context {M_preorder : ∀ T, PreorderedSet (M T)}.
   Context {M_joinable : ∀ T {T_preorder : PreorderedSet T}, 
     Joinable (M T)}.
 
-  Global Instance maybeAT_joinable {A} `{Joinable A} : 
+  Global Instance maybeAT_joinable {A} `{A_joinable : Joinable A} : 
     Joinable (MaybeAT M A) :=
   {
     join_op := join_op;
@@ -248,9 +248,9 @@ Section joinable_maybeAT.
 End joinable_maybeAT.
 
 Section joinable_stateT.
-  Context {M : Type → Type} `{Monad M}.
+  Context {M : Type → Type} `{M_monad : Monad M}.
   Context {M_preorder : ∀ T, PreorderedSet (M T)}.
-  Context {S A : Type} `{Joinable S, Joinable A}.
+  Context {S A : Type} `{S_joinable : Joinable S, A_joinable : Joinable A}.
   Context {M_joinable : ∀ T {T_preorder : PreorderedSet T},
     Joinable (M T)}.
 

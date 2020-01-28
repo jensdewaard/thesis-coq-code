@@ -8,7 +8,7 @@ Require Import Classes.Monad.MonadExcept.
 Require Import Classes.Applicative.
 
 Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type}
-    `{Monad M, nat_inst : IsNat M valType boolType natType, 
+    `{M_monad : Monad M, nat_inst : IsNat M valType boolType natType, 
                bool_inst : IsBool M valType boolType}
     (v : cvalue) : M valType :=
   match v with
@@ -18,7 +18,7 @@ Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type
 
 Fixpoint shared_eval_expr 
     {M : Type -> Type} {S valType boolType natType : Type}
-    `{Monad M, store_inst : Store S M valType,
+    `{M_monad : Monad M, store_inst : Store S M valType,
       nat_inst  : IsNat M valType boolType natType, 
       bool_inst : IsBool M valType boolType}
     (e : expr) : M valType :=
@@ -74,8 +74,8 @@ Open Scope com_scope.
 
 Fixpoint shared_ceval 
   {M : Type -> Type} {S valType natType boolType : Type}
-  `{MonadFail M, Store S M valType, (∀ A, MonadExcept M A), 
-    A : IsNat M valType boolType natType, IsBool M valType boolType}
+  `{M_fail : MonadFail M, store : Store S M valType, M_except : ∀ A, MonadExcept M A, 
+    nat_inst : IsNat M valType boolType natType, bool_inst : IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
   | CSkip => pure tt

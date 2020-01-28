@@ -12,7 +12,7 @@ Require Import Types.Parity.
 Implicit Type M : Type → Type.
 Generalizable Variable M.
 
-Definition ensure_par `{MonadFail M} (v : avalue) : M parity :=
+Definition ensure_par `{M_fail : MonadFail M} (v : avalue) : M parity :=
   match v with
   | VParity x => pure x
   | _ => fail
@@ -60,22 +60,22 @@ Qed.
 Hint Rewrite <- even_extract_pareven_equiv odd_extract_parodd_equiv :
   soundness.
 
-Definition extract_parM `{Monad M} (n : nat) : M parity :=
+Definition extract_parM `{M_monad : Monad M} (n : nat) : M parity :=
   pure (extract_par n).
 
-Definition pplusM `{Monad M} (n m : parity) : M parity :=
+Definition pplusM `{M_monad : Monad M} (n m : parity) : M parity :=
   pure (parity_plus n m).
 
-Definition pmultM `{Monad M} (n m : parity) : M parity :=
+Definition pmultM `{M_monad : Monad M} (n m : parity) : M parity :=
   pure (parity_mult n m ).
 
-Definition peqM `{Monad M} (n m : parity) : M abstr_bool :=
+Definition peqM `{M_monad : Monad M} (n m : parity) : M abstr_bool :=
   pure (parity_eq n m).
 
-Definition pleM `{Monad M} (n m : parity) : M abstr_bool :=
+Definition pleM `{M_monad : Monad M} (n m : parity) : M abstr_bool :=
   pure ab_top.
 
-Definition build_parity `{Monad M} (p : parity) : M avalue :=
+Definition build_parity `{M_monad : Monad M} (p : parity) : M avalue :=
   pure (VParity p).
 
 Global Instance isnat_parity M `{MonadFail M} : 
@@ -89,4 +89,3 @@ Global Instance isnat_parity M `{MonadFail M} :
   eq_op := peqM;
   le_op := pleM;
 }.
-

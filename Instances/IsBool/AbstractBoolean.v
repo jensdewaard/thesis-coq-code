@@ -12,19 +12,19 @@ Require Import Types.Stores.
 
 Generalizable Variable M.
 
-Definition ensure_abool `{MonadFail M} (v : avalue) : M abstr_bool :=
+Definition ensure_abool `{M_fail : MonadFail M} (v : avalue) : M abstr_bool :=
   match v with
   | VAbstrBool b => pure b
   | _ => fail
   end.
 
-Definition and_abM `{Monad M} (b c : abstr_bool) : M abstr_bool := 
+Definition and_abM `{M_monad : Monad M} (b c : abstr_bool) : M abstr_bool := 
   pure (and_ab b c).
 
-Definition neg_abM `{Monad M} (b : abstr_bool) : M abstr_bool := 
+Definition neg_abM `{M_monad : Monad M} (b : abstr_bool) : M abstr_bool := 
   pure (neg_ab b).
 
-Definition eval_if_abstract `{MonadFail M} `{Joinable (M (unit))}
+Definition eval_if_abstract `{M_fail : MonadFail M} `{M_joinable : Joinable (M (unit))}
   (b : abstr_bool) (st1 st2 : M unit) 
   : M unit := 
   match b with
@@ -40,13 +40,13 @@ Definition extract_ab (b : bool) : abstr_bool :=
   | false => ab_false
   end.
 
-Definition extract_abM `{Monad M} (b : bool) : M abstr_bool :=
+Definition extract_abM `{M_monad : Monad M} (b : bool) : M abstr_bool :=
   pure (extract_ab b).
 
-Definition build_abool `{Monad M} (b : abstr_bool) : M avalue :=
+Definition build_abool `{M_monad : Monad M} (b : abstr_bool) : M avalue :=
   pure (VAbstrBool b).
 
-Instance abstract_boolean_type `{MonadFail M} `{Joinable (M (unit))} : 
+Instance abstract_boolean_type `{M_fail : MonadFail M} `{M_joinable : Joinable (M (unit))} : 
 IsBool M avalue abstr_bool :=
 {
   ensure_bool := ensure_abool;

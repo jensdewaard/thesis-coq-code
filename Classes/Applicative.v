@@ -3,22 +3,22 @@ Require Import Classes.Functor.
 Require Import Coq.Program.Basics.
 Require Import Coq.Logic.FinFun.
 
-Implicit Type F : Type → Type.
+Implicit Type M : Type → Type.
 Implicit Type A B C : Type.
 
-Class Applicative F `{Functor F} : Type :=
+Class Applicative M `{M_functor: Functor M} : Type :=
 {
-  pure : forall {A}, A -> F A;
+  pure : forall {A}, A -> M A;
   pure_inj : ∀ {A}, Injective (A:=A) pure;
-  app : forall {A B}, F (A -> B) -> F A -> F B;
-  app_id : forall {A} (x : F A), app (pure id) x = x;
-  app_homomorphism : forall {A B} (f:A -> B) (x:A), 
+  app : forall {A B}, M (A -> B) -> M A -> M B;
+  app_id : forall {A} (x : M A), app (pure id) x = x;
+  app_homomorphism : forall {A B} (f : A -> B) (x:A), 
     app (pure f) (pure x) = pure (f x);
-  app_interchange : forall {A B} (u : F (A -> B)) (y : A), 
+  app_interchange : forall {A B} (u : M (A -> B)) (y : A), 
     app u (pure y) = app (pure (fun f => f y)) u;
-  app_compose : forall {A B C} (u : F (B -> C)) (v : F (A -> B)) (w : F A),
+  app_compose : forall {A B C} (u : M (B -> C)) (v : M (A -> B)) (w : M A),
     app u (app v w) = app (app (app (pure compose) u) v) w;
-  app_fmap : forall {A B} (f : A -> B) (x : F A), 
+  app_fmap : forall {A B} (f : A -> B) (x : M A), 
     fmap f x = app (pure f) x;
 }.
 Arguments pure : simpl never.
@@ -30,19 +30,19 @@ Hint Rewrite @app_homomorphism @app_compose @app_interchange : soundness.
 Hint Rewrite @app_fmap : soundness.
 
 Section laws_and_methods.
-  Context {F} `{Applicative F}.
+  Context {M} `{Applicative M}.
 
-  Definition pass {A B} (fa : F A) (fb : F B) : F B := 
+  Definition pass {A B} (fa : M A) (fb : M B) : M B := 
     (id <$ fa) <*> fb.
   Notation "x >> y" := (pass x y) (right associativity, at level 41).
   Hint Unfold pass : soundness.
 
-  Definition keep {A B} (fa : F A) (fb : F B) : F A :=
+  Definition keep {A B} (fa : M A) (fb : M B) : M A :=
     flip pass fa fb.
   Notation "x << y" := (keep x y) (right associativity, at level 41).
   Hint Unfold keep : soundness.
 
-  Lemma pass_right : forall {A B} (x : A) (y : F B), 
+  Lemma pass_right : forall {A B} (x : A) (y : M B), 
     pure x >> y = y.
   Proof. 
     intros. unfold pass. unfold fmap_replace_left. unfold compose. 
@@ -56,10 +56,10 @@ Section laws_and_methods.
     intros. rewrite app_fmap, app_homomorphism. reflexivity.
   Qed.
 
-  Definition liftA {A B} (f : A -> B) (fa : F A) : (F B) := 
+  Definition liftA {A B} (f : A -> B) (fa : M A) : (M B) := 
     pure f <*> fa.
 
-  Definition liftA2 {A B C} (f : A -> B -> C) (fa : F A) (fb : F B) : F C :=
+  Definition liftA2 {A B C} (f : A -> B -> C) (fa : M A) (fb : M B) : M C :=
     pure f <*> fa <*> fb.
 
 End laws_and_methods.

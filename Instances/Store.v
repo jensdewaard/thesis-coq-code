@@ -9,7 +9,7 @@ Require Import Classes.Applicative.
 Require Import Classes.Functor.
 
 Section store_stateT_concrete. 
-  Context (M : Type -> Type) `{Monad M, Applicative M}.
+  Context (M : Type -> Type) `{M_monad : Monad M}.
 
   Definition stateT_get (S : Type) := fun s : S => pure (s, s).
 
@@ -32,7 +32,7 @@ Section store_stateT_concrete.
 End store_stateT_concrete.
 
 Section store_stateT_abstract.
-  Context (M : Type -> Type) `{Monad M, Applicative M}.
+  Context (M : Type -> Type) `{M_monad : Monad M}.
 
   Definition get_abstract (S : Type) := fun s : S => pure (s, s).
   Definition put_abstract (S : Type) := fun s : S => fun _ : S => pure (tt, s).
@@ -54,7 +54,7 @@ End store_stateT_abstract.
 
 
 Section store_maybeT.
-  Context {M : Type -> Type} `{inst : Monad M} {V : Type}.
+  Context {M : Type -> Type} `{M_monad : Monad M} {V : Type}.
 
   Global Instance store_maybeT (S : Type) `{Store S M V} :
   Store S (MaybeT M) V :=
@@ -67,7 +67,7 @@ Section store_maybeT.
 End store_maybeT.
 
 Section store_maybeAT.
-  Context {M : Type -> Type} `{inst : Monad M} {V : Type}.
+  Context {M : Type -> Type} `{M_monad : Monad M} {V : Type}.
 
   Global Instance store_maybeAT (S : Type) `{Store S M V} :
   Store S (MaybeAT M) V :=

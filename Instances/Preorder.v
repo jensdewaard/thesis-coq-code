@@ -46,7 +46,7 @@ Instance preorder_ab : PreorderedSet abstr_bool :=
 }.
 
 Section preordered_functions.
-  Context {A A' : Type} `{PreorderedSet A'}.
+  Context {A A' : Type} `{A_preorder : PreorderedSet A'}.
 
   Inductive pointwise_ordering : (A → A') → (A → A') → Prop :=
   | pointwise_cons : ∀ f g,  
@@ -77,7 +77,8 @@ End preordered_functions.
 Hint Constructors pointwise_ordering : soundness.
 
 Section preordered_pairs.
-  Context {A B : Type} `{PreorderedSet A, PreorderedSet B}.
+  Context {A B : Type} 
+    `{A_preorder : PreorderedSet A, B_preorder : PreorderedSet B}.
 
   Inductive preorder_pair_le : prod A B → prod A B → Prop :=
     | preorder_pair_cons : ∀ a b c d,
@@ -200,7 +201,6 @@ Global Instance avalue_preorder : PreorderedSet avalue :=
   preorder_trans := avalue_le_trans;
 }.
 
-
 Section preordered_sets_le.
   Context {A : Type}.
 
@@ -236,7 +236,8 @@ Instance preordered_abstract_store : PreorderedSet abstract_store
 }.
 
 Section state_preorder.
-  Context {S A : Type} `{PreorderedSet S, PreorderedSet A}.
+  Context {S A : Type} 
+    `{S_preorder : PreorderedSet S, A_preorder : PreorderedSet A}.
   
   Global Instance state_preorder : 
   PreorderedSet (State S A) :=
@@ -248,7 +249,7 @@ Section state_preorder.
 End state_preorder.
 
 Section maybe_preorder.
-  Context {A} `{PreorderedSet A}.
+  Context {A} `{A_preorder : PreorderedSet A}.
 
   Inductive maybe_le : Maybe A → Maybe A → Prop :=
     | maybe_le_none : ∀ m, maybe_le m None
@@ -276,8 +277,8 @@ End maybe_preorder.
 Hint Constructors maybe_le : soundness.
 
 Section maybeT_preorder.
-  Context {A} `{PreorderedSet A}.
-  Context {M : Type → Type} `{Monad M}.
+  Context {A} `{A_preorder : PreorderedSet A}.
+  Context {M : Type → Type} `{M_monad : Monad M}.
 
   Inductive maybeT_le : MaybeT M A → MaybeT M A → Prop :=
     | maybeT_le_noneT : ∀ m, maybeT_le m NoneT
@@ -304,7 +305,7 @@ Section maybeT_preorder.
 End maybeT_preorder.
 
 Section maybea_preorder.
-  Context {A : Type} `{PreorderedSet A}.
+  Context {A : Type} `{A_preorder : PreorderedSet A}.
 
   Inductive maybea_le : AbstractMaybe A → AbstractMaybe A → Prop :=
     | maybea_le_none : ∀ m, maybea_le m NoneA
@@ -336,8 +337,8 @@ End maybea_preorder.
 Hint Constructors maybea_le : soundness.
 
 Section maybeAT_preorder.
-  Context {A : Type} `{PreorderedSet A}.
-  Context {M : Type -> Type} `{inst : Monad M}.
+  Context {A : Type} `{A_preorder : PreorderedSet A}.
+  Context {M : Type -> Type} `{M_monad : Monad M}.
 
   Inductive maybeat_le : MaybeAT M A → MaybeAT M A → Prop :=
     | maybeat_le_none : ∀ m, maybeat_le m NoneAT
@@ -353,17 +354,20 @@ Section maybeAT_preorder.
   Lemma maybeat_le_trans : ∀ x y z, 
     maybeat_le x y → maybeat_le y z → maybeat_le x z.
   Proof.
-    intros x y z Hxy Hyz. inv Hxy; inv Hyz; eauto with soundness.
-    1-2: symmetry in H2; eapply noneAT_neq_justAT in H2; inv H2.
-    symmetry in H2; eapply noneAT_neq_justornoneAT in H2; inv H2.
-    1-2: apply justAT_inj in H3; subst; constructor; pre_trans.
-    symmetry in H3. apply justAT_neq_justornoneAT in H3. inv H3.
-    apply justAT_neq_justornoneAT in H3; inv H3.
-    apply justAT_neq_justornoneAT in H3; inv H3.
-    apply justOrNoneAT_inj in H3; subst; constructor; pre_trans.
-    apply justAT_neq_justornoneAT in H3; inv H3.
-    apply justAT_neq_justornoneAT in H3; inv H3.
-    apply justOrNoneAT_inj in H3; subst; constructor; pre_trans.
+    intros x y z Hxy Hyz. 
+    inversion Hxy as [| x' y' Hpre_xy | x' y' Hpre_xy | x' y' Hpre_xy |]; subst; clear Hxy;
+    inversion Hyz as [ y'' z' Hpre_yz | y'' z' Hpre_yz Heq | y'' z' Hpre_yz Heq 
+      | y'' z' Hpre_yz Heq | y'' z' Hpre_yz ]; subst; eauto with soundness.
+    1-2: symmetry in Heq; eapply noneAT_neq_justAT in Heq; inv Heq.
+    symmetry in Heq; eapply noneAT_neq_justornoneAT in Heq; inv Heq.
+    1-2: apply justAT_inj in Heq; subst; constructor; pre_trans.
+    symmetry in Heq. apply justAT_neq_justornoneAT in Heq. inv Heq.
+    apply justAT_neq_justornoneAT in Heq; inv Heq.
+    apply justAT_neq_justornoneAT in Heq; inv Heq.
+    apply justOrNoneAT_inj in Heq; subst; constructor; pre_trans.
+    apply justAT_neq_justornoneAT in Heq; inv Heq.
+    apply justAT_neq_justornoneAT in Heq; inv Heq.
+    apply justOrNoneAT_inj in Heq; subst; constructor; pre_trans.
   Qed.
 
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=
@@ -375,8 +379,8 @@ Section maybeAT_preorder.
 End maybeAT_preorder.
 
 Section statet_preorder.
-  Context {S A : Type} `{PreorderedSet A, PreorderedSet S}.
-  Context {M : Type -> Type} `{PreorderedSet (M (A*S)%type)}.
+  Context {S A : Type} `{A_preorder : PreorderedSet A, S_preorder : PreorderedSet S}.
+  Context {M : Type -> Type} `{M_preorder : PreorderedSet (M (A*S)%type)}.
 
   Global Instance statet_preorder : PreorderedSet (StateT S M A) :=
   {

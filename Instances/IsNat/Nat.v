@@ -9,31 +9,31 @@ Require Import Classes.Applicative.
 Implicit Type M : Type → Type.
 Generalizable Variable M.
 
-Definition ensure_nat `{MonadFail M} (v : cvalue) : M nat :=
+Definition ensure_nat `{M_fail : MonadFail M} (v : cvalue) : M nat :=
   match v with
   | VNat x => pure x
   | _ => fail
   end.
 
-Definition extract_natM `{Monad M} (n : nat) : M nat :=
+Definition extract_natM `{M_monad : Monad M} (n : nat) : M nat :=
   pure n.
 
-Definition plusM `{Monad M} (n m : nat) : M nat := 
+Definition plusM `{M_monad : Monad M} (n m : nat) : M nat := 
   pure (plus n m).
 
-Definition multM `{Monad M} (n m : nat) : M nat := 
+Definition multM `{M_monad : Monad M} (n m : nat) : M nat := 
   pure (mult n m).
 
-Definition eqbM `{Monad M} (n m : nat) : M bool := 
+Definition eqbM `{M_monad : Monad M} (n m : nat) : M bool := 
   pure (Nat.eqb n m).
 
-Definition lebM `{Monad M} (n m : nat) : M bool := 
+Definition lebM `{M_monad : Monad M} (n m : nat) : M bool := 
   pure (Nat.leb n m).
 
-Definition build_natural `{Monad M} (n : nat) : M cvalue := 
+Definition build_natural `{M_monad : Monad M} (n : nat) : M cvalue := 
   pure (VNat n).
 
-Global Instance nat_numerical `{MonadFail M} : IsNat M cvalue bool nat :=
+Global Instance nat_numerical `{M_fail : MonadFail M} : IsNat M cvalue bool nat :=
 {
   ensure_nat := ensure_nat;
   build_nat := build_natural;
@@ -43,4 +43,3 @@ Global Instance nat_numerical `{MonadFail M} : IsNat M cvalue bool nat :=
   eq_op := eqbM;
   le_op := lebM;
 }.
-

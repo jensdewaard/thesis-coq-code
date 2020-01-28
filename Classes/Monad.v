@@ -6,7 +6,7 @@ Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.
 Implicit Type A B C D : Type.
 
-Class Monad M `{Applicative M}: Type :=
+Class Monad M `{M_applicative : Applicative M}: Type :=
 {
   bindM : ∀ {A B}, M A  → (A → M B) → M B;
   bind_id_left : ∀ {A B} (f : A → M B) (a : A), 
@@ -26,9 +26,9 @@ Hint Unfold bindM : soundness.
 
 Hint Rewrite @bind_id_left @bind_id_right @bind_assoc @bind_app : soundness.
 
-Definition skip {M} `{Monad M} := pure tt.
+Definition skip {M} `{M_monad : Monad M} := pure tt.
 
-Definition composeM {M : Type → Type} `{Monad M}
+Definition composeM {M : Type → Type} `{M_monad : Monad M}
   {A B C} (f : A → M B) (g : B → M C) (x : A) : M C :=
   bindM (f x) g.
 
@@ -43,7 +43,7 @@ Notation "x >>= y" := (bindM x y) (at level 40, left associativity).
 Notation "x >=> y" := (composeM x y) (at level 40, left associativity).
 
 Section laws_and_methods.
-  Context {M} `{Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
   Definition join {A} (x : M (M A)) : M A := bindM x id.
 
@@ -120,9 +120,9 @@ Notation "x '<-' y ; z" := (bindM y (λ x, z))
 
 
 Section MonadTransformer.
-  Context {M} `{inst : Monad M}.
+  Context {M} `{M_monad : Monad M}.
 
-  Class MonadT T `{Monad (T M)} : Type :=
+  Class MonadT T `{TM_monad : Monad (T M)} : Type :=
   {
     liftT : ∀ {A}, M A → T M A;
     lift_pure : ∀  {A} (x : A), liftT (pure x) = pure x;

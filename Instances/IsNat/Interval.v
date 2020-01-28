@@ -10,31 +10,31 @@ Require Import Classes.Applicative.
 Implicit Type M : Type → Type.
 Generalizable Variable M.
 
-Definition extract_interval `{Monad M} (n : nat) : M interval := 
+Definition extract_interval `{M_monad : Monad M} (n : nat) : M interval := 
   pure (n, n).
 
-Definition ensure_interval `{MonadFail M} (v : avalue) : M interval :=
+Definition ensure_interval `{M_fail : MonadFail M} (v : avalue) : M interval :=
   match v with
   | VInterval i => pure i
   | _ => fail
   end.
 
-Definition iplusM `{Monad M} (i j : interval) : M interval := 
+Definition iplusM `{M_monad : Monad M} (i j : interval) : M interval := 
   pure (iplus i j).
 
-Definition imultM `{Monad M} (i j : interval) : M interval :=
+Definition imultM `{M_monad : Monad M} (i j : interval) : M interval :=
   pure (imult i j).
 
-Definition ieqM `{Monad M} (i j : interval) : M abstr_bool :=
+Definition ieqM `{M_monad : Monad M} (i j : interval) : M abstr_bool :=
   pure (ieqb i j).
 
-Definition ileM `{Monad M} (i j : interval) : M abstr_bool := 
+Definition ileM `{M_monad : Monad M} (i j : interval) : M abstr_bool := 
   pure (ileqb i j).
 
-Definition build_interval `{Monad M} (i : interval) : M avalue :=
+Definition build_interval `{M_monad : Monad M} (i : interval) : M avalue :=
   pure (VInterval i).  
 
-Global Instance isnat_interval `{MonadFail M} :
+Global Instance isnat_interval `{M_fail : MonadFail M} :
   IsNat M avalue abstr_bool interval :=
 {
   extract_nat := extract_interval;

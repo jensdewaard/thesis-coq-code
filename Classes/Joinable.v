@@ -1,7 +1,7 @@
 Require Export Base.
 Require Import Classes.PreorderedSet.
 
-Class Joinable (T : Type) `{PreorderedSet T} : Type :=
+Class Joinable (T : Type) `{T_preorder : PreorderedSet T} : Type :=
 {
   join_op : T -> T -> T;
   join_upper_bound_left: forall t t', preorder t (join_op t t');
