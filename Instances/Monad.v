@@ -573,7 +573,7 @@ Section MaybeT_MonadT.
   Context {M} `{M_monad : Monad M}.
   
   Definition lift_maybeT {A} (Ma : M A) : MaybeT M A :=
-    fmap Just Ma.
+    bindM (M:=M) Ma (λ a, JustT a).
   Arguments lift_maybeT [_] _.
   Hint Unfold lift_maybeT : soundness.
   Hint Rewrite @fmap_bind @bind_fmap : soundness.
@@ -585,8 +585,9 @@ Section MaybeT_MonadT.
   Lemma lift_maybeT_bind : ∀ (A B : Type) (x : M A) (f : A → M B),
   lift_maybeT (x >>= f) = bind_maybeT (lift_maybeT x) (f ∘ (lift_maybeT (A:=B))).
   Proof. 
-    intros. unfold lift_maybeT. autorewrite with soundness. 
-    unfold bind_maybeT. rewrite bind_fmap. f_equal.
+    intros. unfold lift_maybeT, bind_maybeT, NoneT, JustT. 
+    autorewrite with soundness. f_equal; ext. autorewrite with soundness.
+    reflexivity.
   Qed.
 
   Global Instance monadT_maybeT : MonadT (MaybeT) :=
@@ -883,7 +884,7 @@ Section MaybeAT_MonadT.
   Context {M} `{M_monad : Monad M}.
 
   Definition lift_maybeAT {A} (Ma : M A) : MaybeAT M A :=
-    fmap JustA Ma.
+    bindM (M:=M) Ma (λ a, JustAT a).
   Arguments lift_maybeAT [A].
   Hint Unfold lift_maybeAT : soundness.
 
@@ -897,9 +898,9 @@ Section MaybeAT_MonadT.
   Definition lift_maybeAT_bind : ∀ {A B} (x : M A) (f : A → M B),
     lift_maybeAT (x >>= f) = bind_maybeAT (lift_maybeAT x) (f ∘ lift_maybeAT (A:=B)).
   Proof. 
-    unfold lift_maybeAT. intros. 
-    autorewrite with soundness. simpl. unfold bind_maybeAT. autorewrite with
-      soundness. f_equal; ext. 
+    unfold lift_maybeAT, bind_maybeAT, JustAT. intros.
+    autorewrite with soundness. f_equal; ext. autorewrite with soundness.
+    reflexivity.
   Qed.
   Arguments lift_maybeAT_bind [A B] x f.
 

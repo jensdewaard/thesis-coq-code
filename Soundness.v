@@ -394,7 +394,7 @@ Section maybeAT.
   Lemma lift_maybeAT_sound {A A'} `{Galois A A'} :
     gamma (lift_maybeAT (M:=M') (A:=A')) (lift_maybeT (A:=A)).
   Proof.
-    unfold lift_maybeAT, lift_maybeT, MaybeAT, MaybeT.
+    unfold lift_maybeAT, lift_maybeT, MaybeAT, MaybeT, JustAT, JustT.
     repeat constructor. intros.
     repeat eapply gamma_fun_apply; eauto with soundness.
   Qed.
