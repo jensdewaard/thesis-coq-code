@@ -1,4 +1,3 @@
-Require Import Classes.Applicative.
 Require Import Classes.IsBool.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
@@ -14,15 +13,15 @@ Generalizable Variable M.
 
 Definition ensure_abool `{M_fail : MonadFail M} (v : avalue) : M abstr_bool :=
   match v with
-  | VAbstrBool b => pure b
+  | VAbstrBool b => returnM b
   | _ => fail
   end.
 
 Definition and_abM `{M_monad : Monad M} (b c : abstr_bool) : M abstr_bool := 
-  pure (and_ab b c).
+  returnM (and_ab b c).
 
 Definition neg_abM `{M_monad : Monad M} (b : abstr_bool) : M abstr_bool := 
-  pure (neg_ab b).
+  returnM (neg_ab b).
 
 Definition eval_if_abstract `{M_fail : MonadFail M} `{M_joinable : Joinable (M (unit))}
   (b : abstr_bool) (st1 st2 : M unit) 
@@ -41,10 +40,10 @@ Definition extract_ab (b : bool) : abstr_bool :=
   end.
 
 Definition extract_abM `{M_monad : Monad M} (b : bool) : M abstr_bool :=
-  pure (extract_ab b).
+  returnM (extract_ab b).
 
 Definition build_abool `{M_monad : Monad M} (b : abstr_bool) : M avalue :=
-  pure (VAbstrBool b).
+  returnM (VAbstrBool b).
 
 Instance abstract_boolean_type `{M_fail : MonadFail M} `{M_joinable : Joinable (M (unit))} : 
 IsBool M avalue abstr_bool :=

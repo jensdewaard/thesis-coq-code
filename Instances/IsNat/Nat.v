@@ -11,27 +11,27 @@ Generalizable Variable M.
 
 Definition ensure_nat `{M_fail : MonadFail M} (v : cvalue) : M nat :=
   match v with
-  | VNat x => pure x
+  | VNat x => returnM x
   | _ => fail
   end.
 
 Definition extract_natM `{M_monad : Monad M} (n : nat) : M nat :=
-  pure n.
+  returnM n.
 
 Definition plusM `{M_monad : Monad M} (n m : nat) : M nat := 
-  pure (plus n m).
+  returnM (plus n m).
 
 Definition multM `{M_monad : Monad M} (n m : nat) : M nat := 
-  pure (mult n m).
+  returnM (mult n m).
 
 Definition eqbM `{M_monad : Monad M} (n m : nat) : M bool := 
-  pure (Nat.eqb n m).
+  returnM (Nat.eqb n m).
 
 Definition lebM `{M_monad : Monad M} (n m : nat) : M bool := 
-  pure (Nat.leb n m).
+  returnM (Nat.leb n m).
 
 Definition build_natural `{M_monad : Monad M} (n : nat) : M cvalue := 
-  pure (VNat n).
+  returnM (VNat n).
 
 Global Instance nat_numerical `{M_fail : MonadFail M} : IsNat M cvalue bool nat :=
 {

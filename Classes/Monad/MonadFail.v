@@ -9,6 +9,3 @@ Class MonadFail M `{M_monad : Monad M} : Type := {
 }.
 Arguments fail : simpl never.
 Hint Rewrite @fail_left : soundness.
-
-Definition guard {M} `{M_fail : MonadFail M} : bool → M unit := 
-  λ b, if b then skip else fail.

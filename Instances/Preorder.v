@@ -291,7 +291,8 @@ Section maybeT_preorder.
     unfold Transitive. intros x y z Hxy Hyz. 
     inversion Hxy as [m Hm Heq | m n Hpre Hm Hn | m Hm Heq]; subst;
     inversion Hyz as [p Hp Hz | p q Hp Hq Hz | p Hp Hz ]; eauto with soundness.
-    exfalso. eapply justT_eq_noneT_false. apply Hq.
+    unfold JustT, NoneT in Hq. apply (returnM_inj (A:=Maybe A)) in Hq.
+    inversion Hq.
     apply justT_inj in Hq. subst.
     constructor. pre_trans.
   Qed.
@@ -358,16 +359,20 @@ Section maybeAT_preorder.
     inversion Hxy as [| x' y' Hpre_xy | x' y' Hpre_xy | x' y' Hpre_xy |]; subst; clear Hxy;
     inversion Hyz as [ y'' z' Hpre_yz | y'' z' Hpre_yz Heq | y'' z' Hpre_yz Heq 
       | y'' z' Hpre_yz Heq | y'' z' Hpre_yz ]; subst; eauto with soundness.
-    1-2: symmetry in Heq; eapply noneAT_neq_justAT in Heq; inv Heq.
-    symmetry in Heq; eapply noneAT_neq_justornoneAT in Heq; inv Heq.
-    1-2: apply justAT_inj in Heq; subst; constructor; pre_trans.
-    symmetry in Heq. apply justAT_neq_justornoneAT in Heq. inv Heq.
-    apply justAT_neq_justornoneAT in Heq; inv Heq.
-    apply justAT_neq_justornoneAT in Heq; inv Heq.
-    apply justOrNoneAT_inj in Heq; subst; constructor; pre_trans.
-    apply justAT_neq_justornoneAT in Heq; inv Heq.
-    apply justAT_neq_justornoneAT in Heq; inv Heq.
-    apply justOrNoneAT_inj in Heq; subst; constructor; pre_trans.
+    1-2: apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. 
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
+    constructor. pre_trans.
+    constructor. apply (returnM_inj (A:=AbstractMaybe A)) in Heq. inv Heq.
+    pre_trans. apply (returnM_inj (A:=AbstractMaybe A)) in Heq;inv Heq.
+    unfold JustAT, JustOrNoneAT in Heq.
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. constructor.
+    pre_trans. apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. 
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
+    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. constructor.
+    pre_trans.
   Qed.
 
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=

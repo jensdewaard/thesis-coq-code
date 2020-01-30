@@ -1,9 +1,7 @@
-Require Import Classes.Applicative.
 Require Import Classes.Monad.MonadExcept.
 Require Import Classes.Monad.MonadFail.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
-Require Import Classes.Functor.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
 Require Import Instances.Monad.
@@ -47,8 +45,8 @@ Section except_maybe.
     intros. destruct_all (Maybe A); reflexivity.
   Qed.
 
-  Lemma catch_maybe_pure : ∀ {A : Type} (x : Maybe A) (a : A),
-    catch_maybe (pure a) x = pure a.
+  Lemma catch_maybe_return : ∀ {A : Type} (x : Maybe A) (a : A),
+    catch_maybe (returnM a) x = returnM a.
   Proof.
     reflexivity. 
   Qed.
@@ -59,7 +57,7 @@ Section except_maybe.
     catch_left := catch_maybe_throw_left;
     catch_right := catch_maybe_throw_right;
     catch_assoc := catch_maybe_assoc;
-    catch_pure := catch_maybe_pure;
+    catch_return := catch_maybe_return;
   }.
 End except_maybe.
 
@@ -96,8 +94,8 @@ Section except_abstract_maybe.
     intros. destruct x; simpl. 2: unfold join_op; simpl. 
   Admitted.
 
-  Lemma catch_abstract_maybe_pure : ∀ (x : AbstractMaybe A) (a : A),
-    catch_abstract_maybe (pure a) x = pure a.
+  Lemma catch_abstract_maybe_return : ∀ (x : AbstractMaybe A) (a : A),
+    catch_abstract_maybe (returnM a) x = returnM a.
   Proof.
     reflexivity. 
   Qed.
@@ -120,7 +118,7 @@ Section except_abstract_maybe.
     catch := catch_abstract_maybe;
     catch_left := catch_abstract_maybe_throw_left;
     catch_right := catch_abstract_maybe_throw_right;
-    catch_pure := catch_abstract_maybe_pure;
+    catch_return := catch_abstract_maybe_return;
     catch_assoc := catch_abstract_maybe_assoc;
   }.
 End except_abstract_maybe.
@@ -128,7 +126,7 @@ End except_abstract_maybe.
 Section fail_maybeT.
   Context {M} `{M_monad : Monad M}.
 
-  Definition fail_maybeT {A} : MaybeT M A := pure None.
+  Definition fail_maybeT {A} : MaybeT M A := returnM None.
 
   Lemma fail_maybeT_left : ∀ (A B : Type) (m : A → MaybeT M B), 
     bind_maybeT fail_maybeT m = fail_maybeT.
@@ -148,10 +146,10 @@ Section except_maybeT.
   Context {M} `{M_monad : Monad M}.
 
   Definition catch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
-    @bindM M _ _ _ _ _ mx (fun x : Maybe A =>
+    bindM (M:=M) mx (fun x : Maybe A =>
       match x with
       | None => my
-      | Just a => pure (Just a)
+      | Just a => returnM (Just a)
       end).
   Hint Unfold catch_maybeT : soundness.
 
@@ -166,7 +164,7 @@ Section except_maybeT.
     catch_maybeT x fail_maybeT = x.
   Proof.
     unfold catch_maybeT, fail_maybeT. intros.
-    replace x with (bindM (M:=M) x pure) at 2.
+    replace x with (bindM (M:=M) x returnM) at 2.
     f_equal; ext; destruct x0; reflexivity.
     rewrite <- (bind_id_right (M:=M)). f_equal.
   Qed.
@@ -179,10 +177,10 @@ Section except_maybeT.
     f_equal.
   Qed.
 
-  Lemma catch_maybeT_pure : ∀ {A : Type} (x : MaybeT M A) (a : A),
-    catch_maybeT (pure a) x = pure a.
+  Lemma catch_maybeT_return : ∀ {A : Type} (x : MaybeT M A) (a : A),
+    catch_maybeT (returnM a) x = returnM a.
   Proof.
-    unfold catch_maybeT. intros. unfold pure; simpl; unfold pure_maybeT. 
+    unfold catch_maybeT. intros. unfold returnM; simpl; unfold JustT. 
     rewrite bind_id_left. reflexivity.
   Qed.
 
@@ -192,14 +190,14 @@ Section except_maybeT.
     catch_left := catch_maybeT_throw_left;
     catch_right := catch_maybeT_throw_right;
     catch_assoc := catch_maybeT_assoc;
-    catch_pure := catch_maybeT_pure;
+    catch_return := catch_maybeT_return;
   }. 
 End except_maybeT.
 
 Section fail_maybeAT.
   Context {M : Type → Type} `{M_monad : Monad M}.
 
-  Definition fail_maybeAT {A} : MaybeAT M A := pure NoneA.
+  Definition fail_maybeAT {A} : MaybeAT M A := returnM NoneA.
 
   Lemma fail_maybeAT_left : ∀ (A B : Type) (m : A → MaybeAT M B), 
     bind_maybeAT (A:=A) (B:=B) fail_maybeAT m = fail_maybeAT (A:=B).
@@ -222,8 +220,8 @@ Section except_maybeAT.
     (mx my : MaybeAT M A) : MaybeAT M A :=
     bindM (M:=M) mx (fun x : AbstractMaybe A =>
       match x with
-      | JustA a => pure (JustA a)
-      | JustOrNoneA a => pure (JustOrNoneA a) (* should be a join_op *)
+      | JustA a => returnM (JustA a)
+      | JustOrNoneA a => returnM (JustOrNoneA a) (* should be a join_op *)
       | NoneA => my
       end).
 
@@ -249,10 +247,10 @@ Section except_maybeAT.
     f_equal.
   Qed.
 
-  Lemma catch_maybeAT_pure : ∀ {A} (x : MaybeAT M A) (a : A),
-    catch_maybeAT (pure a) x = pure a.
+  Lemma catch_maybeAT_return : ∀ {A} (x : MaybeAT M A) (a : A),
+    catch_maybeAT (returnM a) x = returnM a.
   Proof.
-    unfold catch_maybeAT. intros. unfold pure; simpl; unfold pure_maybeAT. 
+    unfold catch_maybeAT. intros. unfold returnM; simpl; unfold JustAT. 
     rewrite bind_id_left. reflexivity.
   Qed.
 
@@ -262,7 +260,7 @@ Section except_maybeAT.
       catch_left := catch_maybeAT_throw_left;
       catch_right := catch_maybeAT_throw_right;
       catch_assoc := catch_maybeAT_assoc;
-      catch_pure := catch_maybeAT_pure;
+      catch_return := catch_maybeAT_return;
     }. 
 End except_maybeAT.
 
@@ -276,7 +274,7 @@ Section fail_stateT.
     fail_stateT (A:=A) >>= s = fail_stateT.
   Proof.
     intros. unfold fail_stateT, lift_stateT. ext. 
-    autorewrite with soundness. unfold app_stateT, fmap_stateT. 
+    autorewrite with soundness. 
     unfold bindM; simpl; unfold bind_stateT. 
     autorewrite with soundness. reflexivity.
   Qed.
@@ -317,11 +315,11 @@ Section except_stateT.
     intros. unfold catch_stateT. ext. rewrite catch_assoc. reflexivity.
   Qed.
 
-  Lemma catch_stateT_pure : ∀ {A} (x : StateT S M A) (a : A),
-    catch_stateT (pure a) x = pure a.
+  Lemma catch_stateT_return : ∀ {A} (x : StateT S M A) (a : A),
+    catch_stateT (returnM a) x = returnM a.
   Proof.
-    intros. unfold catch_stateT. ext. unfold pure. simpl. unfold pure_stateT.
-    rewrite catch_pure. reflexivity.
+    intros. unfold catch_stateT. ext. unfold returnM. simpl. unfold return_stateT.
+    rewrite catch_return. reflexivity.
   Qed.
 
   Instance except_stateT {A} : MonadExcept (StateT S M) A :=
@@ -330,6 +328,6 @@ Section except_stateT.
     catch_left := catch_stateT_throw_left;
     catch_right := catch_stateT_throw_right;
     catch_assoc := catch_stateT_assoc;
-    catch_pure := catch_stateT_pure;
+    catch_return := catch_stateT_return;
   }. 
 End except_stateT.

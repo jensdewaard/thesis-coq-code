@@ -14,7 +14,7 @@ Generalizable Variable M.
 
 Definition ensure_par `{M_fail : MonadFail M} (v : avalue) : M parity :=
   match v with
-  | VParity x => pure x
+  | VParity x => returnM x
   | _ => fail
   end.
 
@@ -61,22 +61,22 @@ Hint Rewrite <- even_extract_pareven_equiv odd_extract_parodd_equiv :
   soundness.
 
 Definition extract_parM `{M_monad : Monad M} (n : nat) : M parity :=
-  pure (extract_par n).
+  returnM (extract_par n).
 
 Definition pplusM `{M_monad : Monad M} (n m : parity) : M parity :=
-  pure (parity_plus n m).
+  returnM (parity_plus n m).
 
 Definition pmultM `{M_monad : Monad M} (n m : parity) : M parity :=
-  pure (parity_mult n m ).
+  returnM (parity_mult n m ).
 
 Definition peqM `{M_monad : Monad M} (n m : parity) : M abstr_bool :=
-  pure (parity_eq n m).
+  returnM (parity_eq n m).
 
 Definition pleM `{M_monad : Monad M} (n m : parity) : M abstr_bool :=
-  pure ab_top.
+  returnM ab_top.
 
 Definition build_parity `{M_monad : Monad M} (p : parity) : M avalue :=
-  pure (VParity p).
+  returnM (VParity p).
 
 Global Instance isnat_parity M `{MonadFail M} : 
   IsNat M avalue abstr_bool parity :=
