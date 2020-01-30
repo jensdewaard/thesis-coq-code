@@ -1,0 +1,34 @@
+\section{Methodology}
+We have decided on an incremental approach to developing the framework. I will
+start out by defining the requisite mathematical constructs, such as the
+orderings and Galois connections, in Coq. Building on these definitions, I
+should then be able to define what it means for an abstract interpreter to be
+sound, and provide a rudimentary implementation of a concrete and abstract
+interpreter for a toy language.
+
+After defining these basics steps, I will then improve upon it by incorporating
+the design of~\cite{keidel2018compositional}, extracting a shared interpreter
+from the concrete and abstract interpreters. By proving lemmas about the
+shared interpreter and the concrete and abstract implementations, it is hoped
+that the resulting proof would be easier to develop than a comparative proof
+written for an abstract and concrete interpreter that are not so similarly
+structured.
+
+The end result is intended to be a framework to ease the development of formal
+proofs of the soundness of abstract interpreters in Coq. It should be possible
+for the developers of those proof to define their concrete and abstract
+interpreters and receive a series of lemmas to prove. The soundness of the
+interpreters should follow from those for free 
+by~\cite{keidel2018compositional}.
+
+After the framework has been written, I will verify if the usage of the
+framework will indeed result in easier proofs by performing a case study on an
+abstract interpreter.
+
+\subsection{Coq}
+We have used the interactive theorem prover Coq to write our definitions and
+prove the soundness of the abstract interpreter. Coq is a proof assistant that
+helps to define lemmas and theorems and write formal proofs. Coq can also be
+used to write programs and proof that those programs correspond to their
+specifications~\cite{coqintroduction}.
+

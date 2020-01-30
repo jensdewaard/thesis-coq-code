@@ -1,0 +1,36 @@
+\section{Related Work}
+
+% Beginning of abstract interpretation who then expanded on it, what was added
+%
+% about using proof assistants to do abstract interpretation
+Proof assistants can be used to mechanize the proof of abstract interpreters.
+However, as this can be tedious work, much effort has been put into easing the
+proof burden. Darais et al~\cite{darais2017abstracting} have focused on
+abstracting definitional interpreters in order to increase the modularity of
+the abstract interpreters. Definitional interpreters leave certain aspects of
+the computations implicit by defining a new language that describes the
+language that is to be analyzed~\cite{reynolds1972definitional}. Unlike in our
+work, where there is a heavy emphasis on continuations through the use of our
+AbstractState and State monads, the abstract definitional interpreter
+constructed by Darais has no explicit representation of continuations.
+
+One of the problems Darais had to work around was non-termination of the
+definitional interpreter. To counteract this required extra work on his part.
+Because Coq does not allow writing non-terminating functions, we had no such
+problems.
+
+Keidel et al.~\cite{keidel2018compositional} instead propose a way to split up
+the concrete and abstract interpreters by defining a shared structure. By
+implementing the concrete and abstract interpreters as instances of a shared
+intrepreter, the soundness proof of the abstract interpreter can be decomposed
+into smaller lemmas, each focusing on how the two instances differ from the
+shared part. It is this paper that serves as the basis for this thesis. However,
+the proofs in Keidels work are pen-and-paper proofs. By implenting the ideas
+presented in Coq instead of Haskell, we can mechanize these pen-and-paper
+proofs, making abstract interpreters that are proven sound more accessible.
+
+One large difference between Keidel's paper and this thesis lies in that we use
+Monads instead of Arrows to represent effects such as stores and exceptions. As
+arrows are generalizations of monads~\cite{hughes2000generalising}, we could
+rewrite our implementation to use arrows instead, but we have not seen the need
+to do so (yet).

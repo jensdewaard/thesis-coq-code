@@ -1,0 +1,101 @@
+\section{Introduction}
+Software engineering is an complex discipline. While developing, it
+is easy to lose oversight of what the code actually does. 
+Many tools have been developed to mitigate this problem and help developers
+develop faith in their code.
+Unit testing libraries aid in running the program on select inputs to see 
+if the result is correct. Fuzzing tools run the
+program on random input to see if this elicits a crash. 
+Static code analyzers look at the source code of a program to see if
+the code will perform as expected. These analyzers do not run the programs under
+test, hence the name static. In this thesis, we will consider these static
+analyzers.
+
+There exist many kinds of static code analysis. The field is broad, as it
+refers to any kind of tool that inspects source code, but we will attempt to
+paint a picture to clarify. One type of static code analysis is taint analysis,
+which seeks to find security bugs in a program. User input is often a source of
+security breaches, as a malicious user could input a specially crafted input. A
+taint analyzer considers all user input as tainted, and tracks the flow of
+tainted data through the program. Tainted data must be sanitized before it
+can be used in a high security context. An example of such sanitization is
+clearing a submitted username and password from illegal characters to prevent
+an SQL injection attack. Another example of a kind of static analysis is a 
+type checker. Type checkers are used in the compilers of many languages and 
+assure that the provided program is well-typed. 
+
+As programs that are not well-typed will crash, it is important
+that the type checker will not report false positives. To put it in other 
+words, it is important that the static analysis is sound. False positives would
+mean that the analyzer says the program is okay, but will in fact crash during
+runtime. Contrast this with false negatives, in which the analyzer says there
+will be a problem that will not actually occur. The measure of such false
+negatives is called precision. While a static analyzer need not be totally
+precise, it is still desirable to keep the precision as high as possible to
+encourage the use of the analyzer.
+
+Proving that static analyzers are sound is a daunting task. Doing it by hand is
+a long and cumbersome process, and error prone as a result of this.
+Research into abstract interpretation started in the 1970s, in part by Cousot 
+and Cousot~\cite{cousot1977abstract}. Their 1977 paper showed how reasoning over
+the abstract properties of values could be used to perform program analysis,
+despite the resulting abstractions being imprecise. A few years later, they
+build upon theirs and other work to define a generic framework to capture the
+program flow using abstract interpretation~\cite{cousot1979systematic}.
+Cousot then provided a method for designing an abstract interpreter
+based on a provided concrete interpreter~\cite{cousot1999calculational}.
+Using the Galois connections between
+the concrete and abstract values, he showed that it is possible to calcuate 
+a sound abstract interpreter.
+
+The work of Coquand et al~\cite{coquand1986calculus} eventually led to the
+development of Coq, an interactive proof assistant. Coq implements the calculus
+of constructions, a system for constructive proofs. By using proof assistants 
+we can mechanically prove the soundness of analyzers. 
+However, this is still not often done. It is difficult to
+pinpoint the exact reason for this, but we will proceed under the assumption
+that the required effort remains to large for the perceived gains.
+
+So how can we further improve upon this situation? Keidel et al. developed a 
+framework for decomposing these soundness proofs into smaller,
+independent pieces~\cite{keidel2018compositional}.
+The idea is that by reusing lemmas and reasoning about 
+shared parts between the abstract and concrete interpreters, the resulting 
+proof can be shrunk significantly.
+
+Prior work with regards mechanically proving the soundness of abstract
+interpreters has been done before by Monniaux et al~\cite{Monniaux3}. One of the
+results of his work shows that the abstraction function of Galois connections
+cannot be formally written in constructive logic. The work of 
+Pichardie~\cite{pichardie2005interpretation} builds on this and shows that we
+can circumvent this problem by stating the soundness lemmas using the
+concretization function only. Darais et al~\cite{darais2016constructive} claim
+to have solved this problem with Galois connections that are both general and
+constructive.
+
+% Research in proof assistants, what did it add
+
+\subsection{Problem Statement}
+The goal of this thesis is to implement a framework in Coq that can be used to 
+ease the development of soundness
+proofs, and perform a case study in which the soundness of an abstract
+interpreter is proven using that framework. The idea is that in the process of
+developing the framework we will be able to articulate best practices for
+writing soundness proofs.
+
+\subsection{Research Questions}
+
+\begin{center}
+	\begin{enumerate}
+		\item
+How can we develop a methodology in Coq to ease the development of
+formal proofs for static analyzers?
+
+		\item
+	How can we quantify the ease with which soundness proofs are developed?
+
+		\item
+	What measures can we apply to the given interpreters to make them easier to
+	write proofs for?
+	\end{enumerate}
+\end{center}

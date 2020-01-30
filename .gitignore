@@ -3,3 +3,7 @@ doc/
 tags
 Makefile.coq
 Makefile.coq.conf
+thesis/_minted-report
+*.out
+*.pdf
+*.tdo

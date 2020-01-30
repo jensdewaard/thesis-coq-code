@@ -1,0 +1,1284 @@
+\section{Implementation}
+In this section we will describe how the framework was implemented in Coq and
+the theory behind the implementation. First, we will delve into the theory
+behind monads~\cite{wadler1995monads}. We borrow these constructs from the 
+Haskell Prelude and reimplement them in Coq. Secondly, we shall describe the 
+syntax of a toy language and define a concrete interpreter of this language. We
+will show how we can decompose the concrete interpreter due to its monadic
+structure. After that, we
+dive into the theory behind Galois connections. After defining Galois
+connections, we show how there is a Galois connection between the previously
+defined concrete interpreter and an example of an abstract interpreter.
+Finally, we show what it means for such an abstract interpreter to be sound.
+
+\subsection{Monads}
+Many tutorials explaining monads exist and monads are generally regarded as
+difficult to understand. We will briefly try to explain them here, though
+a complete understanding monads is not neccessary to follow later sections.
+Understanding that we can decompose the program along the lines of the methods
+provided by the Monad typeclass is sufficient.
+
+Monads are a way to add impure effects to a pure language. Examples of impure
+effects are modifying a global state, throwing and handlings exceptions and
+perform IO operations. It is often said that monads represent
+\textit{computations}. 
+
+In Coq we can implement monads in the form of a typeclass, as it is done in
+Haskell~\cite{sozeau2008first}. Typeclasses are somewhat like interfaces in 
+object-oriented programming languages. A programmer can write functions 
+operating on typeclasses instead of concrete types, and those functions can
+accept all types that implement the functions defined in that specific typeclass. 
+In this case, all types belonging to the Monad typeclass must implement two functions,
+\textit{bind}, originally called \textit{*} in the paper by Wadler, and 
+\textit{return}, originally called \textit{unit}. An implementation of monads
+as a typeclass in Coq is given in Listing \ref{lst:sample_monad}.
+
+\begin{listing}[H]
+\begin{minted}{Coq}
+Class Monad (M : Type -> Type) : Type :=
+{
+  returnM : forall {A}, A -> M A;
+  bindM : forall {A B}, M A -> (A -> M B) -> M B;
+}.
+Notation "x >>= y" := (bindM x y) (at level 40, left associativity).
+\end{minted}
+\caption{Example of an implementation of Monad as a Coq typeclass}
+\label{lst:sample_monad}
+\end{listing}
+
+Because return is a reserved keyword in Coq, we rename both \textit{return} and 
+\textit{bind} into \textit{returnM} and \textit{bindM} respectively.
+\textit{returnM} takes a value and \"wraps\" it in the monad. \textit{bindM} is
+a function that can apply a function to a monadic value. As is the convention
+in Haskell, we will use $>>=$ as an infix notation for the bindM
+function.
+
+One of the advantages that Coq typeclasses have over those in Haskell is the
+abilty to add lemmas to the typeclass in addition to the methods. Proper monads
+have to observe three laws, together called the Monad laws. These laws are, as
+written in the original paper
+\begin{align*}
+    \textit{unit}\ a >>= \lambda b. n =&\ n[a/b] \\
+    m >>= \lambda a . \textit{unit}\ a =&\ m \\
+    m >>= (\lambda a.n >>= \lambda b.o) =&\ (m >>= \lambda a.n) >>= \lambda b.o
+\end{align*}
+
+In English, these mean that binding \textit{returnM} to a function f is
+equivalent to just applying $f$ to the value wrapped by \textit{returnM}. The
+second law states that binding to \textit{returnM} is effectively a no-op, and
+the last law requires \textit{bindM} to be associative. In Coq, we can add the
+following lemmas to the Monad typeclass to ensure that all typeclass instances
+are valid monads, which is something that Haskell cannot guarantee. 
+
+\begin{listing}[H]
+\begin{minted}{Coq}
+Class Monad (M : Type -> Type) : Type := {
+  bind_id_left : forall {A B} (f : A -> M B) (a : A), 
+    bindM (returnM a) f = f a;
+  bind_id_right : forall {A} (MA : M A),
+    bindM MA returnM = MA;
+  bind_assoc : forall {A B C} (MA : M A) (f : A -> M B) (g : B -> M C),
+    bindM (bindM MA f) g = bindM MA (λ a, bindM (f a) g);
+}
+\end{minted}
+\caption{Lemmas for the monad laws}
+\label{lst:monad_lemmas}
+\end{listing}
+
+In this thesis, we consider monads that add two different side effects. The
+first is the Maybe monad, also known as Option. The Maybe monad adds the
+possibility of failure to an operation. The other is the State monad, which
+allows us to keep track of a global state. In the next few sections we will
+discuss the implementation of these monads.
+
+\subsection{Maybe}
+\begin{listing}[H]
+\begin{minted}{coq}
+Inductive Maybe A : Type :=
+    | Just : A -> Maybe A
+    | None : Maybe A.
+\end{minted}
+\caption{The Maybe monad}
+\label{lst:maybe_monad}
+\end{listing}
+
+The first monad we implemented was the Maybe monad. Values of the type
+\mintinline{coq}{Maybe A } can be of either the form 
+\mintinline{coq}{Just a }, where $a$ is a value of type $A$ or 
+\mintinline{coq}{None }. Here, \mintinline{latex}{None} represent a failed
+computation. For example, a monadic version of division \mintinline{coq}{nat ->
+nat -> Maybe nat } could return \mintinline{coq}{None } when dividing by zero,
+and a \mintinline{coq}{Just } value with the right answer in other cases.
+
+The return method of Maybe is the same as the Just constructor. 
+The bind method of the Maybe monad performs a case analysis on the provided
+value. In the case of Just, it extracts the inner value and applies the given
+function to it. In the case of None, it returns None. This allows the chaining
+of multiple operations without explicit error handling between each step.
+
+\begin{listing}[H]
+\begin{minted}{coq}
+  Definition bind_maybe {A B} 
+  (m : Maybe A) (k : A -> Maybe B) : Maybe B :=
+    match m with
+    | None => None
+    | Just a => k a
+    end.
+\end{minted}
+\caption{The bind method for Maybe}
+\label{lst:bind_maybe}
+\end{listing}
+
+\subsection{State}
+When we evaluate a program, we will require a way to keep track of a global
+state. This state can be as simple as an integer that keeps a count of the
+number of operations performed. In our case, we will use a map of strings to
+values $V$,  modelling the use of variables in our program. The specific type 
+of V will be described in a later section.
+
+The State monad allows us to add the ability for tracking state to a pure
+program. It is defined as 
+\mintinline{coq}{Definition State (S A : Type) := S -> (A * S). } The State
+monad wraps a value in a function that keeps track of an additional value of
+type S. Looking at the types of State and return shows us how we ought to
+implement the return function for State. When using return, the type for S 
+is automatically inferred from the context.
+
+\begin{listing}[H]
+\begin{minted}{coq}
+Definition return_state := fun a : A => fun st : S => (a, st).
+\end{minted}
+\end{listing}
+
+The bind method for State passes the state variable along to the next
+computation. Updates states are passed along and the current state is
+accessible at each step of the computation.operation.
+
+\begin{listing}[H]
+\begin{minted}{coq}
+  Definition bind_state {A B} 
+    (p : State S A) (k : A -> State S B) : State S B :=
+    fun st => match (p st) with
+              | (x, st') => k x st'
+              end.
+\end{minted}
+\caption{The implementation of bind for the State monad}
+\label{lst:bind_state}
+\end{listing}
+
+Listing~\ref{lst:bind_state} shows us how the bind method is implemented. The
+result of binding a State value to a function is a new function (as all values
+of State need to be) in which the provided state variable is applied to the
+State value. The result of this computation, including the new updated state,
+is then passed to the continuation function $k$.
+
+The State and Maybe monads show us how we would implement the desired
+properties of our Toy language in a pure manner. But right now, we will have to
+change between the two. We can either have the evaluator utilize the State
+monad to keep track of state, or have it use the Maybe monad to allow
+exceptions, but we cannot have a runtime in which we can both throw exceptions
+as well as keep track of a global state. 
+
+There is a way to combine the functionalities of monads via the use of monad
+transformers. 
+
+\subsection{Monad Transformers}
+Monad transformers are a way to add the side effects of a monad to another
+monad. To facilitate this, we introduce another typeclass.
+
+\begin{listing}
+\begin{minted}{coq}
+  Class MonadT {M} `{Monad M} (T : (Type -> Type) -> Type -> Type)  `{Monad (T M)} : Type :=
+  {
+    liftT : forall {A}, M A -> T M A;
+    lift_return : forall  {A} (x : A), liftT (returnM x) = returnM x;
+    lift_bind : forall {A B} (x : M A) (f : A -> M B),
+      liftT (x >>= f) = liftT x >>= (f ∘ liftT);
+  }.
+\end{minted}
+\end{listing}
+
+The notation \textit{`Monad (T M)} indicates that whenever we define an
+typeclass instance for a type T, we require that (T M), which should be of type
+Type -> Type, is also a monad instance. That means that all the returnM and
+bindM methods, as well as the monad laws, apply to the transformed monad (T M).
+In addition, we also have access to a new method liftT, which allows us to
+utilize methods defined for the underlying monad by "lifting" them to the
+transformed monad. 
+
+We define two transformer monads that correspond to the monads defined above:
+MaybeT and StateT. These extend a monad by allowing for failing computations
+and the ability to retain a global state. 
+
+\begin{listing}
+\begin{minted}{coq}
+Definition MaybeT M A: Type := M (Maybe A).
+Definition StateT S M A : Type := S → M (A*S)%type.
+\end{minted}
+\caption{Definitions for the monad transformers}
+\end{listing}
+
+\subsection{The Concrete Interpreter}
+
+\subsubsection{Language Syntax}\label{sec:lang}
+Programs consist of statements and expressions. These programs are evaluated by
+interpreters. In this subsection, we shall describe the syntax of a toy
+language.
+
+
+\begin{minted}{Coq}
+Inductive cvalue : Type :=
+  | VNat : nat -> cvalue
+  | VBool : bool -> cvalue.
+\end{minted}
+
+Our toy language has two types of values. Natural numbers, represented by
+\coq{VNat } and boolean values, represented by \coq{VBool }. 
+When a \coq{cvalue }, short for concrete value is needed, any of these two 
+types can be used.
+
+Expressions are operations on values that result in a new value. They are
+implemented as an inductive type called \coq{expr}. 
+
+\begin{minted}{Coq}
+Inductive expr : Type :=
+  | EVal : cvalue -> expr
+  | EVar : string -> expr
+  | EPlus : expr -> expr -> expr
+  | EMult : expr -> expr -> expr
+  | EEq : expr -> expr -> expr
+  | ELe : expr -> expr -> expr
+  | ENot : expr -> expr
+  | EAnd : expr -> expr -> expr.
+\end{minted}
+
+Expressions can exist of concrete values (`5', `true'), names of variables
+saved in a store (see Section~\ref{sec:stores}) and operations on these values
+(+, *, ==, $<$, negation and $\&\&$). 
+
+\begin{minted}{Coq}
+Inductive com : Type :=
+  | CSkip : com
+  | CSeq : com -> com -> com
+  | CAss : string -> expr -> com
+  | CIf  : expr -> com -> com -> com
+  | CTryCatch : com -> com -> com
+  | CThrow : com. 
+\end{minted}
+
+Statements control the flow of the program. In this case, we have implemented a
+skip statements that effectively does nothing, an assigment statement that
+assigns the result of an expression to a variable, an if statement, a try-catch
+statement and a throw statement that acts as an exception.
+
+\subsubsection{Stores}\label{sec:stores}
+When evaluating the assignment statement \coq{CAss} and the variable
+expression \coq{EVar}, the interpreter should write to and read from a variable
+storage. We call these stores. 
+
+The concrete store is a map\footnote{The \textit{total\_map} comes from 
+	Map.v from the public Software Foundations course.} 
+from strings to cvalues. The store is implemented as a total map, which is a
+map that returns a default value when a key is requested that is not present in
+the map. Values can be added to the map via the \coq{t_update} function.
+
+% maybe explain why I didn't use a partial map?
+\begin{minted}{Coq}
+Definition store := total_map cvalue.
+
+Definition t_update {A:Type} (m : total_map A)
+                    (x : string) (v : A) :=
+  fun x' => if beq_string x x' then v else m x'.
+
+\end{minted}
+
+\subsubsection{Monads}\label{sec:monad}
+Monads are a design pattern used to represent computation. Much has been
+written about how they work, and monads are in fact notorious for being
+difficult to understand. We will not go into detail here, and instead just 
+provide the definition of the monad typeclass and an implementation of
+it~\cite{kleisli1965every}.
+
+\begin{minted}{Coq}
+Class Monad (M : Type -> Type) : Type :=
+{
+  returnM : forall A, A -> M A;
+  bind : forall A B, M A  -> (A -> M B) -> M B;
+}.
+\end{minted}
+
+\begin{minted}{Coq}
+Definition State (A : Type) := store -> result A store.
+
+Definition return_state (A : Type) (x : A) : State A :=
+  fun st => returnR A store x st.
+
+Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
+    : State B :=
+  fun st => match m st with
+            | returnR _ _ x st' => f x st'
+            | crashed _ _ => crashed _ _
+            | exception _ _ st' => exception _ _ st'
+            end.
+
+Instance state_monad : Monad (State) := {
+  returnM := (return_state);
+  bindM := (bind_state);
+}.
+\end{minted}
+
+Monads require two functions, a \coq{return} function that wraps a value as a
+monadic value and a \coq{bind} function that is able to chain operations on the
+monadic values. 
+
+The State monad is an instance of a monad that we can use to propagate state
+changes when analyzing programs. We are able to abstract away how data is
+stored and instead focus on the transformations on values.
+
+\subsubsection{Do notation}
+The interpreters make excessive use of the bind function of the State monad
+defined in Section~\ref{sec:monad}. Because of this, we introduce a special
+notation for the function.
+
+\begin{minted}{Coq}
+Notation "x '<<' y ; z" := (bind y (fun x => z))
+  (at level 20, y at level 100, 
+   z at level 200, only parsing).
+\end{minted}
+
+If we did not include this notation, making use of the Monad would quickly
+become cumbersome. With it, we are able to write data pipelines in an
+imperative style. To illustrate, the below code shows the two
+different styles. As the length of the `imperative' program increases, the
+functional notation grows more cumbersome and error prone.
+
+\begin{minted}{Coq}
+ENot e =>
+	v << (eval_expr e) ;
+	b << (ensure_bool v) ;
+	returnM (VBool (negb b))
+
+ENot e =>
+	bind (eval_expr e) (fun v =>
+		bind (ensure_bool v) (fun b =>
+			returnM (VBool (negb b))))
+\end{minted}
+
+
+\subsubsection{The interpreter}
+As shown in Section~\ref{sec:lang} the syntax of the language allows the two
+types of values, booleans and natural numbers, to be used interchangably while
+still have a valid syntax. However, most operations will be meaningless if used
+on the wrong operators. For example, ``1 + true'' is valid syntax, but it is 
+not a valid program.
+
+To ensure that the correct types are used when evaluating operators,
+the interpreter has an `ensure' function for each of the types. 
+
+\begin{minted}{Coq}
+Definition ensure_nat (v : cvalue) : State nat :=
+  fun st => match v with
+            | VNat x => returnR nat store x st
+            | _ => crashed _ _
+            end.
+            
+Definition ensure_bool (v : cvalue) : State bool :=
+  fun st => match v with
+            | VBool b => returnR bool store b st
+            | _ => crashed _ _
+            end.
+\end{minted}
+
+When the ensure function is called with a type other than the desired type, it
+returns a crashed state. This crashed state is unrecoverable, meaning that the
+interpreter cannot return to a valid state without intervention from the
+programmer. The crashed state is propagated throughout the rest of the program.
+
+\begin{minted}{Coq}
+Fixpoint eval_expr (e : expr) : State cvalue :=
+  match e with
+  | EVal x => returnM x
+  | EVar x => st << get ;
+      returnM (st x)
+  | EPlus e1 e2 => 
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VNat (n1 + n2))
+  | EMult e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VNat (n1 * n2))
+  | EEq e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VBool (Nat.eqb n1 n2))
+  | ELe e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      n1 << (ensure_nat v1) ;
+      n2 << (ensure_nat v2) ;
+      returnM (VBool (Nat.leb n1 n2))
+  | ENot e =>
+      v << (eval_expr e) ;
+      b << (ensure_bool v) ;
+      returnM (VBool (negb b))
+  | EAnd e1 e2 =>
+      v1 << (eval_expr e1) ;
+      v2 << (eval_expr e2) ;
+      b1 << (ensure_bool v1) ;
+      b2 << (ensure_bool v2) ;
+      returnM (VBool (andb b1 b2))
+  end.
+\end{minted}
+
+The concrete interpeter follows the same structure for each kind of operator.
+The smaller expressions are evaluated first via recursive calls to the
+evaluation function and the interpreter
+ensures they are of the proper types. Then, the built-in operator corresponding
+to the expression is called on those values.
+
+\begin{minted}{Coq}
+Definition eval_if {A} (b : bool) (st1 st2 : State A) : State A := 
+  if b then st1 else st2.
+
+Definition eval_catch {A} (st1 st2 : State A) : State A :=
+  fun st => match (st1 st) with
+  | crashed _ _ => crashed _ _
+  | exception _ _ st' => (st2 st')
+  | x => x
+  end.
+\end{minted}
+To ease the comparison between the concrete interpreter and abstract
+interpreters later on, we have factored out the evaluation of the if and catch
+expressions. When these have been factored out, proving the soundness of these
+operators can be put into several smaller lemmas, as can be seen in Section
+\ref{sec:soundness}.
+
+The concrete interpretation of the If statement is simply a wrapper around the
+built-in if construct of Coq. 
+
+The evaluation of the try-catch statement is a
+match function of the result of the first statement block. If the first block
+crashes, the result of the entire try catch statement is also a crash. Recall
+that crashes should only occur in the case of code errors, by writing
+a program that for example adds a boolean to an integer.
+
+If the first block raises an exception through the use of the fail statement,
+the interpreter returns the result of the evaluation of the second block. In
+any other case, which is just the succesful evaluation of the first block, the
+second block is disregarded and the result of the evaluation of the first block
+is used.
+
+\begin{minted}{Coq}
+Fixpoint ceval (c : com) : State unit :=
+  match c with
+  | CSkip => returnM tt
+  | c1 ;c; c2 => 
+      (ceval c1) ;; (ceval c2)
+  | x ::= a => 
+      n << (eval_expr a) ;
+      st << get ;
+      put (t_update st x n)
+  | CIf b c1 c2 => 
+      v << (eval_expr b) ;
+      b' << (ensure_bool v) ;
+      eval_if b' (ceval c1) (ceval c2)
+  | try c1 catch c2 =>
+   	  eval_catch (ceval c1) (ceval c2)
+  | CFail => fail
+  end.
+\end{minted}
+
+These functions are used in the concrete interpeter of the language statements.
+The `ceval' function uses many of the earlier defined functions and operations,
+such as retrieving and inserting values from/to maps and the monadic operations
+defined in Section~\ref{sec:monad}.
+
+\subsection{Galois Connections}
+In this section we will describe the notion of Galois definitions. Before we
+can describe those however, we will have to explain some other concepts. We
+start with typeclasses, constructs that first appeared in the Haskell
+programming language~\cite{wadler1989make}. We then define type classes for
+preordered sets, before moving on to define a type class for Galois
+connections.
+
+\subsubsection{Type Classes}
+In order to be able to automate the soundness proofs as much as possible, we
+will need to define several mathematical concepts in Coq. In this section, we
+will describe those concepts and show how they are implemented in the form of
+Coq typeclasses~\cite{sozeau2008first}. 
+
+Type classes are a method to add constraints to the parameters of functions.
+Consider the type class \coq{Eq} in the code below.
+
+\begin{minted}{Coq}
+Class Eq (X : Type) : Type :=
+{
+	eq_op : X -> X -> Prop;
+}.
+\end{minted}
+
+In plain language, this would mean that all types \coq{X}, on which there is a
+function \coq{eq_op} defined with the proper signature, belong to the type
+class \coq{Eq}. 
+
+To show that a type belongs to the type class, we have to provide what is
+called an instance.
+
+\begin{minted}{Coq}
+Instance nat_eq : Eq Nat :=
+{
+	eq_op := Nat.eq;
+}.
+\end{minted}
+
+In the above snippet, we prove that the built-in \coq{Nat} type is part of
+the \coq{Eq} type class, with the equality operator on natural numbers as the
+\coq{eq_op} function.
+
+\subsubsection{Preordered sets}
+The first definition we shall implenent is the notion of a preordered set. 
+A preordered set is any set S on which we can define a preorder relation
+$\sqsubseteq$ such that the preorder relation is reflexive and transitive. That
+is, for all $a, a \sqsubseteq a$ (reflexivity) and for all $a$ $b$ $c$, if $a
+\sqsubseteq b$ and $b \sqsubseteq c$, then $a \sqsubseteq c$ (transitivity).
+We refer to such a combination of set S and relation as $(A, \sqsubseteq)$.
+
+The definitions of reflexive and transitive relations are already included in
+the standard library of Coq, so we can import those. This gives us the
+following definition of the preorderd set as a Coq type class.
+
+\begin{minted}{Coq}
+Class PreorderedSet (X : Type) : Type :=
+{
+  preorder : X -> X -> Prop;
+  preorder_refl: Reflexive preorder;
+  preorder_trans: Transitive preorder;
+}.
+\end{minted}
+
+Defining an instance of this typeclass requires providing a type and a preorder
+relation, in addition to proofs of the reflexive and transitive properties of
+that preorder. 
+
+\subsubsection{Galois connections}
+We require the definition of a preordered set in order to be able to define a
+Galois connection.
+
+Traditionally, Galois connections are defined on two partially ordered sets.
+However, they can also be defined on preordered sets, and for our purposes that
+works too. The difference between preordered sets and partially ordered sets is
+that a partial order is antisymmetric in addition to reflexive and transitive.
+We do not require the antisymmetric property, so we can loosen that restraint.
+
+The definition of Galois connections that we have implemented is that of the
+monotone Galois connection. Given two preordered sets $(A,\sqsubseteq)$ and
+$(B,\sqsubseteq)$, a Galois connection between those two sets is defined as two
+functions $\alpha : A \rightarrow B$ and $\gamma : B \rightarrow A$ such 
+that $\alpha(a)
+\sqsubseteq b$ iff $a \sqsubseteq \gamma(b)$.
+
+\begin{minted}{Coq}
+Class Galois (A B : Type) `{PreorderedSet B} : Type :=
+{
+  gamma : B -> A -> Prop;
+  gamma_monotone : monotone gamma;
+}.
+\end{minted}
+
+Instancing the Coq type class definition of Galois connections between two
+types $A$ and $B$ requires supplying those types, as well as a gamma function
+$gamma : B \rightarrow A \rightarrow Prop$ that is monotone. 
+A monotone function $f : A \rightarrow B$ is
+a function between two preordered sets $A$ and $B$ such that if $a \sqsubseteq
+a'$, then $f(a) \sqsubseteq f(a')$.
+
+Note that the Coq definition does not require A to be a preordered set. This is
+because we actuall consider Galois connections between $\mathcal{P}(A)$ and
+$B$. For example, we will consider the relation between sets of natural numbers
+e.g.\ $\{2, 4, 8\}$ and parities e.g.\ even.
+
+Another difference between the Coq implementation and the mathematical
+definition is the lack of corresponding \textit{alpha} function. This is
+because we are unable to define this function, due to limitations in Coq.
+Luckily, it turns out that the $\alpha$ function is not necessary to prove
+soundness~\cite{jourdan2016verasco}.
+
+It is difficult to grasp what a Galois connection means from the definition
+alone, so we will provide a few examples in the next section, after
+introducing the abstract types.
+
+\subsubsection{Parities}
+The first abstract type defined was \coq{Parity}.
+
+\begin{minted}{Coq}
+Inductive parity : Type :=
+  | par_even : parity
+  | par_odd : parity
+  | par_top : parity
+  | par_bottom : parity.
+\end{minted}
+
+The parity of a natural number is whether it is even or odd; e.g.\ the parity
+of the number 2 is even, and the parity of the number 9 is odd.
+
+The top value represents any natural number, and the bottom value is the empty
+set of numbers. As such, it should not occur during normal execution of the 
+program.
+
+We can define a Galois connection between natural numbers and the parity type.
+To do so, we must provide a gamma function and prove its monotonicity. Recall
+that the signature is of the form $A \rightarrow B \rightarrow Prop$. In this
+case, we shall use \coq{parity} as $A$ and \coq{nat} as $B$.
+
+Any type of the form $B \rightarrow Prop$ can be seen as sets of $B$. We define
+a function \coq{gamma_par} as taking a parity as a parameter and returning
+sets of natural numbers.
+
+\begin{minted}{Coq}
+Definition gamma_par (p : parity) : nat -> Prop :=
+  match p with
+  | par_even => even 
+  | par_odd => odd 
+  | par_top => (fun n => True)
+  | par_bottom => fun n => False
+  end.
+\end{minted}
+
+In the provided code, the even and odd symbols are imported from the Coq
+standard library. They are the sets of even and odd numbers respectively. Each
+of the four possible values of parity is mapped to a set of natural numbers.
+
+\begin{minted}{Coq}
+Instance galois_parity_nat : Galois nat parity :=
+{
+  gamma := gamma_par;
+  gamma_monotone := gamma_par_monotone;
+}.
+\end{minted}
+
+The above code shows how a Galois connection between sets of natural numbers 
+and parities is instantiated. \coq{gamma_par_monotone} refers to the proof the
+the \coq{gamma_par} function is monotone. This proof has been omitted for 
+brevity.
+
+\subsubsection{Intervals}
+Parities are only one possible abstraction of natural numbers. Another
+possibility would be to use intervals. We have not implemented this in our
+work, but we will explain how this abstraction would work as another example,
+to further clarify the concept of abstractions.
+
+An interval of natural numbers is a valid abstraction of a set of natural
+numbers if each of the natural numbers in the set falls within the interval.
+For example, the the interval $[1,5]$ is an abstract approximation of the set
+$\{2, 4, 5\}$. It is also a valid approximation of the set $\{1,5\}$. This
+again illustrates the fact that the abstract approximation often lose 
+precision.
+
+The same operators than can be defined on natural numbers can be defined on
+intervals. Addition, multiplication and comparisons can all be implemented.
+Adding the intervals $[1,3]$ and $[4, 7]$ would result in the interval $[5,
+10]$, for example. 
+
+\subsubsection{Abstract Booleans}
+The abstract booleans are only slightly different from their concrete
+counterpart. We supplement the normal boolean values (true and false) with
+values for top and bottom. As with the parities, these abstract values
+represent all concrete values and no concrete values respectively.
+
+\begin{minted}{Coq}
+Inductive abstr_bool : Type :=
+  | ab_true   : abstr_bool
+  | ab_false  : abstr_bool
+  | ab_top    : abstr_bool
+  | ab_bottom : abstr_bool.
+\end{minted}
+
+\begin{minted}{Coq}
+Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
+  match ab with
+  | ab_true   => Is_true b
+  | ab_false  => ~Is_true b
+  | ab_top    => True
+  | ab_bottom => False
+  end.
+\end{minted}
+
+The gamma function for booleans is very straightforward due to the limited
+number of concrete values. As with \coq{gamma_par}, the top and bottom
+values are mapped to True and False.
+
+\subsection{The Abstract Interpreter}
+As with the concrete interpeter, the abstract interpreter has the
+\coq{ensure_*} functions for the abstract types. 
+They are very similar to the ensure functions above and are omitted for brevity. 
+
+The concrete interpreter used the \coq{State} monad to persist state through
+the program. The abstract interpreter has a corresponding monad called the \\
+\coq{AbstractState} monad.
+
+\begin{minted}{Coq}
+Definition AbstractState (A : Type) :=
+  abstract_store -> result A abstract_store.
+
+Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
+  fun st => returnR A abstract_store x st.
+
+Definition bind_state_abstract (A B : Type) 
+  (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
+  fun st => match m st with
+            | returnR _ _ x st' => f x st'
+            | crashed _ _ => crashed _ _
+            | exception _ _ st' => exception _ _ st' 
+            end.
+
+Instance abstract_state_monad : Monad (AbstractState) := {
+  returnM := return_state_abstract;
+  bindM := bind_state_abstract;
+}.
+\end{minted}
+
+The abstract state differs from the concrete state in what type of store is
+used. The abstract store is almost the same is the concrete store, but returns
+abstract values instead of concrete values. When concrete values are inserted
+in the store, they are first converted into their abstract counterpart.
+
+\begin{minted}{Coq}
+Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
+  match e with
+  | EVal x => returnM (extract x)
+  | EVar x => st << get_abstract ;
+      returnM (st x)
+  | EPlus e1 e2 => 
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VParity (parity_plus n1 n2))
+  | EMult e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VParity (parity_mult n1 n2))
+  | EEq e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VAbstrBool (parity_eq n1 n2))
+  | ELe e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      n1 << (ensure_par v1) ;
+      n2 << (ensure_par v2) ;
+      returnM (VAbstrBool (ab_top))
+  | ENot e =>
+      v << (eval_expr_abstract e) ;
+      b << (ensure_abool v) ;
+      returnM (VAbstrBool (neg_ab b))
+  | EAnd e1 e2 =>
+      v1 << (eval_expr_abstract e1) ;
+      v2 << (eval_expr_abstract e2) ;
+      b1 << (ensure_abool v1) ;
+      b2 << (ensure_abool v2) ;
+      returnM (VAbstrBool (and_ab b1 b2))
+  end.
+\end{minted}
+
+The abstract interpreter for expressions looks much the same as the concrete
+version. The differences are in which type of ensure function is called and in
+that the operations on the types are now the abstract versions. For example,
+where the concrete interpreter called the standard plus operator for natural
+numbers, the abstract interpreter calls the parity plus function.
+
+Notice also that in the case of evaluating a literal value, the abstract
+interpreter differs from the concrete version in that the value is wrapped with
+an extract function. This function converts a concrete version into its
+abstract representation.
+
+\begin{minted}{Coq}
+Definition extract (v : cvalue) : avalue :=
+  match v with
+  | VNat x => VParity (extract_par x)
+  | VBool x => VAbstrBool (extract_bool x)
+  end.
+\end{minted}
+
+\subsection{Extracting the Shared Interpreter}\label{sec:shared_interpreter}
+As observed in the previous section, the abstract and concrete interpreter
+share many similarities. This leads us to the question of whether we can
+decompose the interpreters along the shared structure in a way that eases the
+proof burden. In this section, we look at how we've extracted the shared
+interpreter and how this shared structure can be instantiated to create
+abstract and concrete interpreters like those defined earlier.
+
+To be able to define the shared interpreter, we will need to define interfaces
+that can be instantiated as abstract and concrete versions. In Coq, we can
+define these interfaces in the form of typeclasses. We shall first discuss the
+Store typeclass.
+
+\subsubsection{Stores}
+The Store typeclass defines the interface for getting and setting values in the
+stores. 
+\begin{minted}{Coq}
+Class Store (M : Type -> Type) (valType : Type) :=
+{
+  get : string -> M valType;
+  put : string -> valType -> M unit;
+}.
+\end{minted}
+
+The interface exposes two functions, get and put. We abstract over the specific
+monad that is used to pass the state, and we can instantiate the typeclass with
+the value type the store is concerned with.
+
+\begin{minted}{Coq}
+Definition store_get (x : string) : State cvalue := fun st =>
+  returnR (st x) st.
+
+Definition store_put (x : string) (v : cvalue) : State unit := 
+  fun st => returnR tt (t_update st x v).
+
+Instance store_concrete : Store State cvalue := {
+  get := store_get;
+  put := store_put;
+}.
+\end{minted}
+
+In the above Coq code, we see that the concrete store is instantiated with the
+concrete State monad and concrete values. Correspondingly, the abstract store
+is instantiated with the AbstractState monad and abstract values.
+
+\subsubsection{Exceptions}
+Like with stores, we will require an interface for every side-effect our
+programs will have. One of those side-effects is the ability to throw
+exceptions. For this, we have the Except typeclass.
+
+\begin{minted}{Coq}
+Class Except (M : Type -> Type) := {
+  throw    : M unit;
+  trycatch : M unit -> M unit -> M unit;
+}.
+\end{minted}
+
+The Except typeclass has functions for throwing exceptions and a structure for
+handling the thrown exceptions. As with the Store interface, it is not
+concerned with the specific monad used, which aids in the composability of the
+structure. 
+
+\begin{minted}{Coq}
+Definition eval_catch_abstract {A} `{Joinable A} 
+  (st1 st2 : AbstractState A) : AbstractState A :=
+  fun st => match (st1 st) with
+  | crashedA => crashedA 
+  | exceptionA st' => st2 st'
+  | exceptionOrReturn x st' => 
+      join_op (exceptionOrReturn x st') (st2 st')
+  | returnRA x st' => returnRA x st'
+  end.
+
+Definition fail_abstract {A : Type} : AbstractState A :=
+  fun st => exceptionA st.
+
+Instance except_abstract : Except AbstractState := 
+{
+  throw := fail_abstract;
+  trycatch := eval_catch_abstract;
+}.
+\end{minted}
+
+The above listing shows the implementation of the abstract exception handling.
+The trycatch function should receive two states and execute the first. Should
+that return an exception, it returns the result of the second state. In the
+case of the abstract instance, it is also possible for a result to be either
+an exception or a succesful computation. In those cases, the function should
+return the join of the two results.
+
+\subsubsection{IsBool and IsNat}
+The shared interpreter needs to have a uniform way of handling values, as it
+can be instantiated with either abstract or concrete values. For every type of
+concrete value we will require a corresponding interface. In our case, this
+means that we will require an interface for boolean types and an interface for
+numerical types.
+
+\begin{minted}{Coq}
+Class IsBool (M : Type -> Type)
+  (valType boolType : Type) : Type :=
+{
+  ensure_bool  : valType -> M boolType;
+  build_bool   : boolType -> M valType;
+  extract_bool : bool -> M boolType;
+  and_op       : boolType -> boolType -> M boolType;
+  neg_op       : boolType -> M boolType;
+  if_op        : boolType -> M unit -> M unit -> M unit;
+}.
+\end{minted}
+
+The IsBool typeclass is the interface for the boolean types. The interface
+exposes all the operator that are possible on booleans. We've defined the and
+operator and the negation operator. We also include the if operator in this
+interface, as the behaviour of if will change depending on the boolean type. 
+
+In addition, there are also the ensure, build and extract functions. The ensure
+function checks whether the supplied value is actually of the type the
+typeclass is instantiated for. If not, the program will crash. This ensure
+function is called before the aforementioned operators, as they are not defined
+for natural numbers. The build function wraps a boolean type in the value type
+so that it can be passed along into other functions. The extract function can
+turn a concrete value into a boolType. In the concrete implementation
+of the IsBool typeclass, this will be the identity function.
+
+\begin{minted}{Coq}
+Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
+  fun st => match v with
+            | VAbstrBool b => returnRA b st
+            | _ => crashedA
+            end.
+
+Definition eval_if_abstract {A} `{Joinable A} 
+  (b : abstr_bool) (st1 st2 : AbstractState A) 
+  : AbstractState A :=
+  match b with
+  | ab_true   => st1
+  | ab_false  => st2
+  | ab_top    => join_op st1 st2
+  | ab_bottom => fail_abstract
+  end.
+
+Definition extract_ab (b : bool) : abstr_bool := 
+  match b with
+  | true => ab_true
+  | false => ab_false
+  end.
+
+Instance abstract_boolean_type : IsBool AbstractState avalue abstr_bool :=
+{
+  ensure_bool := ensure_abool;
+  extract_bool := extract_abM;
+  build_bool := build_abool;
+  and_op := and_abM;
+  neg_op := neg_abM;
+  if_op := eval_if_abstract;
+}.
+\end{minted}
+
+The above listing shows the abstract implementation of the IsBool typeclass.
+The abstract if evaluation takes two states and returns a state based on the
+given boolean value. In the case of the Top boolean value, it returns a join of
+the two states, as the abstract interpreter will be unsure of what path to
+take. The listing also shows how the extract function takes a concrete value
+and turns it into the correct abstraction.
+
+\begin{minted}{Coq}
+Class IsNat (M : Type -> Type)
+  (valType boolType natType : Type) : Type :=
+{
+  ensure_nat  : valType -> M natType;
+  build_nat   : natType -> M valType;
+  extract_nat : nat -> M natType;
+  plus_op     : natType -> natType -> M natType;
+  mult_op     : natType -> natType -> M natType;
+  eq_op       : natType -> natType -> M boolType;
+  le_op       : natType -> natType -> M boolType;
+}.
+\end{minted}
+
+The typeclass for numerical types looks much the same. It has the same ensure,
+build and extract functions, as well as the operators for numerical types;
+addition multiplication, equality and less-than.
+
+Using the above interfaces, we can define the shared interpreter.
+\begin{minted}{Coq}
+Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type}
+    `{Monad M, IsNat M valType boolType natType, IsBool M valType boolType}
+    (v : cvalue) : M valType :=
+  match v with
+  | VNat n => n' << extract_nat n; build_nat n'
+  | VBool b => b' << extract_bool b; build_bool b'
+  end.
+
+Fixpoint shared_eval_expr 
+    {M : Type -> Type} {valType boolType natType : Type}
+    `{Monad M, Store M valType,
+      IsNat M valType boolType natType, IsBool M valType boolType}
+    (e : expr) : M valType :=
+  match e with
+  | EVal v =>
+      extract_build_val v
+  | EVar x =>
+      get x
+  | EPlus e1 e2 => 
+      v1 << shared_eval_expr e1 ;
+      v2 << shared_eval_expr e2 ;
+      n1 << ensure_nat v1 ;
+      n2 << ensure_nat v2 ;
+      n << plus_op n1 n2 ;
+      build_nat n
+  | EMult e1 e2 => 
+      v1 << shared_eval_expr e1 ;
+      v2 << shared_eval_expr e2 ;
+      n1 << ensure_nat v1 ;
+      n2 << ensure_nat v2 ;
+      n << mult_op n1 n2 ;
+      build_nat n
+  | EEq e1 e2 =>
+      v1 << shared_eval_expr e1 ;
+      v2 << shared_eval_expr e2 ;
+      n1 << ensure_nat v1 ;
+      n2 << ensure_nat v2 ;
+      b << eq_op n1 n2 ;
+      build_bool b
+  | ELe e1 e2 =>
+      v1 << shared_eval_expr e1 ;
+      v2 << shared_eval_expr e2 ;
+      n1 << ensure_nat v1 ;
+      n2 << ensure_nat v2 ;
+      b << le_op n1 n2;
+      build_bool b
+  | ENot e1 =>
+      v1 << shared_eval_expr e1 ;
+      b1 << ensure_bool v1 ;
+      b << neg_op b1;
+      build_bool b
+  | EAnd e1 e2 =>
+      v1 << shared_eval_expr e1 ;
+      v2 << shared_eval_expr e2 ;
+      b1 << ensure_bool v1 ;
+      b2 << ensure_bool v2 ;
+      b << and_op b1 b2 ;
+      build_bool b
+  end.
+
+Fixpoint shared_ceval 
+  {M : Type -> Type} {valType natType boolType : Type}
+  `{Monad M, Store M valType, Except M, 
+    IsNat M valType boolType natType, IsBool M valType boolType}
+  (c : com) : M unit :=
+  match c with
+  | CSkip => returnM tt
+  | c1 ;c; c2 =>
+      (shared_ceval c1) ;; (shared_ceval c2)
+  | x ::= a => 
+      v << shared_eval_expr a ;
+      put x v
+  | CIf b c1 c2 => 
+      v << shared_eval_expr b ;
+      b' << ensure_bool v ;
+      if_op b' (shared_ceval c1) (shared_ceval c2)
+  | try c1 catch c2 => 
+      trycatch (shared_ceval c1) (shared_ceval c2)
+  | CFail => throw
+  end.
+\end{minted}
+
+The required instances are added as implicited contraints to the definitions of
+the shared interpreter. By doing this, we can get the type engine of Coq to
+find the required instances for us. This greatly simplifies how we can now
+define the abstract and concrete interpreters.
+
+\begin{minted}{Coq}
+Definition eval_expr (e : expr) : State cvalue :=
+  shared_eval_expr e.
+
+Definition ceval (c : com) : State unit :=
+  shared_ceval c.
+\end{minted}
+
+We only have to define which State monad we want the interpreter to use.
+Because the State type uses concrete types, it automatically infers that we
+will also require the concrete instances of the Except, Store, IsBool and IsNat
+typeclasses. In the next section, we shall discuss how defining the abstract
+and concrete interpreters as implementations of the shared interpreter aids in
+proving the soundness of the abstract interpreter.
+
+\subsection{Soundness}\label{sec:soundness}
+The main focus of this thesis is the soundness of the abstract interpreter. In
+this section, we will define what it means for a abstract function to be sound
+with regards to a concrete function, and show how we prove the abstract 
+interpreter is sound with regards to the concrete interpreter. 
+
+\begin{minted}{Coq}
+Definition sound {A B A' B' : Type} := gamma b a.
+\end{minted}
+
+To put it in plain language, the definition of sound as defined in Coq means 
+that something is sound if the gamma property holds. This goes for everything
+from parities and natural numbers to two functions.
+
+For example, \textbf{if} we have two functions $f : B \rightarrow B'$ and $f' 
+: A \rightarrow A'$, where there are two Galois connections 
+between $B$ and $A$, and $B'$ and $A'$ respectively, \textbf{then} when if 
+there is a gamma relation between the input values, there will be a gamma
+relation between the output values.
+
+This is a bit of an obtuse definition, so we will provide some examples. Let us
+look at the soundness of the parity plus function. We will show what it
+means for that function to be sound with regards to standard addition of
+natural numbers.
+
+\begin{minted}{Coq}
+Definition parity_plus (p q : parity) : parity :=
+  match p with 
+  | par_top => match q with
+               | par_bottom => par_bottom
+               | _ => par_top
+               end
+  | par_even => q
+  | par_odd => match q with
+               | par_top => par_top
+               | par_even => par_odd
+               | par_odd => par_even
+               | par_bottom => par_bottom
+               end
+  | par_bottom => par_bottom
+  end.
+\end{minted}
+
+So in more concrete terms, the function \coq{parity_plus} is sound with 
+regards to \coq{plus}
+if when, if the inputs are related, the output is also related. In Coq, this 
+notion of relatedness is written as follows
+
+\begin{minted}{Coq}
+gamma p1 n1 -> gamma p2 n2 -> gamma (parity_plus p1 p2) (plus n1 n2).
+\end{minted}
+
+If \coq{p1} is an abstract representation of \coq{n1}, and \coq{p2} is an 
+abstract representation of \coq{n2}, then \coq{parity_plus p1 p2} should be an 
+abstract representation of \coq{plus n1 n2}. 
+
+Due to the automation capabilities of Coq, the actual proof for the soundness
+of the \coq{parity_plus} function is very short.
+
+\begin{minted}{Coq}
+Lemma sound_parity_plus :
+  sound plus parity_plus.
+Proof. intros.
+  unfold sound. simpl. unfold gamma_fun; intros. simpl. 
+  destruct a, a0; simpl in *; try tauto;
+  auto using even_even_plus, odd_plus_r, odd_plus_l, odd_even_plus.
+Qed.
+\end{minted}
+
+The proof is written using case analysis. It considers all possible
+constructors of the parities and simplies the result of the \coq{parity_plus}
+function. Then it uses the built-in proofs of adding combinations of even and
+odd numbers to solve the subgoals.
+
+We have similar proofs for each of the operations on values. We will not list
+all those proofs here, as they are all short and of similar structure. Examine
+all possible input values; resolve the functions and ascertain the preservation
+of the gamma relation in those cases where the hypotheses hold.
+
+More interesting are the soundness proofs for the interpreters. Because the
+abstract and concrete interpreters both consist of the same structure, the
+shared interpreter, the interpreters can be decomposed along the same lines.
+
+We have the \coq{bind_state} and \coq{bind_state_abstract} functions that 
+serve to control the flow of the program. The bind functions execute a function
+and use the result of the function in the remaining functions. We can proof
+that if the functions that are called are sound, and the remaining functions
+are sound, the entire bind function is sound. Because the remaining functions
+are also chains of bind functions, we need to proof the pairwise soundness of 
+the functions to proof the entire interpreter sound.
+
+The soundness proof for \coq{bind_state} and \coq{bind_state_abstract} is
+rather long and involved, and so it omitted here for brevity. We can use the
+soundness of the bind functions to decompose the soundness proof of the
+interpreter. We create a custom tactic we call \coq{solve_binds}. Be repeating
+the application of the soundness lemma of bind, we can turn a goal concering a
+series of binds into a series of subgoals, each concering only a pair of
+functions.
+
+\begin{minted}{Coq}
+Theorem eval_expr_sound : forall a,
+  gamma (eval_expr_abstract a) (eval_expr a).
+Proof.
+  intros. unfold eval_expr_abstract, eval_expr. induction a; 
+  repeat solve_binds; auto with soundness. 
+Qed.
+
+Theorem sound_interpreter:
+  forall c, gamma (ceval_abstract c) (ceval c).
+Proof.
+  intros. unfold ceval_abstract, ceval. 
+  induction c; simpl; repeat solve_binds; auto with soundness.
+Qed.
+\end{minted}
+
+After we obtain a series of subgoals, we can call Coq's automation functions on
+those subgoals. To do so, we need only create a hint database containing lemmas
+for all the function pairs in the concrete and abstract interpreters.
+
+\subsection{Sample Programs}
+Now that we have a proof of the soundness of the abstract interpreter for every
+statement in the language, we will take a look at three concrete examples of a
+program written in the language. 
+
+\begin{minted}{Coq}
+Definition program1 := 
+  IF2 (ELe (EVal (VNat 5)) (EVal (VNat 4))) 
+  THEN (CAss "x" (EVal (VBool true))) 
+  ELSE (CAss "x" (EVal (VNat 9))).
+
+Definition program2 :=
+  CAss "x" (EVal (VNat 20)) ;c;
+  IF2 (EEq (EVar "x") (EVal (VNat 10)))
+  THEN CFail
+  ELSE (CAss "x" (EVal (VNat 20))).
+
+Definition program3 :=
+  CAss "x" 
+  	(EPlus (EVal (VNat 10)) (EVal ((VBool true)))).
+\end{minted}
+
+In more conventional notation, these programs correspond to
+
+\begin{lstlisting}
+IF 5 < 4 THEN x := true ELSE x:= 9
+\end{lstlisting}
+
+\begin{lstlisting}
+x := 20; IF x == 10 THEN fail ELSE x:= 20
+\end{lstlisting}
+
+\begin{lstlisting}
+x := (10 + true)
+\end{lstlisting}
+
+We will discuss how the two interpreters work through these programs. When the
+concrete interpreter evaluates the first program, it is able to tell that 5 is
+not less than 4. As such, it evaluates the first branch of the if statement and
+ignores the second. As such, it will end up with a store that contains
+\textit{true} as the value of $x$.
+
+In contrast, the abstract interpreter extracts the abstract values for 5 and 4
+and will end up with an if statement that compares the set of odd numbers with
+the set of even numbers. It is unable to determine which of these is smaller
+than the other so it evaluates to the top value for the abstract booleans. In
+this case, it joins the stores of the two branches and this results in a store
+with the abstract top value for $x$. The concrete value of \textit{true} is
+sound with regards to this top value, and so the abstract interpreter is sound
+for the first program.
+
+In the case of the second program, the concrete interpreter will opt for the
+else branch and return a store where x holds the value of 20. The abstract
+interpreter again cannot determine whether the values are equal and results in
+the top abstract boolean value. It returns a state that is a join between the
+failed state and a result where x is 20, using the ExceptionOrReturn
+constructor. This value is a valid approximation of the concrete result, so the
+interpreter is again sound.
+
+In the third program, both the abstract and concrete interpreter exhibit the
+same behaviour. Because adding a boolean to an integer is illegal, both
+interpreters crash on that expression. Any concrete state is approximated by
+the crashed abstract state, including a crashed concrete state, so the
+interpreter is sound when analyzing this program.
+

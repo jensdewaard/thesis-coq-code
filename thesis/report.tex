@@ -1,0 +1,28 @@
+\documentclass[a4paper]{article}
+
+\title{Implementing the Decomposition of Soundness Proofs of Abstract
+Interpreters in Coq}
+\usepackage{listings}
+\usepackage{parskip}
+\usepackage{amsmath}
+\usepackage{todonotes}
+\usepackage{hyperref}
+\newcommand{\todoin}[1][]{\todo[inline, #1]}
+\author{Jens de Waard}
+
+\usepackage{minted}
+\newmintinline[coq]{coq}{}
+
+\begin{document}
+\maketitle
+%\listoftodos
+
+\input{introduction}
+\input{methodology}
+\input{implementation}
+\input{relatedwork}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
