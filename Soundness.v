@@ -575,20 +575,31 @@ Section joinable_abstract_state.
     apply join_upper_bound_right.
   Qed.
 
-  (*Global Instance joinable_abstract_state :
+  Lemma join_abstract_state_assoc : ∀ a b c : (AbstractState A),
+    join_abstract_state a (join_abstract_state b c) =
+    join_abstract_state (join_abstract_state a b) c.
+  Proof. 
+    intros. unfold join_abstract_state. extensionality st.
+    rewrite join_assoc. reflexivity.
+  Qed.
+
+  Global Instance joinable_abstract_state :
   Joinable (AbstractState A) :=
   {
     join_op := join_abstract_state;  
     join_upper_bound_left := join_abstract_state_upper_bound_left;
     join_upper_bound_right := join_abstract_state_upper_bound_right;
-  }.*)
+    join_assoc := join_abstract_state_assoc;
+  }.
 End joinable_abstract_state.
 
 Lemma extract_build_val_sound : forall (v : cvalue),
   gamma 
-    (extract_build_val (M:=MaybeAT (StateT abstract_store Maybe)) (nat_inst:=isnat_parity AbstractState)
+    (extract_build_val (M:=AbstractState) 
+        (valType:=avalue)
+        (nat_inst:=isnat_parity AbstractState)
         (bool_inst:=(abstract_boolean_type)) v) 
-    (extract_build_val (M:=MaybeT (StateT store Maybe)) v).
+    (extract_build_val (M:=ConcreteState) (valType:=cvalue) v).
 Proof.
   destruct v; repeat constructor; eauto using extract_par_sound with soundness. 
   destruct b; auto with soundness.
@@ -596,46 +607,36 @@ Qed.
 Hint Resolve extract_build_val_sound : soundness.
 
 Theorem eval_expr_sound : forall a,
-  gamma (shared_eval_expr (M:=AbstractState) (nat_inst:=isnat_parity AbstractState) 
-  (bool_inst:=(abstract_boolean_type)) a) 
-        (shared_eval_expr (M:=ConcreteState) a).
+  gamma 
+    (shared_eval_expr (M:=MaybeAT (StateT abstract_store Maybe)) (nat_inst:=isnat_parity AbstractState) 
+      (bool_inst:=(abstract_boolean_type)) (S:=abstract_store) (valType:=avalue) a) 
+    (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) a).
 Proof.
   intros. induction a; repeat constructor; simpl; intros.
   - auto using gamma_fun_apply with soundness.
-  - debug auto using gamma_fun_apply with soundness. gamma_destruct.
+  - auto using gamma_fun_apply with soundness. gamma_destruct.
     auto.
   - intros. repeat apply gamma_fun_apply; eauto with soundness.
-  - eauto with soundness.
-  - simpl. intros. repeat apply gamma_fun_apply; eauto with soundness.
-    admit.
-    repeat constructor; intros. eapply gamma_fun_apply.
-    eapply gamma_fun_apply. apply gamma_fun_apply. admit.
-    
-    intros. debug auto using gamma_fun_apply with soundness.
-    gamma_destruct. 
-    apply gamma_fun_apply. 
-    apply extract_build_val_sound.
-  - gamma_destruct. debug eauto using gamma_fun_apply with soundness.
-    Print HintDb soundness.
-  - debug eauto using gamma_fun_apply with soundness.
-  - debug eauto using gamma_fun_apply with soundness. admit.
-  - eauto with soundness. admit.
-  - eauto with soundness. admit.
-  - eauto with soundness. intros. admit.
-  - eauto with soundness. admit.
-  - eauto with soundness. 
+  - repeat apply gamma_fun_apply. admit. auto. constructor; intros.
+    repeat apply gamma_fun_apply. admit. auto. constructor; intros.
+    repeat apply gamma_fun_apply. admit. admit. auto. admit. auto.
 Admitted.
 Hint Resolve eval_expr_sound : soundness.
 
-Lemma sound_if_op {M M'} `{SoundMonad M M'} : 
-  gamma (eval_if_abstract)
-  (eval_if).
+Section sound_if.
+  Context {M M' : Type → Type} `{SoundMonad M M'}.
+  Hypothesis M'_joinable : ∀ (T : Type) {T_pre : PreorderedSet T}, 
+    Joinable T → Joinable (M' T).
+
+Lemma sound_if_op : gamma (eval_if_abstract (M:=M')) (eval_if (M:=M)).
 Proof.
   constructor; intros b ab Hab. constructor; intros m m' Hm. 
   constructor; intros m2 m2' Hm2. 
   destruct b, ab; simpl; eauto with soundness. inversion Hab. discriminate.
-  inversion Hab. discriminate.
+  apply gamma_join_left. apply Hm. inversion Hab. discriminate.
+  apply gamma_join_right. apply Hm2.
 Qed.
+End sound_if.
 
 (*Lemma sound_eval_catch :
   gamma (eval_catch_abstract) (eval_catch).
@@ -676,7 +677,7 @@ Hint Resolve sound_fail : soundness.
 Theorem sound_interpreter:
   forall c, gamma (shared_ceval 
                     (M:=AbstractState) 
-                    (A:=isnat_parity)
+                    (nat_inst:=isnat_parity AbstractState)
                     c) 
                   (shared_ceval (M:=ConcreteState) c).
 Proof.
