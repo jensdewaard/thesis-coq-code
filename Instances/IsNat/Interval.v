@@ -5,7 +5,6 @@ Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Instances.Monad.
-Require Import Classes.Applicative.
 
 Implicit Type M : Type → Type.
 Generalizable Variable M.

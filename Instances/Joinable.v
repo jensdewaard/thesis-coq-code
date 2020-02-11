@@ -1,5 +1,3 @@
-Require Import Classes.Applicative.
-Require Import Classes.Functor.
 Require Import Classes.Joinable.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Logic.FunctionalExtensionality.

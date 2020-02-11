@@ -1,6 +1,4 @@
 Require Export Base.
-Require Import Classes.Functor.
-Require Import Classes.Applicative.
 
 Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.

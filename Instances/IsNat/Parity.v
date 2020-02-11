@@ -1,5 +1,4 @@
 Require Export Base.
-Require Import Classes.Applicative.
 Require Import Classes.IsNat.
 Require Import Classes.Monad.
 Require Import Coq.Arith.Arith.

@@ -4,7 +4,6 @@ Require Import Classes.Monad.MonadFail.
 Require Import Types.Stores.
 Require Import Language.Statements.
 Require Import Instances.Monad.
-Require Import Classes.Applicative.
 
 Implicit Type M : Type → Type.
 Generalizable Variable M.

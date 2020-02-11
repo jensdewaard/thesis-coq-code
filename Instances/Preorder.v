@@ -1,5 +1,4 @@
 Require Export Base.
-Require Import Classes.Applicative.
 Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Le.
 Require Import Coq.Classes.RelationClasses.
