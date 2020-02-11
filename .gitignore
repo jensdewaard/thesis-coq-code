@@ -7,3 +7,7 @@ thesis/_minted-report
 *.out
 *.pdf
 *.tdo
+*.glob
+*.vo
+*.aux
+\#*
