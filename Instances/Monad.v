@@ -315,7 +315,7 @@ End MaybeAT_MonadT.
 Definition State (S A : Type) := S -> (A * S).
 
 Section State_Monad.
-  Context {S : Type}.
+  Context {S : Type} `{S_inhabited : !Inhabited S}.
 
   Definition return_state {A} (a :A) : State S A := 
     λ st : S, (a, st).
@@ -323,8 +323,9 @@ Section State_Monad.
   Lemma return_state_inj : ∀ A (x y : A),
     return_state x = return_state y → x = y.
   Proof.
-    intros. unfold return_state in H. 
-  Admitted.
+    intros. unfold return_state in H. unfold Inhabited in S_inhabited.
+    eapply equal_f in H. Unshelve. inversion H. reflexivity. apply S_inhabited.
+  Qed.
 
   Definition bind_state {A B} 
     (p : State S A) (k : A -> State S B) : State S B :=
@@ -362,7 +363,7 @@ Definition StateT S M A : Type := S → M (A*S)%type.
 
 Section Monad_StateT.
   Context {M} `{M_monad : Monad M}.
-  Context {S : Type}.
+  Context {S : Type} `{S_inhabited : !Inhabited S}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
@@ -371,8 +372,10 @@ Section Monad_StateT.
   Lemma return_stateT_inj : ∀ A (x y : A),
     return_stateT x = return_stateT y → x = y.
   Proof.
-    intros A x y Heq. unfold return_stateT in Heq.
-  Admitted.
+    intros A x y Heq. unfold return_stateT in Heq. eapply equal_f in Heq.
+    apply returnM_inj in Heq. inversion Heq. reflexivity. Unshelve.
+    apply S_inhabited.
+  Qed.
 
   Definition bind_stateT {A B} (MA : StateT S M A) 
     (f : A -> StateT S M B) : StateT S M B :=
@@ -421,7 +424,7 @@ Hint Unfold bind_stateT : soundness.
 
 Section MonadT_StateT.
   Context {M} `{M_monad :Monad M}.
-  Context {S : Type}.
+  Context {S : Type} `{!Inhabited S}.
 
   Definition lift_stateT {A} (MA : M A) : StateT S M A :=
     fun st => bindM MA (fun a => returnM (a, st)).

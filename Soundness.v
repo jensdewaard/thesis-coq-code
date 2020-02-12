@@ -141,7 +141,7 @@ Hint Resolve bind_state_sound : soundness.
 
 Section stateT.
   Context {M M' : Type → Type} `{SoundMonad M M'}.
-  Context {S S' : Type} `{Galois S S'}.
+  Context {S S' : Type} `{Galois S S'} `{!Inhabited S, !Inhabited S'}.
 
   Lemma return_stateT_sound : ∀ A A' `{A_galois : Galois A A'},
     gamma (return_stateT (S:=S') (M:=M') (A:=A')) (return_stateT (A:=A)).

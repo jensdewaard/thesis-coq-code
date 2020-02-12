@@ -60,3 +60,6 @@ Ltac simple_solve := autounfold with soundness; intros;
  * Monad (MaybeT M). As typeclass instances search by default is depth first 
  * and unbounded, we set an upperbound here to avoid infinite loops *)
 Global Set Typeclasses Depth 10.
+
+Class Inhabited (S : Type) := inhabitant : S.
+Arguments inhabitant _ {_}.
