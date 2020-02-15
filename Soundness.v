@@ -34,10 +34,7 @@ Hint Extern 0 (gamma _ _) => progress gamma_destruct : soundness.
 
 Axiom gamma_pure_none : ∀ {M M' : Type → Type} `{Monad M, Monad M'} {A A' :
   Type}  `{Galois (M A) (M' (Maybe A'))} (c : M A), gamma (returnM (M:=M') None) c.
-Axiom gamma_pure_noneA : ∀ {M M' : Type → Type} `{Monad M, Monad M'} {A A' :
-  Type}  `{Galois (M A) (M' (AbstractMaybe A'))} (c : M A), 
-  gamma (returnM (M:=M') NoneA) c.
-Hint Resolve gamma_pure_none gamma_pure_noneA : soundness.
+Hint Resolve gamma_pure_none : soundness.
 
 (* Soundness of unit *)
 Lemma gamma_unit_sound :
