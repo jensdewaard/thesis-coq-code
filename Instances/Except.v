@@ -39,12 +39,6 @@ Section except_maybe.
     catch_maybe x None = x.
   Proof. simple_solve. Qed.
 
-  Lemma catch_maybe_assoc  : ∀ {A : Type} (x y z : Maybe A),
-    catch_maybe x (catch_maybe y z) = catch_maybe (catch_maybe x y) z.
-  Proof.
-    intros. destruct_all (Maybe A); reflexivity.
-  Qed.
-
   Lemma catch_maybe_return : ∀ {A : Type} (x : Maybe A) (a : A),
     catch_maybe (returnM a) x = returnM a.
   Proof.
@@ -53,10 +47,8 @@ Section except_maybe.
 
   Global Instance except_maybe : ∀ A, MonadExcept Maybe A :=
   {
-    catch := catch_maybe;
     catch_left := catch_maybe_throw_left;
     catch_right := catch_maybe_throw_right;
-    catch_assoc := catch_maybe_assoc;
     catch_return := catch_maybe_return;
   }.
 End except_maybe.
@@ -91,8 +83,8 @@ Section except_abstract_maybe.
   Lemma catch_abstract_maybe_throw_right : ∀ (x : AbstractMaybe A),
     catch_abstract_maybe x NoneA = x.
   Proof.
-    intros. destruct x; simpl. 2: unfold join_op; simpl. 
-  Admitted.
+    intros. destruct x; simpl; unfold join_op; simpl; reflexivity.
+  Qed.
 
   Lemma catch_abstract_maybe_return : ∀ (x : AbstractMaybe A) (a : A),
     catch_abstract_maybe (returnM a) x = returnM a.
@@ -100,26 +92,11 @@ Section except_abstract_maybe.
     reflexivity. 
   Qed.
 
-  Lemma catch_abstract_maybe_assoc : ∀ (x y z : AbstractMaybe A),
-    catch_abstract_maybe x (catch_abstract_maybe y z) =
-    catch_abstract_maybe (catch_abstract_maybe x y) z.
-  Proof.
-    intros. destruct x as [a1|a1|] eqn:Hx; 
-    destruct y as [a2|a2|] eqn:Hy; 
-    destruct z as [a3|a3|] eqn:Hz; simpl; try reflexivity.
-    - unfold join_op; simpl. admit.
-    - unfold join_op; simpl. admit.
-    - unfold join_op; simpl. admit.
-    - unfold join_op; simpl. rewrite join_assoc. reflexivity.
-  Admitted.
-
   Global Instance fail_maybeA : MonadExcept AbstractMaybe A :=
   {
-    catch := catch_abstract_maybe;
     catch_left := catch_abstract_maybe_throw_left;
     catch_right := catch_abstract_maybe_throw_right;
     catch_return := catch_abstract_maybe_return;
-    catch_assoc := catch_abstract_maybe_assoc;
   }.
 End except_abstract_maybe.
 
@@ -169,14 +146,6 @@ Section except_maybeT.
     rewrite <- (bind_id_right (M:=M)). f_equal.
   Qed.
 
-  Lemma catch_maybeT_assoc : ∀ {A : Type} (x y z : MaybeT M A),
-    catch_maybeT x (catch_maybeT y z) = catch_maybeT (catch_maybeT x y) z.
-  Proof.
-    intros. unfold catch_maybeT. autorewrite with soundness. f_equal. 
-    extensionality m. destruct m; autorewrite with soundness. reflexivity.
-    f_equal.
-  Qed.
-
   Lemma catch_maybeT_return : ∀ {A : Type} (x : MaybeT M A) (a : A),
     catch_maybeT (returnM a) x = returnM a.
   Proof.
@@ -186,10 +155,8 @@ Section except_maybeT.
 
   Global Instance except_maybeT {A} : MonadExcept (MaybeT M) A :=
   {
-    catch := catch_maybeT;
     catch_left := catch_maybeT_throw_left;
     catch_right := catch_maybeT_throw_right;
-    catch_assoc := catch_maybeT_assoc;
     catch_return := catch_maybeT_return;
   }. 
 End except_maybeT.
@@ -239,14 +206,6 @@ Section except_maybeAT.
     f_equal; extensionality m. destruct m; reflexivity.
   Qed.
 
-  Lemma catch_maybeAT_assoc : ∀ {A} (x y z : MaybeAT M A),
-    catch_maybeAT x (catch_maybeAT y z) = catch_maybeAT (catch_maybeAT x y) z.
-  Proof.
-    intros. unfold catch_maybeAT. rewrite bind_assoc. f_equal. 
-    extensionality m. destruct m. 1-2: rewrite bind_id_left; reflexivity.
-    f_equal.
-  Qed.
-
   Lemma catch_maybeAT_return : ∀ {A} (x : MaybeAT M A) (a : A),
     catch_maybeAT (returnM a) x = returnM a.
   Proof.
@@ -256,10 +215,8 @@ Section except_maybeAT.
 
   Global Instance except_maybeAT {A} : MonadExcept (MaybeAT M) A :=
     {
-      catch := catch_maybeAT;
       catch_left := catch_maybeAT_throw_left;
       catch_right := catch_maybeAT_throw_right;
-      catch_assoc := catch_maybeAT_assoc;
       catch_return := catch_maybeAT_return;
     }. 
 End except_maybeAT.
@@ -309,12 +266,6 @@ Section except_stateT.
     ext. autorewrite with soundness. reflexivity.
   Qed.
 
-  Lemma catch_stateT_assoc : ∀ {A} (x y z: StateT S M A),
-    catch_stateT x (catch_stateT y z) = catch_stateT (catch_stateT x y) z.
-  Proof.
-    intros. unfold catch_stateT. ext. rewrite catch_assoc. reflexivity.
-  Qed.
-
   Lemma catch_stateT_return : ∀ {A} (x : StateT S M A) (a : A),
     catch_stateT (returnM a) x = returnM a.
   Proof.
@@ -324,10 +275,8 @@ Section except_stateT.
 
   Instance except_stateT {A} : MonadExcept (StateT S M) A :=
   {
-    catch := catch_stateT;
     catch_left := catch_stateT_throw_left;
     catch_right := catch_stateT_throw_right;
-    catch_assoc := catch_stateT_assoc;
     catch_return := catch_stateT_return;
   }. 
 End except_stateT.

@@ -308,7 +308,8 @@ Section maybea_preorder.
   Context {A : Type} `{A_preorder : PreorderedSet A}.
 
   Inductive maybea_le : AbstractMaybe A → AbstractMaybe A → Prop :=
-    | maybea_le_none : ∀ m, maybea_le m NoneA
+    | maybea_le_none : maybea_le NoneA NoneA
+    | maybea_le_none_justornone : ∀ y, maybea_le NoneA (JustOrNoneA y)
     | maybea_le_just : ∀ x y, preorder x y → maybea_le (JustA x) (JustA y)
     | maybea_le_justornone_r : ∀ x y, preorder x y →
         maybea_le (JustA x) (JustOrNoneA y)
@@ -341,7 +342,8 @@ Section maybeAT_preorder.
   Context {M : Type -> Type} `{M_monad : Monad M}.
 
   Inductive maybeat_le : MaybeAT M A → MaybeAT M A → Prop :=
-    | maybeat_le_none : ∀ m, maybeat_le m NoneAT
+    | maybeat_le_none : maybeat_le NoneAT NoneAT
+    | maybeat_le_none_justornone : ∀ y, maybeat_le NoneAT (JustOrNoneAT y)
     | maybeat_le_just : ∀ x y, 
         preorder x y → maybeat_le (JustAT x) (JustAT y)
     | maybeat_le_justornone_r : ∀ x y, preorder x y →
@@ -355,23 +357,31 @@ Section maybeAT_preorder.
     maybeat_le x y → maybeat_le y z → maybeat_le x z.
   Proof.
     intros x y z Hxy Hyz. 
-    inversion Hxy as [| x' y' Hpre_xy | x' y' Hpre_xy | x' y' Hpre_xy |]; subst; clear Hxy;
-    inversion Hyz as [ y'' z' Hpre_yz | y'' z' Hpre_yz Heq | y'' z' Hpre_yz Heq 
-      | y'' z' Hpre_yz Heq | y'' z' Hpre_yz ]; subst; eauto with soundness.
-    1-2: apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. 
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
-    constructor. pre_trans.
-    constructor. apply (returnM_inj (A:=AbstractMaybe A)) in Heq. inv Heq.
-    pre_trans. apply (returnM_inj (A:=AbstractMaybe A)) in Heq;inv Heq.
-    unfold JustAT, JustOrNoneAT in Heq.
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. constructor.
-    pre_trans. apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. 
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq.
-    apply (returnM_inj (A:=AbstractMaybe A)) in Heq; inv Heq. constructor.
-    pre_trans.
+    inversion Hxy; subst; try constructor; try assumption.
+    - inversion Hyz; subst; try constructor; try assumption.
+      apply (returnM_inj (A:=AbstractMaybe A)) in H. inv H.
+    - inversion Hyz; subst; try constructor; try assumption.
+      apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
+      apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
+      apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+      eapply preorder_trans. apply H. assumption.
+      apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+      eapply preorder_trans. apply H. assumption.
+      apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+    - inversion Hyz; subst; try constructor; try assumption.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+        eapply preorder_trans. apply H. assumption.
+    - inversion Hyz; subst; try constructor; try assumption.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
+        eapply preorder_trans. apply H. apply H1.
   Qed.
 
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=

@@ -167,7 +167,7 @@ Section galois_maybe.
   Context {A A'} `{A_galois : Galois A A'}.
 
   Inductive gamma_maybeA : AbstractMaybe A' → Maybe A → Prop :=
-    | gamma_noneA : ∀ m, gamma_maybeA NoneA m
+    | gamma_noneA : gamma_maybeA NoneA None
     | gamma_justornoneA_none : ∀ a, 
         gamma_maybeA (JustOrNoneA a) None
     | gamma_justA_just : ∀ a' a, gamma a' a → gamma_maybeA (JustA a') (Just a)
@@ -184,7 +184,7 @@ Section galois_maybe.
   Lemma gamma_maybeA_monotone : monotone gamma_maybeA.
   Proof.
     unfold monotone. intros a a' Ha. constructor; intros m Hm.
-    inv Ha; inv Hm; eauto with soundness; constructor; apply_widen.
+    inv Ha; inv Hm; eauto with soundness; try constructor; try apply_widen.
   Qed.
 
   Lemma gamma_maybe_monotone : monotone gamma_maybe.

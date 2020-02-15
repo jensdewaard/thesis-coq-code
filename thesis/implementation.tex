@@ -218,6 +218,10 @@ Definition StateT S M A : Type := S → M (A*S)%type.
 \caption{Definitions for the monad transformers}
 \end{listing}
 
+\begin{itemize}
+    \item {MonadExcept: AbstractMaybe not catch\_assoc}
+\end{itemize}
+
 \subsection{The Concrete Interpreter}
 
 \subsubsection{Language Syntax}\label{sec:lang}

@@ -81,17 +81,10 @@ Proof.
 Qed.
 Hint Resolve bind_maybe_sound : soundness.
 
-Lemma gamma_fail_maybe : ∀ (A A' : Type) `{Galois A A'} (m : Maybe A), 
-  gamma (fail (M:=Maybe)) m.
-Proof. 
-  constructor.
-Qed.
-
 Instance maybe_sound : SoundMonad Maybe Maybe :=
 {
   return_sound := just_sound;
   bind_sound := bind_maybe_sound;
-  gamma_fail := gamma_fail_maybe;
 }.
 
 Lemma justA_sound : ∀ A A' `{A_galois : Galois A A'},
@@ -111,17 +104,10 @@ Proof.
   apply Hf in Ha. all: destruct (mf' a'); eauto with soundness.
 Qed.
 
-Lemma gamma_fail_abstract_maybe : ∀ (A A' : Type) `{Galois A A'} (m : Maybe A),
-  gamma (fail (M:=AbstractMaybe)) m.
-Proof.
-  intros. destruct m; unfold fail; simpl; try constructor. 
-Qed.
-
 Instance abstract_maybe_sound : SoundMonad Maybe AbstractMaybe :=
 {
   return_sound := justA_sound;
   bind_sound := bind_abstract_maybe_sound;
-  gamma_fail := gamma_fail_abstract_maybe;
 }.
 
 Lemma bind_state_sound {S S'} `{Galois S S'} : ∀ (A A' B B' : Type)
@@ -157,19 +143,10 @@ Section stateT.
     destruct p, p'. repeat eapply gamma_fun_apply; eauto with soundness.
   Qed.
 
-  Lemma gamma_fail_stateT : ∀ (A A' : Type) `{Galois A A'} (st : StateT S M A),
-    gamma (fail (M:=StateT S' M') (A:=A')) st.
-  Proof.
-    intros. unfold fail; simpl. unfold fail_stateT, lift_stateT.
-    constructor; intros s s' Hs. autorewrite with soundness.
-    eapply gamma_fail. auto.
-  Qed.
-
   Global Instance stateT_sound : SoundMonad (StateT S M) (StateT S' M') :=
   {
     return_sound := return_stateT_sound;
     bind_sound := bind_stateT_sound;
-    gamma_fail := gamma_fail_stateT;
   }.
 End stateT.
 
@@ -190,17 +167,10 @@ Section maybeT.
     repeat eapply gamma_fun_apply; eauto with soundness.
   Qed.
 
-  Lemma gamma_fail_maybeT : ∀ (A A' : Type) `{Galois A A'} (m : MaybeT M A),
-    gamma (fail (M:=MaybeT M') (A:=A')) m.
-  Proof.
-    intros. unfold fail; simpl. unfold fail_maybeT. apply gamma_pure_none.
-  Qed.
-
   Global Instance maybeT_sound : SoundMonad (MaybeT M) (MaybeT M') :=
   {
     return_sound := justT_sound;
     bind_sound := bind_maybeT_sound;
-    gamma_fail := gamma_fail_maybeT;
   }.
 End maybeT.
 
@@ -236,17 +206,10 @@ Section maybeAT.
     repeat eapply gamma_fun_apply; eauto with soundness.
   Qed.
 
-  Lemma gamma_fail_maybeAT : ∀ (A A' : Type) `{Galois A A'} (m : MaybeT M A),
-    gamma (fail (M:=MaybeAT M') (A:=A')) m.
-  Proof.
-    intros. unfold fail; simpl. unfold fail_maybeAT. apply gamma_pure_noneA.
-  Qed.
-
   Global Instance maybeAT_sound : SoundMonad (MaybeT M) (MaybeAT M') :=
   {
     return_sound := justAT_sound;
     bind_sound := bind_maybeAT_sound;
-    gamma_fail := gamma_fail_maybeAT;
   }.
 End maybeAT.
 
@@ -299,12 +262,13 @@ Proof.
 Qed.
 
 (* Monadic versions of parity operations *)
-Lemma ensure_par_sound {M M'} `{SoundMonad M M'} {M_fail : MonadFail M} :
-  gamma (ensure_par) ensure_nat.
+Lemma ensure_par_sound {M M'} `{SoundMonad M M'} 
+  {M'_fail : MonadFail M'} {M_fail : MonadFail M} :
+  gamma (ensure_par (M:=M')) ensure_nat.
 Proof.
   constructor; intros a a' Hgamma. destruct a; inv Hgamma; subst; simpl; eauto
   with soundness.
-Qed.
+Admitted.
 Hint Resolve ensure_par_sound : soundness.
 
 Lemma extract_parM_sound {M M'} `{SoundMonad M M'} : forall n,
@@ -450,12 +414,12 @@ Proof.
 Qed.
 Hint Resolve extract_interval_sound : soundness.
 
-Lemma ensure_interval_sound {M M'} `{SoundMonad M M'} {M_fail : MonadFail M} : 
+Lemma ensure_interval_sound {M M'} `{SoundMonad M M'} 
+  {M_fail : MonadFail M} {M'_fail : MonadFail M'} : 
   gamma ensure_interval ensure_nat.
 Proof.
-  constructor; intros v v' Hv. inversion Hv; subst; simpl; 
-  eauto using gamma_fail with soundness.
-Qed.
+  constructor; intros v v' Hv. inversion Hv; subst; simpl.
+Admitted.
 Hint Resolve ensure_interval_sound : soundness.
 
 (* Soundness of operations on booleans *)
@@ -489,13 +453,12 @@ Qed.
 
 (* Monadic operations on abstract booleans *)
 
-Lemma ensure_abool_sound {M M'} `{SoundMonad M M'} {M_fail : MonadFail M} :
+Lemma ensure_abool_sound {M M'} `{SoundMonad M M'} 
+  {M_fail : MonadFail M} {M'_fail : MonadFail M'} :
   gamma ensure_abool ensure_bool.
 Proof. 
   constructor. intros a b Hab. unfold ensure_abool, ensure_bool.
-  destruct a, b; eauto using gamma_fail with soundness. 
-  inversion Hab; subst. apply gamma_fun_apply; eauto with soundness.
-Qed.
+Admitted.
 Hint Resolve ensure_abool_sound : soundness.
 
 Lemma neg_abM_sound {M M'} `{SoundMonad M M'} :
@@ -624,11 +587,12 @@ Admitted.
 Hint Resolve eval_expr_sound : soundness.
 
 Section sound_if.
-  Context {M M' : Type → Type} `{SoundMonad M M'}.
+  Context {M M' : Type → Type} `{SoundMonad M M'} `{MonadFail M'}.
   Hypothesis M'_joinable : ∀ (T : Type) {T_pre : PreorderedSet T}, 
     Joinable T → Joinable (M' T).
 
-Lemma sound_if_op : gamma (eval_if_abstract (M:=M')) (eval_if (M:=M)).
+Lemma sound_if_op : 
+  gamma (eval_if_abstract (M:=M')) (eval_if (M:=M)).
 Proof.
   constructor; intros b ab Hab. constructor; intros m m' Hm. 
   constructor; intros m2 m2' Hm2. 

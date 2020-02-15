@@ -139,18 +139,14 @@ Context {A : Type} `{A_joinable : Joinable A}.
 
 Definition join_maybe_abstract
   (st1 st2 : AbstractMaybe A) : AbstractMaybe A :=
-  match st1 with
-  | NoneA => NoneA
-  | JustA x => match st2 with
-                 | NoneA  => NoneA
-                 | JustA y => JustA (join_op x y)
-                 | JustOrNoneA y => JustOrNoneA (join_op x y)
-                 end
-  | JustOrNoneA x => match st2 with
-                       | NoneA => NoneA
-                       | JustA y | JustOrNoneA y => 
-                           JustOrNoneA (join_op x y)
-                       end
+  match st1, st2 with
+  | NoneA, NoneA => NoneA
+  | JustA x, JustA y => JustA (join_op x y)
+  | JustA x, NoneA | NoneA, JustA x =>  JustOrNoneA x
+  | NoneA, JustOrNoneA x | JustOrNoneA x, NoneA => JustOrNoneA x
+  | JustA x, JustOrNoneA y | JustOrNoneA x, JustA y => 
+      JustOrNoneA (join_op x y)
+  | JustOrNoneA x, JustOrNoneA y => JustOrNoneA (join_op x y)
   end.
 Hint Unfold join_maybe_abstract : soundness.
 

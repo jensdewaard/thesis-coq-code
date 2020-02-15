@@ -16,7 +16,6 @@ Section sound_monad.
       gamma (returnM (M:=M') (A:=A')) (returnM (M:=M) (A:=A));
     bind_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
       gamma (bindM (M:=M') (A:=A') (B:=B')) (bindM (M:=M) (A:=A) (B:=B));
-    gamma_fail : ∀ (A A' : Type) `{Galois A A'} (m : M A), gamma fail m;
   }.
 End sound_monad.
-Hint Resolve return_sound bind_sound gamma_fail : soundness.
+Hint Resolve return_sound bind_sound : soundness.
