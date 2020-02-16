@@ -1,3 +1,4 @@
+Require Export Base.
 Require Import Classes.Monad.
 Require Import Classes.Monad.MonadState.
 Require Import Instances.Monad.
@@ -7,46 +8,33 @@ Require Import Types.Maybe.
 Require Import Types.State.
 Require Import Types.Stores.
 
-Section store_stateT_concrete. 
+Section store_state.
+  Context {S : Type} `{!Inhabited S}.
+  Definition state_get := λ s : S, (s, s).
+  Definition state_put := λ s : S, λ _ : S, (tt, s).
+
+  Global Instance store_state : MonadState S (State S) :=
+  {
+    get := state_get;
+    put := state_put;
+  }.
+End store_state.
+
+Section store_stateT.
   Context (M : Type -> Type) `{M_monad : Monad M}.
+  Context {S : Type} `{!Inhabited S}.
 
-  Definition stateT_get := fun s : store => returnM (s, s).
+  Definition stateT_get := fun s : S => returnM (s, s).
 
-  Definition stateT_put := fun s : store => fun _ : store => returnM (tt, s).
-
-  Definition retrieve_concrete (x : string) : StateT store M cvalue :=
-    fun s : store => returnM (s x, s).
-
-  Definition update_concrete (x : string) (v : cvalue) : StateT store M store :=
-    fun s : store => let s' := t_update s x v in returnM (s', s').
+  Definition stateT_put := fun s : S => fun _ : S => returnM (tt, s).
 
   Global Instance store_stateT : 
-  MonadState store (StateT store M) :=
+  MonadState S (StateT _ M) :=
   {
     get := stateT_get;
     put := stateT_put;
   }.
-End store_stateT_concrete.
-
-Section store_stateT_abstract.
-  Context (M : Type -> Type) `{M_monad : Monad M}.
-
-  Definition get_abstract := fun s : abstract_store => returnM (s, s).
-  Definition put_abstract := fun s : abstract_store => 
-    fun _ : abstract_store => returnM (tt, s).
-  Definition retrieve_abstract (x : string) : StateT abstract_store M avalue :=
-    fun s : abstract_store => returnM (s x, s).
-  Definition update_abstract (x : string) (v : avalue) : 
-    StateT abstract_store M abstract_store :=
-    fun s : abstract_store => let s' := t_update s x v in returnM (s', s').
-
-  Global Instance store_stateT_abstract : 
-    MonadState abstract_store (StateT abstract_store M) :=
-  {
-    get := get_abstract;
-    put := put_abstract;
-  }.
-End store_stateT_abstract.
+End store_stateT.
 
 Section store_maybeT.
   Context {M : Type -> Type} `{M_monad : Monad M}.
