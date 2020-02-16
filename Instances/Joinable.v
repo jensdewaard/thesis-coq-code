@@ -185,11 +185,15 @@ Qed.
   
 Lemma avalue_join_upper_bound_left : ∀ a1 a2,
   preorder a1 (avalue_join a1 a2).
-Proof. Admitted.
+Proof. 
+  intros. destruct a1, a2; eauto with soundness.
+Qed.
 
 Lemma avalue_join_upper_bound_right : ∀ a1 a2,
   preorder a2 (avalue_join a1 a2).
-Proof. Admitted.
+Proof. 
+  intros. destruct a1, a2; eauto with soundness.
+Qed.
 
 Instance avalue_joinable : Joinable avalue :=
 {
