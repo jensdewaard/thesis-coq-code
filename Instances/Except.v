@@ -6,6 +6,8 @@ Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
 Require Import Instances.Monad.
 Require Import Types.Stores.
+Require Import Types.Maybe.
+Require Import Types.State.
 
 Implicit Type A : Type.
 Implicit Type M : Type → Type.

@@ -29,6 +29,8 @@ Require Import Types.Parity.
 Require Import Types.Interval.
 Require Import Types.Stores.
 Require Import Classes.SoundMonad.
+Require Import Types.Maybe.
+Require Import Types.State.
 
 Hint Extern 0 (gamma _ _) => progress gamma_destruct : soundness.
 
@@ -406,8 +408,8 @@ Lemma extract_interval_sound {M M'} `{SoundMonad M M'} : forall n,
 Proof.
   unfold extract_interval, extract_natM.
   intros. apply gamma_fun_apply. eauto with soundness.
-  constructor. unfold min. simpl. rewrite Nat.leb_refl. easy.
-  unfold max. simpl. rewrite Nat.leb_refl. easy.
+  constructor. rewrite interval_min_refl. apply preorder_refl.
+  rewrite interval_max_refl. apply preorder_refl.
 Qed.
 Hint Resolve extract_interval_sound : soundness.
 
@@ -520,6 +522,13 @@ Section joinable_abstract_state.
 
   Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A
     := λ st, join_op (st1 st) (st2 st).
+
+  Lemma join_abstract_state_refl : ∀ st,
+    join_abstract_state st st = st.
+  Proof.
+    intro st. ext. unfold join_abstract_state. rewrite join_refl.
+    reflexivity.
+  Qed.
   
   Lemma join_abstract_state_upper_bound_left : 
     ∀ a a' : (AbstractState A), preorder a (join_abstract_state a a').
@@ -546,7 +555,7 @@ Section joinable_abstract_state.
   Global Instance joinable_abstract_state :
   Joinable (AbstractState A) :=
   {
-    join_op := join_abstract_state;  
+    join_refl := join_abstract_state_refl;  
     join_upper_bound_left := join_abstract_state_upper_bound_left;
     join_upper_bound_right := join_abstract_state_upper_bound_right;
     join_assoc := join_abstract_state_assoc;

@@ -1,8 +1,10 @@
 Require Export Base.
 Require Import Classes.PreorderedSet.
+Require Import Classes.Monad.
 Require Import Coq.Arith.Le.
 Require Import Coq.Classes.RelationClasses.
-Require Import Instances.Monad.
+Require Import Types.Maybe.
+Require Import Types.State.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.

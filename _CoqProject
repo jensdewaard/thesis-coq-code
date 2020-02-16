@@ -4,12 +4,15 @@ Types/Maps.v
 Types/AbstractBool.v
 Types/Parity.v
 Types/Interval.v
+Types/State.v
 Language/Statements.v
 Types/Stores.v
 Classes/PreorderedSet.v
 Classes/Joinable.v
 Classes/Galois.v
 Classes/Monad.v
+Types/Maybe.v
+Classes/JoinableMonad.v
 Classes/Monad/MonadFail.v
 Classes/Monad/MonadExcept.v
 Classes/IsNat.v

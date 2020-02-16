@@ -4,6 +4,7 @@ Require Import Classes.PreorderedSet.
 Class Joinable (T : Type) `{T_preorder : PreorderedSet T} : Type :=
 {
   join_op : T -> T -> T;
+  join_refl : ∀ x, join_op x x = x;
   join_upper_bound_left: forall t t', preorder t (join_op t t');
   join_upper_bound_right: forall t t', preorder t' (join_op t t');
   join_assoc : ∀ x y z : T, 
@@ -11,4 +12,5 @@ Class Joinable (T : Type) `{T_preorder : PreorderedSet T} : Type :=
 }.
 Arguments join_op : simpl never.
 Hint Resolve join_upper_bound_left join_upper_bound_right : soundness.
+Hint Rewrite @join_refl : soundness.
 

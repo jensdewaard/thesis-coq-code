@@ -1,18 +1,19 @@
 Require Export Base.
-Require Import Coq.Program.Basics.
 Require Export Classes.Monad.
+Require Import Classes.Joinable.
+Require Import Classes.JoinableMonad.
+Require Import Classes.PreorderedSet.
+Require Import Coq.Program.Basics.
 Require Import FunctionalExtensionality.
 Require Import Language.Statements.
 Require Import Types.Maps.
+Require Import Types.Maybe.
+Require Import Types.State.
+Require Import Instances.Joinable.
+Require Import Instances.Preorder.
 
 Implicit Type S A B C : Type.
 Implicit Type M : Type → Type.
-
-Inductive Maybe A : Type :=
-    | Just : A -> Maybe A
-    | None : Maybe A.
-Arguments Just {_}.
-Arguments None {_}.
 
 Section Maybe_Monad.
   Definition bind_maybe {A B} 
@@ -55,14 +56,6 @@ Section Maybe_Monad.
   }. 
 End Maybe_Monad.
 Hint Rewrite @bind_maybe_id_left @bind_maybe_id_right : soundness.
-
-Inductive AbstractMaybe (A : Type) : Type :=
-  | JustA : A -> AbstractMaybe A
-  | JustOrNoneA : A -> AbstractMaybe A
-  | NoneA : AbstractMaybe A.
-Arguments JustA {_}.
-Arguments JustOrNoneA {_}.
-Arguments NoneA {_}.
 
 Section AbstractMaybe_Monad.
   Definition bind_maybeA {A B : Type}
@@ -113,13 +106,8 @@ Section AbstractMaybe_Monad.
 End AbstractMaybe_Monad.
 Hint Rewrite @bind_maybeA_id_left @bind_maybeA_id_right : soundness.
 
-Definition MaybeT M A: Type := M (Maybe A).
-
 Section MaybeT_Monad.
   Context {M} `{M_monad : Monad M}.
-
-  Definition NoneT {A} : MaybeT M A := returnM None.
-  Definition JustT {A} (a : A) : MaybeT M A := returnM (Just a).
 
   Definition bind_maybeT {A B} (x : MaybeT M A) 
     (f : A -> MaybeT M B) : MaybeT M B :=
@@ -161,12 +149,6 @@ Section MaybeT_Monad.
   Qed.
   Arguments bind_maybeT_assoc [A B C] MA f g.
 
-  Lemma justT_inj : ∀ A (x y : A),
-    JustT x = JustT y → x = y.
-  Proof.
-    intros. apply just_inj, returnM_inj. assumption.
-  Qed.
-
   Global Instance monad_maybeT : Monad (MaybeT M) :=
   {
     returnM_inj := justT_inj;
@@ -205,15 +187,8 @@ Section MaybeT_MonadT.
   }. 
 End MaybeT_MonadT.
 
-Definition MaybeAT M A : Type := M (AbstractMaybe A).
-
 Section MaybeAT_Monad.
-  Context {M} `{M_monad : Monad M}.
-
-  Definition NoneAT {A} : MaybeAT M A := returnM NoneA.
-  Definition JustAT {A} (a : A) : MaybeAT M A := returnM (JustA a).
-  Definition JustOrNoneAT {A} (a : A) : MaybeAT M A := 
-    returnM (JustOrNoneA a).
+  Context {M} `{M_monad : Monad M} `{JoinableMonad M}.
 
   Definition bind_maybeAT {A B} 
     (Mma : MaybeAT M A)
@@ -222,13 +197,13 @@ Section MaybeAT_Monad.
     match ma with
     | NoneA => returnM NoneA
     | JustA a => f a
-    | JustOrNoneA a => 
+    | JustOrNoneA a => (
         @bindM M _ (AbstractMaybe B) (AbstractMaybe B) (f a) (fun mfa =>
                        match mfa with
                        | NoneA => returnM NoneA
                        | JustA b => returnM (JustOrNoneA b)
                        | JustOrNoneA b => returnM (JustOrNoneA b)
-                       end)
+                       end))
     end).
   Hint Unfold bind_maybeAT : soundness.
 
@@ -240,13 +215,13 @@ Section MaybeAT_Monad.
   Qed.
   Arguments bind_maybeAT_id_left [A B] f a.
 
-  Lemma bind_maybeAT_id_right : ∀ {A} (MA : MaybeAT M A), 
+  Lemma bind_maybeAT_id_right : ∀ (A : Type) (MA : MaybeAT M A), 
     bind_maybeAT MA JustAT = MA.
   Proof. 
     unfold bind_maybeAT, JustAT. intros. rewrite <- (bind_id_right (M:=M)).
-    f_equal; extensionality x. destruct x; autorewrite with soundness; reflexivity.
+    f_equal; extensionality x. 
+    destruct x; autorewrite with soundness; try reflexivity.
   Qed.
-  Arguments bind_maybeAT_id_right [A] MA.
 
   Lemma bind_maybeAT_assoc : ∀ {A B C} (MA : MaybeAT M A) 
     (f : A → MaybeAT M B) (g : B → MaybeAT M C),
@@ -254,8 +229,8 @@ Section MaybeAT_Monad.
     bind_maybeAT MA (λ a : A, bind_maybeAT (f a) g).
   Proof. 
     intros. unfold bind_maybeAT. autorewrite with soundness.
-    f_equal; ext. destruct x. reflexivity.
-    autorewrite with soundness. f_equal; ext.
+    f_equal; ext. destruct x; simpl. reflexivity. autorewrite with soundness.
+    f_equal; ext.
     destruct x; autorewrite with soundness. 1, 3: reflexivity.
     f_equal; ext. destruct x. autorewrite with soundness.
     reflexivity. autorewrite with soundness. reflexivity.
@@ -263,12 +238,6 @@ Section MaybeAT_Monad.
     autorewrite with soundness. reflexivity.
   Qed.
   Arguments bind_maybeAT_assoc [A B C] MA f g.
-
-  Lemma justAT_inj : ∀ A (x y : A),
-    JustAT x = JustAT y → x = y.
-  Proof.
-    intros. apply justA_inj, returnM_inj. assumption.
-  Qed.
 
   Global Instance monad_maybeAT 
   : Monad (MaybeAT M) :=
@@ -311,8 +280,6 @@ Section MaybeAT_MonadT.
     lift_bind := lift_maybeAT_bind;
   }. 
 End MaybeAT_MonadT.
-
-Definition State (S A : Type) := S -> (A * S).
 
 Section State_Monad.
   Context {S : Type} `{S_inhabited : !Inhabited S}.
@@ -359,7 +326,6 @@ Section State_Monad.
 End State_Monad.
 Hint Unfold bind_state : soundness.
 
-Definition StateT S M A : Type := S → M (A*S)%type.
 
 Section Monad_StateT.
   Context {M} `{M_monad : Monad M}.

@@ -13,6 +13,8 @@ Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Parity.
 Require Import Types.Stores.
+Require Import Types.Maybe.
+Require Import Types.State.
 
 Inductive gamma_par : parity → nat → Prop :=
   | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n

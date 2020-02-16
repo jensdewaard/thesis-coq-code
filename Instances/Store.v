@@ -3,8 +3,10 @@ Require Import Types.Stores.
 Require Import Language.Statements.
 Require Import Classes.Store.
 Require Import Types.Stores.
-Require Import Instances.Monad.
+Require Import Types.State.
 Require Import Classes.Monad.
+Require Import Instances.Monad.
+Require Import Types.Maybe.
 
 Section store_stateT_concrete. 
   Context (M : Type -> Type) `{M_monad : Monad M}.
