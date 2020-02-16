@@ -182,18 +182,19 @@ as well as keep track of a global state.
 There is a way to combine the functionalities of monads via the use of monad
 transformers. 
 
-\subsection{Monad Transformers}
+\subsection{Monad Transformers}~\label{sec:monad_transformers}
 Monad transformers are a way to add the side effects of a monad to another
 monad. To facilitate this, we introduce another typeclass.
 
 \begin{listing}
 \begin{minted}{coq}
-  Class MonadT {M} `{Monad M} (T : (Type -> Type) -> Type -> Type)  `{Monad (T M)} : Type :=
+  Class MonadT {M} `{Monad M} (T : (Type -> Type) -> Type -> Type) 
+    `{Monad (T M)} : Type :=
   {
     liftT : forall {A}, M A -> T M A;
     lift_return : forall  {A} (x : A), liftT (returnM x) = returnM x;
     lift_bind : forall {A B} (x : M A) (f : A -> M B),
-      liftT (x >>= f) = liftT x >>= (f ∘ liftT);
+      liftT (x >>= f) = liftT x >>= (compose f liftT);
   }.
 \end{minted}
 \end{listing}
@@ -213,14 +214,86 @@ and the ability to retain a global state.
 \begin{listing}
 \begin{minted}{coq}
 Definition MaybeT M A: Type := M (Maybe A).
-Definition StateT S M A : Type := S → M (A*S)%type.
+Definition StateT S M A : Type := S -> M (A*S)%type.
 \end{minted}
 \caption{Definitions for the monad transformers}
+\end{listing}
+
+When providing instances for the Monad typeclass for these types, we require
+the use of the bind and return methods of the wrapping monad $M$.
+For example, in listing~\ref{lst:bind_maybeT}, we see that the implementation 
+of  bind for MaybeT
+unwraps the monad M, exposing the underlying Maybe value. We perform a case
+analyis on this value in a way that is similar to how we defined bind\_maybe,
+None values are propagated and values wrapped with Just are threaded through
+chained bind calls.
+
+\begin{listing}
+\begin{minted}{coq}
+  Definition bind_maybeT {A B} (x : MaybeT M A) 
+    (f : A -> MaybeT M B) : MaybeT M B :=
+    bindM (M:=M) x (λ v : Maybe A,
+      match v with
+      | None => returnM None
+      | Just a => f a
+      end
+    ).
+\end{minted}
+\caption{Implementation of $>>=$ for MaybeT}
+\label{lst:bind_maybeT}
 \end{listing}
 
 \begin{itemize}
     \item {MonadExcept: AbstractMaybe not catch\_assoc}
 \end{itemize}
+
+\subsubsection{An alternative definition for MaybeT}
+The above definition for MaybeT defines MaybeT in terms of Maybe, and utilizes
+the Definition keyword. Another way would be to use the Induction keyword, as
+shown in listing~\ref{lst:alternative_maybeT}.
+
+\begin{listing}
+\begin{minted}{coq}
+Inductive MaybeT (M : Type -> Type) (A : Type) :=
+    | JustT : A -> MaybeT M A
+    | NoneT : MaybeT M A.
+\end{minted}
+\caption{Alternative definition for MaybeT}
+\label{lst:alternative_maybeT}
+\end{listing}
+
+In fact, at first glance this definition would be much easier to use. Our
+proofs become much easier to reason about, because we can utilize the tactics
+induction and discriminate for case analysis. The inductive definition tells us
+that there are only two possible constructors for constructing MaybeT values.
+The other definition has as many possible constructors as the wrapping monad M
+has. To make matters worse, in most cases we don't know anything about this
+monad M, as our proofs are generic.
+
+The reason for us to still choose the Definition based approach lies in the
+type signature for liftT. As stated in Section~\ref{sec:monad_tranformers},
+this signature, for a given monad tranformers M, is 
+\mintinline{coq}{M A -> T M A }. In other words, in order to define a valid
+lift function for MaybeT, we need to define a function that takes a value of
+type M A and returns a value of type MaybeT M A.
+
+Considering that our only ways to construct a value of type MaybeT M A is to
+utilize the constructors JustT or NoneT, we will require a way to "unwrap" the
+contained value from the M A instance. We can visualize the required methods
+with the following signature.
+
+\begin{equation}
+    M\ A\ \rightarrow\ A \rightarrow \text{MaybeT}\ M\ A
+\end{equation}
+
+Unfortunately, there exists no method to extract the value A from M A. There is
+the bind function, with the signature 
+$M\ A\ \rightarrow (A\ \rightarrow M B) \rightarrow M B$, but it is of no use
+to us in this instance. It does not support returning a different type of
+monad. This means we are unable to construct a valid definition for lift, and
+are therefore unable to use this definition of MaybeT.
+
+\subsection{MonadFail, MonadExcept and MonadStore}
 
 \subsection{The Concrete Interpreter}
 
