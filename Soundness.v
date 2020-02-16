@@ -578,7 +578,7 @@ Hint Resolve extract_build_val_sound : soundness.
 Theorem eval_expr_sound : forall a,
   gamma 
     (shared_eval_expr (M:=MaybeAT (StateT abstract_store Maybe)) (nat_inst:=isnat_parity AbstractState) 
-      (bool_inst:=(abstract_boolean_type)) (S:=abstract_store) (valType:=avalue) a) 
+      (bool_inst:=(abstract_boolean_type)) (valType:=avalue) a) 
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) a).
 Proof.
   intros. induction a; repeat constructor; simpl; intros.

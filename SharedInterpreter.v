@@ -1,8 +1,9 @@
 Require Import Statements.
+Require Import Types.Maps.
 Require Import Classes.Monad.
 Require Import Classes.IsNat.
 Require Import Classes.IsBool.
-Require Import Classes.Store.
+Require Import Classes.Monad.MonadState.
 Require Import Classes.Monad.MonadFail.
 Require Import Classes.Monad.MonadExcept.
 
@@ -16,8 +17,9 @@ Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type
   end.
 
 Fixpoint shared_eval_expr 
-    {M : Type -> Type} {S valType boolType natType : Type}
-    `{M_monad : Monad M, store_inst : Store S M valType,
+    {M : Type -> Type} {valType boolType natType : Type}
+    `{M_monad : Monad M, 
+      store_inst : MonadState (total_map valType) M,
       nat_inst  : IsNat M valType boolType natType, 
       bool_inst : IsBool M valType boolType}
     (e : expr) : M valType :=
@@ -26,7 +28,7 @@ Fixpoint shared_eval_expr
       extract_build_val v
   | EVar x =>
       s <- get;
-      retrieve x
+      returnM (s x)
   | EPlus e1 e2 => 
       v1 <- shared_eval_expr e1 ;
       v2 <- shared_eval_expr e2 ;
@@ -72,9 +74,12 @@ Fixpoint shared_eval_expr
 Open Scope com_scope.
 
 Fixpoint shared_ceval 
-  {M : Type -> Type} {S valType natType boolType : Type}
-  `{M_fail : MonadFail M, store : Store S M valType, M_except : ∀ A, MonadExcept M A, 
-    nat_inst : IsNat M valType boolType natType, bool_inst : IsBool M valType boolType}
+  {M : Type -> Type} {valType natType boolType : Type}
+  `{M_fail : MonadFail M, 
+    store : MonadState (total_map valType)  M, 
+    M_except : ∀ A, MonadExcept M A, 
+    nat_inst : IsNat M valType boolType natType, 
+    bool_inst : IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
   | CSkip => returnM tt
@@ -82,8 +87,8 @@ Fixpoint shared_ceval
       (shared_ceval c1) ;; (shared_ceval c2)
   | x ::= a => 
       v <- shared_eval_expr a ;
-      s <- update x v ;
-      put s
+      s <- get ;
+      put (t_update s x v)
   | CIf b c1 c2 => 
       v <- shared_eval_expr b ;
       b' <- ensure_bool v ;

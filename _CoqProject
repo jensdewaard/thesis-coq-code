@@ -15,9 +15,9 @@ Types/Maybe.v
 Classes/JoinableMonad.v
 Classes/Monad/MonadFail.v
 Classes/Monad/MonadExcept.v
+Classes/Monad/MonadState.v
 Classes/IsNat.v
 Classes/IsBool.v
-Classes/Store.v
 Instances/Preorder.v
 Instances/Joinable.v
 Instances/Monad.v
