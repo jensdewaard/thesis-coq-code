@@ -293,31 +293,173 @@ to us in this instance. It does not support returning a different type of
 monad. This means we are unable to construct a valid definition for lift, and
 are therefore unable to use this definition of MaybeT.
 
-\subsection{MonadFail, MonadExcept and MonadStore}
+\subsection{MonadFail, MonadExcept and MonadState}
+With the use of monad transformers and lifting we are able to build a so-called 
+monad stack to encode any side effects we may want in a pure way. However, when
+we write code that reasons about possible side effects, we do not wish the
+remember the exact number of lifts required to get to the underlying monad that
+encodes those side effects. 
+
+For this use case, we have ported MonadFail, MonadExcept and MonadState from
+Haskell. The easiest way to explain why we use these typeclasses is that 
+the typeclasses Maybe and State were more concerned with
+\textit{how} the side effects were implemented, whereas these typeclasses deal 
+more with \textit{what} side effects a type can cause.
+
+\begin{listing}
+\begin{minted}{coq}
+Class MonadFail M `{M_monad : Monad M} : Type := {
+  fail {A : Type} : M A;
+  fail_left: forall {A B} (m : A -> M B), (@fail A) >>= m = fail;
+}.
+\end{minted}
+\caption{Definition of the MonadFail typeclass}
+\label{lst:monadfail}
+\end{listing}
+
+Listing~\ref{lst:monadfail} shows the definition for the MonadFail typeclass.
+The definition tells us to things: all instances of MonadFail have a value
+called fail, and when this value is used on the left-hand side of a bind, the
+resulting value is also fail.
+
+The implementation of this typeclass for the Maybe monad is simple. We just use
+None as the fail value. The proof for the fail\_left lemma follows readily from
+the definition of bind\_maybe. The same goes for MaybeT, in which case our fail
+value is \mintinline{coq}{returnM None }.
+
+However, things get slightly more interesting when looking at State and StateT.
+The normal State monad is not an instance of MonadFail. This should not come as
+a surprise, as the point of this monad was to add a read/write state and not
+the possibility of failure. StateT, however, preserves the ability for failure
+if the underlying monad is an instance of MonadFail.
+
+\begin{listing}
+\begin{minted}{coq}
+Section fail_stateT.
+  Context {M : Type -> Type} `{M_fail : MonadFail M}.
+  Context {S : Type} `{!Inhabited S}.
+
+  Definition fail_stateT {A} : StateT S M A := lift_stateT fail.
+
+  Lemma fail_stateT_left : forall (A B : Type) (s : A -> StateT S M B),
+    fail_stateT (A:=A) >>= s = fail_stateT.
+  Proof.
+    intros. unfold fail_stateT, lift_stateT. ext. 
+    autorewrite with soundness. 
+    unfold bindM; simpl; unfold bind_stateT. 
+    autorewrite with soundness. reflexivity.
+  Qed.
+
+  Global Instance monad_fail_stateT : MonadFail (StateT S M) :=
+  {
+    fail := @fail_stateT;
+    fail_left := fail_stateT_left;
+  }.
+End fail_stateT.
+\end{minted}
+\caption{The MonadFail instance of StateT}
+\label{lst:monadfail_stateT}
+\end{listing}
+
+Listing~\ref{lst:monadfail_stateT} shows the usage of a lift method to change
+the fail method of the underlying MonadFail to work for the transformed StateT
+monad instead. The proof unfolds the methods defined in terms of StateT and
+rewrites the goal based on the monadic laws for bind and the fail\_left lemma.
+
+Now that we have described monads that can fail, it comes natural to think
+about monads that can recover from failure. To describe this ability, we have
+the MonadExcept typeclass.
+
+\begin{listing}
+\begin{minted}{coq}
+Class MonadExcept M `{M_fail : MonadFail M} A := {
+  catch : M A -> M A -> M A;
+  catch_left : forall (x : M A), catch fail x = x;
+  catch_right : forall (x : M A), catch x fail = x;
+  catch_return : forall (x : M A) (a : A),
+    catch (returnM a) x = returnM a;
+}.
+\end{minted}
+\caption{The MonadExcept typeclass}
+\label{lst:monadexcept}
+\end{listing}
+
+The MonadExcept typeclass is a subtype of the MonadFail typeclass; all
+instances of MonadExcept also need to be instances of MonadFail. Recovering
+from failure is meaningless without the ability to fail.
+
+For all instances of MonadExcept, we define a catch function. This function
+is a lot like try-catch functionality in languages such as Java. The function
+should take two values of type M A. If the first is fail, it returns the
+second provided value. If it is not, it returns the first provided value. This
+functionality is encoded in the lemmas attached to the typeclass.
+
+\begin{listing}
+\begin{minted}{coq}
+Class MonadState (S : Type) (M : Type -> Type) `{M_monad : Monad M} :=
+{
+  get : M S;
+  put : S -> M unit;
+}.
+\end{minted}
+\caption{The MonadState typeclass}
+\label{lst:monadstate}
+\end{listing}
+
+In the same way that we use typeclasses to easily access the fail effects, we 
+can use a typeclass to access the state that is carried by the (transformed)
+monad. Any monad implementing the MonadState typeclass should provide access to
+a get method that sets the current state as the 'return value' of the function,
+and a put method that updates the carried state with the given value.
+
+\begin{listing}
+\begin{minted}{coq}
+Section store_state_concrete.
+  Definition state_get := fun s : store => (s, s).
+  Definition state_put := fun s : store => fun _ : store => (tt, s).
+
+  Global Instance store_state : MonadState store (State _) :=
+  {
+    get := state_get;
+    put := state_put;
+  }.
+End store_state_concrete.
+\end{minted}
+\caption{The State instance of MonadState}
+\label{lst:monadstate_state}
+\end{listing}
+
+Now that we've described the monads used in the project and the 
+theories behind them, we turn to the implementation of the concrete
+interpreter. In the next section, we start by defining the language that is to
+be interpreted, and how we compose the monads to do so.
 
 \subsection{The Concrete Interpreter}
 
-\subsubsection{Language Syntax}\label{sec:lang}
+\subsubsection{Language Syntax}
+\label{sec:lang}
 Programs consist of statements and expressions. These programs are evaluated by
 interpreters. In this subsection, we shall describe the syntax of a toy
 language.
 
-
+\begin{listing}
 \begin{minted}{Coq}
 Inductive cvalue : Type :=
   | VNat : nat -> cvalue
   | VBool : bool -> cvalue.
 \end{minted}
+\end{listing}
 
 Our toy language has two types of values. Natural numbers, represented by
-\coq{VNat } and boolean values, represented by \coq{VBool }. 
-When a \coq{cvalue }, short for concrete value is needed, any of these two 
-types can be used.
+\mintinline{coq}{VNat } and boolean values, represented by \mintinline{coq}{VBool }. 
+When a \mintinline{coq}{cvalue }, short for concrete value is needed, any of
+these two types can be used.
 
 Expressions are operations on values that result in a new value. They are
-implemented as an inductive type called \coq{expr}. 
+implemented as an inductive type called \mintinline{coq}{expr }. 
 
-\begin{minted}{Coq}
+\begin{listing}
+\begin{minted}{coq}
 Inductive expr : Type :=
   | EVal : cvalue -> expr
   | EVar : string -> expr
@@ -328,12 +470,14 @@ Inductive expr : Type :=
   | ENot : expr -> expr
   | EAnd : expr -> expr -> expr.
 \end{minted}
+\end{listing}
 
 Expressions can exist of concrete values (`5', `true'), names of variables
 saved in a store (see Section~\ref{sec:stores}) and operations on these values
 (+, *, ==, $<$, negation and $\&\&$). 
 
-\begin{minted}{Coq}
+\begin{listing}
+\begin{minted}{coq}
 Inductive com : Type :=
   | CSkip : com
   | CSeq : com -> com -> com
@@ -342,25 +486,28 @@ Inductive com : Type :=
   | CTryCatch : com -> com -> com
   | CThrow : com. 
 \end{minted}
+\end{listing}
 
 Statements control the flow of the program. In this case, we have implemented a
-skip statements that effectively does nothing, an assigment statement that
+skip statement that effectively does nothing, an assigment statement that
 assigns the result of an expression to a variable, an if statement, a try-catch
 statement and a throw statement that acts as an exception.
 
 \subsubsection{Stores}\label{sec:stores}
-When evaluating the assignment statement \coq{CAss} and the variable
-expression \coq{EVar}, the interpreter should write to and read from a variable
+When evaluating the assignment statement \mintinline{coq}{CAss } and the variable
+expression \mintinline{coq}{EVar }, the interpreter should write to and read from a variable
 storage. We call these stores. 
 
 The concrete store is a map\footnote{The \textit{total\_map} comes from 
 	Map.v from the public Software Foundations course.} 
 from strings to cvalues. The store is implemented as a total map, which is a
 map that returns a default value when a key is requested that is not present in
-the map. Values can be added to the map via the \coq{t_update} function.
-
+the map. Values can be added to the map via the \mintinline{coq}{t_update }
+function.
 % maybe explain why I didn't use a partial map?
-\begin{minted}{Coq}
+
+\begin{listing}
+\begin{minted}{coq}
 Definition store := total_map cvalue.
 
 Definition t_update {A:Type} (m : total_map A)
@@ -368,79 +515,40 @@ Definition t_update {A:Type} (m : total_map A)
   fun x' => if beq_string x x' then v else m x'.
 
 \end{minted}
-
-\subsubsection{Monads}\label{sec:monad}
-Monads are a design pattern used to represent computation. Much has been
-written about how they work, and monads are in fact notorious for being
-difficult to understand. We will not go into detail here, and instead just 
-provide the definition of the monad typeclass and an implementation of
-it~\cite{kleisli1965every}.
-
-\begin{minted}{Coq}
-Class Monad (M : Type -> Type) : Type :=
-{
-  returnM : forall A, A -> M A;
-  bind : forall A B, M A  -> (A -> M B) -> M B;
-}.
-\end{minted}
-
-\begin{minted}{Coq}
-Definition State (A : Type) := store -> result A store.
-
-Definition return_state (A : Type) (x : A) : State A :=
-  fun st => returnR A store x st.
-
-Definition bind_state (A B : Type) (m : State A) (f : A -> State B) 
-    : State B :=
-  fun st => match m st with
-            | returnR _ _ x st' => f x st'
-            | crashed _ _ => crashed _ _
-            | exception _ _ st' => exception _ _ st'
-            end.
-
-Instance state_monad : Monad (State) := {
-  returnM := (return_state);
-  bindM := (bind_state);
-}.
-\end{minted}
-
-Monads require two functions, a \coq{return} function that wraps a value as a
-monadic value and a \coq{bind} function that is able to chain operations on the
-monadic values. 
-
-The State monad is an instance of a monad that we can use to propagate state
-changes when analyzing programs. We are able to abstract away how data is
-stored and instead focus on the transformations on values.
+\end{listing}
 
 \subsubsection{Do notation}
-The interpreters make excessive use of the bind function of the State monad
-defined in Section~\ref{sec:monad}. Because of this, we introduce a special
-notation for the function.
+The interpreters make excessive use of the bind function of the monads.
+Because of this, we introduce a special notation for the function.
 
+\begin{listing}
 \begin{minted}{Coq}
 Notation "x '<<' y ; z" := (bind y (fun x => z))
   (at level 20, y at level 100, 
    z at level 200, only parsing).
 \end{minted}
+\end{listing}
 
 If we did not include this notation, making use of the Monad would quickly
 become cumbersome. With it, we are able to write data pipelines in an
 imperative style. To illustrate, the below code shows the two
 different styles. As the length of the `imperative' program increases, the
-functional notation grows more cumbersome and error prone.
+functional notation grows more cumbersome and error prone due to the number of
+parenthesis involved.
 
-\begin{minted}{Coq}
-ENot e =>
+\begin{listing}
+\begin{minted}{coq}
+Definition do_notation :=
 	v << (eval_expr e) ;
 	b << (ensure_bool v) ;
-	returnM (VBool (negb b))
+	returnM (VBool (negb b)).
 
-ENot e =>
-	bind (eval_expr e) (fun v =>
-		bind (ensure_bool v) (fun b =>
-			returnM (VBool (negb b))))
+Definition nested_notation :=
+	(eval_expr e) >>= (fun v =>
+		(ensure_bool v) >>= (fun b =>
+			returnM (VBool (negb b)))).
 \end{minted}
-
+\end{listing}
 
 \subsubsection{The interpreter}
 As shown in Section~\ref{sec:lang} the syntax of the language allows the two
@@ -452,27 +560,36 @@ not a valid program.
 To ensure that the correct types are used when evaluating operators,
 the interpreter has an `ensure' function for each of the types. 
 
+\begin{listing}
 \begin{minted}{Coq}
-Definition ensure_nat (v : cvalue) : State nat :=
-  fun st => match v with
-            | VNat x => returnR nat store x st
-            | _ => crashed _ _
-            end.
+Definition ensure_nat `{M_fail : MonadFail M} (v : cvalue) : M nat :=
+  match v with
+  | VNat x => returnM x
+  | _ => fail
+  end.
             
-Definition ensure_bool (v : cvalue) : State bool :=
-  fun st => match v with
-            | VBool b => returnR bool store b st
-            | _ => crashed _ _
-            end.
+Definition ensure_bool `{M_fail : MonadFail M} (v : cvalue) : M bool :=
+  match v with
+  | VBool b => returnM x
+  | _ => fail
+  end.
 \end{minted}
+\end{listing}
+
+Notice that both ensure functions are parametrized over a monad M that is
+capable of failing. This allows us to resuse these functions with whatever
+stack of monad transformers we desire, as long as one of those monad
+transformers adds the ability to fail e.g., MaybeT is on the stack or Maybe is
+the inner-most monad.
 
 When the ensure function is called with a type other than the desired type, it
-returns a crashed state. This crashed state is unrecoverable, meaning that the
-interpreter cannot return to a valid state without intervention from the
-programmer. The crashed state is propagated throughout the rest of the program.
+returns the fail value of its monad M. As a consequence of the
+fail\_left lemma, this failure is propagated throughout the rest of the
+program.
 
+\begin{listing}[H]
 \begin{minted}{Coq}
-Fixpoint eval_expr (e : expr) : State cvalue :=
+Fixpoint eval_expr (e : expr) : M cvalue :=
   match e with
   | EVal x => returnM x
   | EVar x => st << get ;
@@ -513,6 +630,7 @@ Fixpoint eval_expr (e : expr) : State cvalue :=
       returnM (VBool (andb b1 b2))
   end.
 \end{minted}
+\end{listing}
 
 The concrete interpeter follows the same structure for each kind of operator.
 The smaller expressions are evaluated first via recursive calls to the
@@ -520,40 +638,9 @@ evaluation function and the interpreter
 ensures they are of the proper types. Then, the built-in operator corresponding
 to the expression is called on those values.
 
+\begin{listing}[H]
 \begin{minted}{Coq}
-Definition eval_if {A} (b : bool) (st1 st2 : State A) : State A := 
-  if b then st1 else st2.
-
-Definition eval_catch {A} (st1 st2 : State A) : State A :=
-  fun st => match (st1 st) with
-  | crashed _ _ => crashed _ _
-  | exception _ _ st' => (st2 st')
-  | x => x
-  end.
-\end{minted}
-To ease the comparison between the concrete interpreter and abstract
-interpreters later on, we have factored out the evaluation of the if and catch
-expressions. When these have been factored out, proving the soundness of these
-operators can be put into several smaller lemmas, as can be seen in Section
-\ref{sec:soundness}.
-
-The concrete interpretation of the If statement is simply a wrapper around the
-built-in if construct of Coq. 
-
-The evaluation of the try-catch statement is a
-match function of the result of the first statement block. If the first block
-crashes, the result of the entire try catch statement is also a crash. Recall
-that crashes should only occur in the case of code errors, by writing
-a program that for example adds a boolean to an integer.
-
-If the first block raises an exception through the use of the fail statement,
-the interpreter returns the result of the evaluation of the second block. In
-any other case, which is just the succesful evaluation of the first block, the
-second block is disregarded and the result of the evaluation of the first block
-is used.
-
-\begin{minted}{Coq}
-Fixpoint ceval (c : com) : State unit :=
+Fixpoint ceval {M} `{MonadExcept M, MonadState M} (c : com) : M unit :=
   match c with
   | CSkip => returnM tt
   | c1 ;c; c2 => 
@@ -565,59 +652,26 @@ Fixpoint ceval (c : com) : State unit :=
   | CIf b c1 c2 => 
       v << (eval_expr b) ;
       b' << (ensure_bool v) ;
-      eval_if b' (ceval c1) (ceval c2)
+      if b' (ceval c1) (ceval c2)
   | try c1 catch c2 =>
-   	  eval_catch (ceval c1) (ceval c2)
+   	  catch (ceval c1) (ceval c2)
   | CFail => fail
   end.
 \end{minted}
+\caption{The concrete interpreter for statements}
+\label{lst:concrete_statements}
+\end{listing}
 
-These functions are used in the concrete interpeter of the language statements.
-The `ceval' function uses many of the earlier defined functions and operations,
-such as retrieving and inserting values from/to maps and the monadic operations
-defined in Section~\ref{sec:monad}.
+The ceval function is the concrete interpreter of our language. It requires
+that the monad M that is used is an instance of both MonadExcept and
+MonadState. This gives us access to get, put, catch and fail, which we need for
+variables and exceptions.
 
 \subsection{Galois Connections}
-In this section we will describe the notion of Galois definitions. Before we
-can describe those however, we will have to explain some other concepts. We
-start with typeclasses, constructs that first appeared in the Haskell
-programming language~\cite{wadler1989make}. We then define type classes for
+In this section we will describe the notion of Galois definitions. However, to
+do so  we require some other concepts. We define type classes for
 preordered sets, before moving on to define a type class for Galois
 connections.
-
-\subsubsection{Type Classes}
-In order to be able to automate the soundness proofs as much as possible, we
-will need to define several mathematical concepts in Coq. In this section, we
-will describe those concepts and show how they are implemented in the form of
-Coq typeclasses~\cite{sozeau2008first}. 
-
-Type classes are a method to add constraints to the parameters of functions.
-Consider the type class \coq{Eq} in the code below.
-
-\begin{minted}{Coq}
-Class Eq (X : Type) : Type :=
-{
-	eq_op : X -> X -> Prop;
-}.
-\end{minted}
-
-In plain language, this would mean that all types \coq{X}, on which there is a
-function \coq{eq_op} defined with the proper signature, belong to the type
-class \coq{Eq}. 
-
-To show that a type belongs to the type class, we have to provide what is
-called an instance.
-
-\begin{minted}{Coq}
-Instance nat_eq : Eq Nat :=
-{
-	eq_op := Nat.eq;
-}.
-\end{minted}
-
-In the above snippet, we prove that the built-in \coq{Nat} type is part of
-the \coq{Eq} type class, with the equality operator on natural numbers as the
-\coq{eq_op} function.
 
 \subsubsection{Preordered sets}
 The first definition we shall implenent is the notion of a preordered set. 
@@ -631,6 +685,7 @@ The definitions of reflexive and transitive relations are already included in
 the standard library of Coq, so we can import those. This gives us the
 following definition of the preorderd set as a Coq type class.
 
+\begin{listing}
 \begin{minted}{Coq}
 Class PreorderedSet (X : Type) : Type :=
 {
@@ -639,6 +694,7 @@ Class PreorderedSet (X : Type) : Type :=
   preorder_trans: Transitive preorder;
 }.
 \end{minted}
+\end{listing}
 
 Defining an instance of this typeclass requires providing a type and a preorder
 relation, in addition to proofs of the reflexive and transitive properties of
@@ -650,7 +706,8 @@ Galois connection.
 
 Traditionally, Galois connections are defined on two partially ordered sets.
 However, they can also be defined on preordered sets, and for our purposes that
-works too. The difference between preordered sets and partially ordered sets is
+works too. %TODO Why?
+The difference between preordered sets and partially ordered sets is
 that a partial order is antisymmetric in addition to reflexive and transitive.
 We do not require the antisymmetric property, so we can loosen that restraint.
 
@@ -692,8 +749,9 @@ alone, so we will provide a few examples in the next section, after
 introducing the abstract types.
 
 \subsubsection{Parities}
-The first abstract type defined was \coq{Parity}.
+The first abstract type defined was \coq{Parity }.
 
+\begin{listing}
 \begin{minted}{Coq}
 Inductive parity : Type :=
   | par_even : parity
@@ -701,6 +759,7 @@ Inductive parity : Type :=
   | par_top : parity
   | par_bottom : parity.
 \end{minted}
+\end{listing}
 
 The parity of a natural number is whether it is even or odd; e.g.\ the parity
 of the number 2 is even, and the parity of the number 9 is odd.
@@ -712,12 +771,13 @@ program.
 We can define a Galois connection between natural numbers and the parity type.
 To do so, we must provide a gamma function and prove its monotonicity. Recall
 that the signature is of the form $A \rightarrow B \rightarrow Prop$. In this
-case, we shall use \coq{parity} as $A$ and \coq{nat} as $B$.
+case, we shall use \coq{parity } as $A$ and \coq{nat } as $B$.
 
 Any type of the form $B \rightarrow Prop$ can be seen as sets of $B$. We define
-a function \coq{gamma_par} as taking a parity as a parameter and returning
+a function \coq{gamma_par } as taking a parity as a parameter and returning
 sets of natural numbers.
 
+\begin{listing}
 \begin{minted}{Coq}
 Definition gamma_par (p : parity) : nat -> Prop :=
   match p with
@@ -727,11 +787,13 @@ Definition gamma_par (p : parity) : nat -> Prop :=
   | par_bottom => fun n => False
   end.
 \end{minted}
+\end{listing}
 
 In the provided code, the even and odd symbols are imported from the Coq
 standard library. They are the sets of even and odd numbers respectively. Each
 of the four possible values of parity is mapped to a set of natural numbers.
 
+\begin{listing}
 \begin{minted}{Coq}
 Instance galois_parity_nat : Galois nat parity :=
 {
@@ -739,10 +801,11 @@ Instance galois_parity_nat : Galois nat parity :=
   gamma_monotone := gamma_par_monotone;
 }.
 \end{minted}
+\end{listing}
 
 The above code shows how a Galois connection between sets of natural numbers 
-and parities is instantiated. \coq{gamma_par_monotone} refers to the proof the
-the \coq{gamma_par} function is monotone. This proof has been omitted for 
+and parities is instantiated. \coq{gamma_par_monotone } refers to the proof the
+the \coq{gamma_par } function is monotone. This proof has been omitted for 
 brevity.
 
 \subsubsection{Intervals}
@@ -762,6 +825,19 @@ The same operators than can be defined on natural numbers can be defined on
 intervals. Addition, multiplication and comparisons can all be implemented.
 Adding the intervals $[1,3]$ and $[4, 7]$ would result in the interval $[5,
 10]$, for example. 
+
+\begin{listing}
+\begin{minted}{coq}
+Definition interval := (nat * nat) % type.
+Definition min (i : interval) : nat := Nat.min (fst i) (snd i).
+Definition max (i : interval) : nat := Nat.max (fst i) (snd i).
+
+Inductive gamma_interval : interval -> nat -> Prop :=
+  | gamma_interval_cons : forall i n, 
+      preorder (min i) n -> preorder n (max i) ->
+      gamma_interval i n.
+\end{minted}
+\end{listing}
 
 \subsubsection{Abstract Booleans}
 The abstract booleans are only slightly different from their concrete
@@ -788,49 +864,42 @@ Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
 \end{minted}
 
 The gamma function for booleans is very straightforward due to the limited
-number of concrete values. As with \coq{gamma_par}, the top and bottom
+number of concrete values. As with \coq{gamma_par }, the top and bottom
 values are mapped to True and False.
 
 \subsection{The Abstract Interpreter}
 As with the concrete interpeter, the abstract interpreter has the
-\coq{ensure_*} functions for the abstract types. 
+\coq{ensure_* } functions for the abstract types. 
 They are very similar to the ensure functions above and are omitted for brevity. 
 
-The concrete interpreter used the \coq{State} monad to persist state through
-the program. The abstract interpreter has a corresponding monad called the \\
-\coq{AbstractState} monad.
+We again define the interpreter in a monad-agnostic way. We only require the
+used monad to have the same capabilities as the one in the concrete
+interpreter, namely failing and state.
 
-\begin{minted}{Coq}
-Definition AbstractState (A : Type) :=
-  abstract_store -> result A abstract_store.
-
-Definition return_state_abstract (A : Type) (x : A) : AbstractState A :=
-  fun st => returnR A abstract_store x st.
-
-Definition bind_state_abstract (A B : Type) 
-  (m : AbstractState A) (f : A -> AbstractState B) : AbstractState B :=
-  fun st => match m st with
-            | returnR _ _ x st' => f x st'
-            | crashed _ _ => crashed _ _
-            | exception _ _ st' => exception _ _ st' 
-            end.
-
-Instance abstract_state_monad : Monad (AbstractState) := {
-  returnM := return_state_abstract;
-  bindM := bind_state_abstract;
-}.
-\end{minted}
-
-The abstract state differs from the concrete state in what type of store is
+The abstract state differs from the concrete state in what values, and with
+those, what type of store is
 used. The abstract store is almost the same is the concrete store, but returns
 abstract values instead of concrete values. When concrete values are inserted
-in the store, they are first converted into their abstract counterpart.
+in the store, they are first converted into their abstract counterpart via the
+extract function.
 
+\begin{listing}[H]
 \begin{minted}{Coq}
-Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
+Definition extract (v : cvalue) : avalue :=
+  match v with
+  | VNat x => VParity (extract_par x)
+  | VBool x => VAbstrBool (extract_bool x)
+  end.
+\end{minted}
+\end{listing}
+
+\begin{listing}[H]
+\begin{minted}{Coq}
+Fixpoint eval_expr_abstract {M} `{MonadExcept M, MonadState M} 
+    (e : expr) : M avalue :=
   match e with
   | EVal x => returnM (extract x)
-  | EVar x => st << get_abstract ;
+  | EVar x => st << get ;
       returnM (st x)
   | EPlus e1 e2 => 
       v1 << (eval_expr_abstract e1) ;
@@ -868,6 +937,7 @@ Fixpoint eval_expr_abstract (e : expr) : AbstractState avalue :=
       returnM (VAbstrBool (and_ab b1 b2))
   end.
 \end{minted}
+\end{listing}
 
 The abstract interpreter for expressions looks much the same as the concrete
 version. The differences are in which type of ensure function is called and in
@@ -875,18 +945,42 @@ that the operations on the types are now the abstract versions. For example,
 where the concrete interpreter called the standard plus operator for natural
 numbers, the abstract interpreter calls the parity plus function.
 
-Notice also that in the case of evaluating a literal value, the abstract
-interpreter differs from the concrete version in that the value is wrapped with
-an extract function. This function converts a concrete version into its
-abstract representation.
+\subsubsection{The AbstractMaybe monad}
+Thus far, we've seen the fail method of Maybe used to model crashed programs
+due to type mismatches, for exampling when adding booleans. In our language, we
+also wish to model exceptions. Consider the following Java snippet.
 
-\begin{minted}{Coq}
-Definition extract (v : cvalue) : avalue :=
-  match v with
-  | VNat x => VParity (extract_par x)
-  | VBool x => VAbstrBool (extract_bool x)
-  end.
+\begin{minted}{java}
+if (x == 0) {
+    throw new Exception();
+else {
+    x = 3;
+}
 \end{minted}
+
+We can model such a program with the fail value of Maybe, but this proves
+insufficient when this program is interpreted in an abstract way. An abstract
+interpreter may not be able to tell whether $x$ is equal to $0$ or not and has
+to reflect this in the returned value.
+
+We introduce a new monad AbstractMaybe to capture this side effect.
+
+\begin{listing}[H]
+\begin{minted}{coq}
+Inductive AbstractMaybe (A : Type) : Type :=
+| NoneA : AbstractMaybe A
+| JustA : A -> AbstractMaybe A
+| JustOrNoneA : A -> AbstractMaybe A.
+\end{minted}
+\end{listing}
+
+In addition to constructors modeling successful and failed operations, this
+type has a constructor that models uncertainty as to whether the operation has
+succeeded.
+
+As with Maybe, we have monad transformer that adds this functionality to a
+monad. We call this transformer MaybeAT, and we define it as \\
+\coq{Definition MaybeAT M A := M (AbstractMaybe A). }
 
 \subsection{Extracting the Shared Interpreter}\label{sec:shared_interpreter}
 As observed in the previous section, the abstract and concrete interpreter
@@ -895,88 +989,6 @@ decompose the interpreters along the shared structure in a way that eases the
 proof burden. In this section, we look at how we've extracted the shared
 interpreter and how this shared structure can be instantiated to create
 abstract and concrete interpreters like those defined earlier.
-
-To be able to define the shared interpreter, we will need to define interfaces
-that can be instantiated as abstract and concrete versions. In Coq, we can
-define these interfaces in the form of typeclasses. We shall first discuss the
-Store typeclass.
-
-\subsubsection{Stores}
-The Store typeclass defines the interface for getting and setting values in the
-stores. 
-\begin{minted}{Coq}
-Class Store (M : Type -> Type) (valType : Type) :=
-{
-  get : string -> M valType;
-  put : string -> valType -> M unit;
-}.
-\end{minted}
-
-The interface exposes two functions, get and put. We abstract over the specific
-monad that is used to pass the state, and we can instantiate the typeclass with
-the value type the store is concerned with.
-
-\begin{minted}{Coq}
-Definition store_get (x : string) : State cvalue := fun st =>
-  returnR (st x) st.
-
-Definition store_put (x : string) (v : cvalue) : State unit := 
-  fun st => returnR tt (t_update st x v).
-
-Instance store_concrete : Store State cvalue := {
-  get := store_get;
-  put := store_put;
-}.
-\end{minted}
-
-In the above Coq code, we see that the concrete store is instantiated with the
-concrete State monad and concrete values. Correspondingly, the abstract store
-is instantiated with the AbstractState monad and abstract values.
-
-\subsubsection{Exceptions}
-Like with stores, we will require an interface for every side-effect our
-programs will have. One of those side-effects is the ability to throw
-exceptions. For this, we have the Except typeclass.
-
-\begin{minted}{Coq}
-Class Except (M : Type -> Type) := {
-  throw    : M unit;
-  trycatch : M unit -> M unit -> M unit;
-}.
-\end{minted}
-
-The Except typeclass has functions for throwing exceptions and a structure for
-handling the thrown exceptions. As with the Store interface, it is not
-concerned with the specific monad used, which aids in the composability of the
-structure. 
-
-\begin{minted}{Coq}
-Definition eval_catch_abstract {A} `{Joinable A} 
-  (st1 st2 : AbstractState A) : AbstractState A :=
-  fun st => match (st1 st) with
-  | crashedA => crashedA 
-  | exceptionA st' => st2 st'
-  | exceptionOrReturn x st' => 
-      join_op (exceptionOrReturn x st') (st2 st')
-  | returnRA x st' => returnRA x st'
-  end.
-
-Definition fail_abstract {A : Type} : AbstractState A :=
-  fun st => exceptionA st.
-
-Instance except_abstract : Except AbstractState := 
-{
-  throw := fail_abstract;
-  trycatch := eval_catch_abstract;
-}.
-\end{minted}
-
-The above listing shows the implementation of the abstract exception handling.
-The trycatch function should receive two states and execute the first. Should
-that return an exception, it returns the result of the second state. In the
-case of the abstract instance, it is also possible for a result to be either
-an exception or a succesful computation. In those cases, the function should
-return the join of the two results.
 
 \subsubsection{IsBool and IsNat}
 The shared interpreter needs to have a uniform way of handling values, as it
@@ -999,7 +1011,7 @@ Class IsBool (M : Type -> Type)
 \end{minted}
 
 The IsBool typeclass is the interface for the boolean types. The interface
-exposes all the operator that are possible on booleans. We've defined the and
+exposes all the operators that are possible on booleans. We've defined the and
 operator and the negation operator. We also include the if operator in this
 interface, as the behaviour of if will change depending on the boolean type. 
 
@@ -1013,20 +1025,21 @@ turn a concrete value into a boolType. In the concrete implementation
 of the IsBool typeclass, this will be the identity function.
 
 \begin{minted}{Coq}
-Definition ensure_abool (v : avalue) : AbstractState abstr_bool :=
-  fun st => match v with
-            | VAbstrBool b => returnRA b st
-            | _ => crashedA
-            end.
+Definition ensure_abool {M} `{MonadFail M} 
+    (v : avalue) : M abstr_bool :=
+  match v with
+  | VAbstrBool b => returnM b
+  | _ => fail
+  end.
 
-Definition eval_if_abstract {A} `{Joinable A} 
-  (b : abstr_bool) (st1 st2 : AbstractState A) 
-  : AbstractState A :=
+Definition eval_if_abstract {M} `{MonadFail M} 
+    {A} `{Joinable A} 
+    (b : abstr_bool) (st1 st2 : M A) : M A :=
   match b with
   | ab_true   => st1
   | ab_false  => st2
   | ab_top    => join_op st1 st2
-  | ab_bottom => fail_abstract
+  | ab_bottom => fail
   end.
 
 Definition extract_ab (b : bool) : abstr_bool := 
@@ -1035,7 +1048,8 @@ Definition extract_ab (b : bool) : abstr_bool :=
   | false => ab_false
   end.
 
-Instance abstract_boolean_type : IsBool AbstractState avalue abstr_bool :=
+Instance abstract_boolean_type {M} `{MonadFail M} : 
+  IsBool M avalue abstr_bool :=
 {
   ensure_bool := ensure_abool;
   extract_bool := extract_abM;
@@ -1047,7 +1061,7 @@ Instance abstract_boolean_type : IsBool AbstractState avalue abstr_bool :=
 \end{minted}
 
 The above listing shows the abstract implementation of the IsBool typeclass.
-The abstract if evaluation takes two states and returns a state based on the
+The abstract if evaluation takes two monadic values and returns one based on the
 given boolean value. In the case of the Top boolean value, it returns a join of
 the two states, as the abstract interpreter will be unsure of what path to
 take. The listing also shows how the extract function takes a concrete value
@@ -1073,99 +1087,116 @@ addition multiplication, equality and less-than.
 
 Using the above interfaces, we can define the shared interpreter.
 \begin{minted}{Coq}
-Definition extract_build_val {M : Type -> Type} {valType boolType natType : Type}
-    `{Monad M, IsNat M valType boolType natType, IsBool M valType boolType}
+Definition extract_build_val 
+    {M : Type -> Type} 
+    {valType boolType natType : Type}
+    `{M_monad : Monad M, 
+      nat_inst : IsNat M valType boolType natType, 
+      bool_inst : IsBool M valType boolType}
     (v : cvalue) : M valType :=
   match v with
-  | VNat n => n' << extract_nat n; build_nat n'
-  | VBool b => b' << extract_bool b; build_bool b'
+  | VNat n => n' <- extract_nat n; build_nat n'
+  | VBool b => b' <- extract_bool b; build_bool b'
   end.
 
 Fixpoint shared_eval_expr 
     {M : Type -> Type} {valType boolType natType : Type}
-    `{Monad M, Store M valType,
-      IsNat M valType boolType natType, IsBool M valType boolType}
+    `{M_monad : Monad M, 
+      store_inst : MonadState (total_map valType) M,
+      nat_inst  : IsNat M valType boolType natType, 
+      bool_inst : IsBool M valType boolType}
     (e : expr) : M valType :=
   match e with
   | EVal v =>
       extract_build_val v
   | EVar x =>
-      get x
+      s <- get;
+      returnM (s x)
   | EPlus e1 e2 => 
-      v1 << shared_eval_expr e1 ;
-      v2 << shared_eval_expr e2 ;
-      n1 << ensure_nat v1 ;
-      n2 << ensure_nat v2 ;
-      n << plus_op n1 n2 ;
+      v1 <- shared_eval_expr e1 ;
+      v2 <- shared_eval_expr e2 ;
+      n1 <- ensure_nat v1 ;
+      n2 <- ensure_nat v2 ;
+      n <- plus_op n1 n2 ;
       build_nat n
   | EMult e1 e2 => 
-      v1 << shared_eval_expr e1 ;
-      v2 << shared_eval_expr e2 ;
-      n1 << ensure_nat v1 ;
-      n2 << ensure_nat v2 ;
-      n << mult_op n1 n2 ;
+      v1 <- shared_eval_expr e1 ;
+      v2 <- shared_eval_expr e2 ;
+      n1 <- ensure_nat v1 ;
+      n2 <- ensure_nat v2 ;
+      n <- mult_op n1 n2 ;
       build_nat n
   | EEq e1 e2 =>
-      v1 << shared_eval_expr e1 ;
-      v2 << shared_eval_expr e2 ;
-      n1 << ensure_nat v1 ;
-      n2 << ensure_nat v2 ;
-      b << eq_op n1 n2 ;
+      v1 <- shared_eval_expr e1 ;
+      v2 <- shared_eval_expr e2 ;
+      n1 <- ensure_nat v1 ;
+      n2 <- ensure_nat v2 ;
+      b <- eq_op n1 n2 ;
       build_bool b
   | ELe e1 e2 =>
-      v1 << shared_eval_expr e1 ;
-      v2 << shared_eval_expr e2 ;
-      n1 << ensure_nat v1 ;
-      n2 << ensure_nat v2 ;
-      b << le_op n1 n2;
+      v1 <- shared_eval_expr e1 ;
+      v2 <- shared_eval_expr e2 ;
+      n1 <- ensure_nat v1 ;
+      n2 <- ensure_nat v2 ;
+      b <- le_op n1 n2;
       build_bool b
   | ENot e1 =>
-      v1 << shared_eval_expr e1 ;
-      b1 << ensure_bool v1 ;
-      b << neg_op b1;
+      v1 <- shared_eval_expr e1 ;
+      b1 <- ensure_bool v1 ;
+      b <- neg_op b1;
       build_bool b
   | EAnd e1 e2 =>
-      v1 << shared_eval_expr e1 ;
-      v2 << shared_eval_expr e2 ;
-      b1 << ensure_bool v1 ;
-      b2 << ensure_bool v2 ;
-      b << and_op b1 b2 ;
+      v1 <- shared_eval_expr e1 ;
+      v2 <- shared_eval_expr e2 ;
+      b1 <- ensure_bool v1 ;
+      b2 <- ensure_bool v2 ;
+      b <- and_op b1 b2 ;
       build_bool b
   end.
-
+  
 Fixpoint shared_ceval 
   {M : Type -> Type} {valType natType boolType : Type}
-  `{Monad M, Store M valType, Except M, 
-    IsNat M valType boolType natType, IsBool M valType boolType}
+  `{M_fail : MonadFail M, 
+    store : MonadState (total_map valType)  M, 
+    M_except : forall A, MonadExcept M A, 
+    nat_inst : IsNat M valType boolType natType, 
+    bool_inst : IsBool M valType boolType}
   (c : com) : M unit :=
   match c with
   | CSkip => returnM tt
   | c1 ;c; c2 =>
       (shared_ceval c1) ;; (shared_ceval c2)
   | x ::= a => 
-      v << shared_eval_expr a ;
-      put x v
+      v <- shared_eval_expr a ;
+      s <- get ;
+      put (t_update s x v)
   | CIf b c1 c2 => 
-      v << shared_eval_expr b ;
-      b' << ensure_bool v ;
+      v <- shared_eval_expr b ;
+      b' <- ensure_bool v ;
       if_op b' (shared_ceval c1) (shared_ceval c2)
-  | try c1 catch c2 => 
-      trycatch (shared_ceval c1) (shared_ceval c2)
-  | CFail => throw
+  | TRY c1 CATCH c2 => 
+      catch (shared_ceval c1) (shared_ceval c2)
+  | CFail => fail
   end.
 \end{minted}
 
 The required instances are added as implicited contraints to the definitions of
 the shared interpreter. By doing this, we can get the type engine of Coq to
 find the required instances for us. This greatly simplifies how we can now
-define the abstract and concrete interpreters.
+define the abstract and concrete interpreters. We only need to supply the
+desired monad and the desired abstraction.
 
 \begin{minted}{Coq}
-Definition eval_expr (e : expr) : State cvalue :=
-  shared_eval_expr e.
+Definition ConcreteState := MaybeT (StateT store Maybe).
 
-Definition ceval (c : com) : State unit :=
+Definition AbstractState := 
+  MaybeAT (StateT abstract_store Maybe).
+
+Definition conrete_interpreter (c : com) : ConcreteState Abstractstate :=
   shared_ceval c.
+
+Definition abstract_interpreter (c : com) : AbstractState unit :=
+  shared_ceval (nat_inst:=isnat_parity _) c.
 \end{minted}
 
 We only have to define which State monad we want the interpreter to use.
