@@ -11,3 +11,6 @@ thesis/_minted-report
 *.vo
 *.aux
 \#*
+*.vos
+*.vok
+.Makefile.coq.d
