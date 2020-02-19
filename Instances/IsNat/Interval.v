@@ -10,7 +10,7 @@ Implicit Type M : Type → Type.
 Generalizable Variable M.
 
 Definition extract_interval `{M_monad : Monad M} (n : nat) : M interval := 
-  returnM (n, n).
+  returnM (Interval n n (le_n n)).
 
 Definition ensure_interval `{M_fail : MonadFail M} (v : avalue) : M interval :=
   match v with

@@ -1,5 +1,4 @@
 Require Export Base.
-Require Import Omega.
 Require Export Instances.Galois.
 Require Import Classes.Galois.
 Require Import Classes.IsBool.
@@ -8,6 +7,7 @@ Require Import Classes.Joinable.
 Require Import Classes.Monad.
 Require Import Classes.Monad.MonadFail.
 Require Import Classes.PreorderedSet.
+Require Import Classes.SoundMonad.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.Even.
 Require Import Coq.Arith.PeanoNat.
@@ -22,15 +22,15 @@ Require Import Instances.Monad.
 Require Import Instances.Preorder.
 Require Import Instances.Store.
 Require Import Language.Statements.
+Require Import Psatz.
 Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
-Require Import Types.Maps.
-Require Import Types.Parity.
 Require Import Types.Interval.
-Require Import Types.Stores.
-Require Import Classes.SoundMonad.
+Require Import Types.Maps.
 Require Import Types.Maybe.
+Require Import Types.Parity.
 Require Import Types.State.
+Require Import Types.Stores.
 
 Hint Extern 0 (gamma _ _) => progress gamma_destruct : soundness.
 
@@ -321,9 +321,7 @@ Hint Resolve build_parity_sound : soundness.
 (* Soundness of operations on intervals *)
 Lemma iplus_sound : gamma iplus plus.
 Proof.
-  repeat constructor. 
-  - rewrite interval_min_plus. gamma_destruct. simpl in *. omega.
-  - rewrite interval_max_plus. gamma_destruct. simpl in *. omega. 
+  repeat constructor; gamma_destruct; simpl in *; lia.
 Qed.
 
 Lemma iplusM_sound {M M'} `{SoundMonad M M'} :
@@ -357,10 +355,10 @@ Proof.
   unfold ileqb. gamma_destruct; simpl in *.
   destruct (max i <? min j) eqn:Hij. 
   rewrite Nat.ltb_lt in Hij.
-  assert (n <=? m = true) as Hnm. rewrite Nat.leb_le. omega. rewrite Hnm.
+  assert (n <=? m = true) as Hnm. rewrite Nat.leb_le. lia. rewrite Hnm.
   auto with soundness. destruct (max j <? min i) eqn:Hji.
   rewrite Nat.ltb_lt in Hji. rewrite Nat.ltb_ge in Hij.
-  assert (n <=? m = false) as Hnm. apply leb_correct_conv. omega.
+  assert (n <=? m = false) as Hnm. apply leb_correct_conv. lia.
   rewrite Hnm. constructor. reflexivity. constructor.
 Qed.
 
@@ -378,7 +376,7 @@ Proof.
   inversion Hin as [i' n' Hmini Hmaxi]; subst; clear Hin.
   inversion Hjm as [j' m' Hminj Hmaxj]; subst; clear Hjm. simpl in *.
   destruct (max i <? min j) eqn:Hij. assert (n =? m = false) as Hnm.
-  rewrite Nat.eqb_neq. rewrite Nat.ltb_lt in Hij. omega. rewrite Hnm.
+  rewrite Nat.eqb_neq. rewrite Nat.ltb_lt in Hij. lia. rewrite Hnm.
   auto with soundness. destruct (min i =? max i) eqn:Hii; eauto with soundness.
   destruct (max i =? min j) eqn:Hieqj; eauto with soundness.
   destruct (min j =? max j) eqn:Hjj; eauto with soundness. simpl.
@@ -407,9 +405,7 @@ Lemma extract_interval_sound {M M'} `{SoundMonad M M'} : forall n,
   gamma (extract_interval n) (extract_natM n).
 Proof.
   unfold extract_interval, extract_natM.
-  intros. apply gamma_fun_apply. eauto with soundness.
-  constructor. rewrite interval_min_refl. apply preorder_refl.
-  rewrite interval_max_refl. apply preorder_refl.
+  intros. apply gamma_fun_apply. eauto with soundness. repeat constructor.
 Qed.
 Hint Resolve extract_interval_sound : soundness.
 
@@ -417,7 +413,7 @@ Lemma ensure_interval_sound {M M'} `{SoundMonad M M'}
   {M_fail : MonadFail M} {M'_fail : MonadFail M'} : 
   gamma ensure_interval ensure_nat.
 Proof.
-  constructor; intros v v' Hv. inversion Hv; subst; simpl.
+  constructor; intros v v' Hv. inversion Hv; subst.
 Admitted.
 Hint Resolve ensure_interval_sound : soundness.
 

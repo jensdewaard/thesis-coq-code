@@ -5,6 +5,7 @@ Require Import Coq.Arith.PeanoNat.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Instances.Preorder.
 Require Import Language.Statements.
+Require Import Psatz.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Maybe.
@@ -103,46 +104,43 @@ Instance abstr_bool_joinable : Joinable abstr_bool :=
   join_upper_bound_right := abstract_bool_join_upper_bound_right;
 }.
 
+Lemma nat_min_min_max_max : ∀ i j,
+  Nat.min (min i) (min j) ≤ Nat.max (max i) (max j).
+Proof.
+  intros. destruct i, j; simpl. lia.
+Qed.
+
 Definition interval_join (i j : interval) : interval :=
-  (Nat.min (min i) (min j), Nat.max (max i) (max j)).
+  Interval (Nat.min (min i) (min j)) 
+           (Nat.max (max i) (max j)) 
+           (nat_min_min_max_max i j).
 
 Lemma interval_join_assoc : ∀ i1 i2 i3,
   interval_join i1 (interval_join i2 i3) =
   interval_join (interval_join i1 i2) i3.
 Proof.
-  intros. unfold interval_join. 
-  destruct i1 as [n1 m1] eqn:H1. 
-  destruct i2 as [n2 m2] eqn:H2. 
-  destruct i3 as [n3 m3] eqn:H3. 
-  repeat rewrite interval_min_Nat_min. 
-  repeat rewrite interval_max_Nat_max. 
-  rewrite Nat.min_assoc, Nat.max_assoc. reflexivity.
+  intros. unfold interval_join. simpl. 
+  apply interval_eq. rewrite Nat.min_assoc. reflexivity.
+  rewrite Nat.max_assoc. reflexivity.
 Qed.
 
 Lemma interval_join_refl : ∀ i,
   interval_join i i = i.
 Proof.
-  intros. unfold interval_join. 
-  rewrite PeanoNat.Nat.min_id, PeanoNat.Nat.max_id. 
-  pose proof interval_increasing.
-  unfold min, max. destruct i. simpl.
-Admitted.
+  intros. unfold interval_join. destruct i. simpl.
+  apply interval_eq. apply Nat.min_idempotent. apply Nat.max_idempotent.
+Qed.
 
-Require Import Omega.
 Lemma interval_join_upper_bound_left : 
   ∀ i1 i2, preorder i1 (interval_join i1 i2).
 Proof.
-  intros. unfold interval_join. simpl. constructor; simpl.
-  - unfold min; simpl. omega with *.
-  - unfold max; simpl. omega with *.
+  intros. unfold interval_join. simpl. constructor; simpl; lia.
 Qed.
 
 Lemma interval_join_upper_bound_right :
   ∀ i1 i2, preorder i2 (interval_join i1 i2).
 Proof.
-  intros. unfold interval_join. constructor; simpl.
-  - unfold min; simpl. omega with *.
-  - unfold max; simpl. omega with *.
+  intros. unfold interval_join. constructor; simpl; lia.
 Qed.
 
 Instance interval_joinable : Joinable interval :=
