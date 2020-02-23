@@ -15,6 +15,47 @@ Require Import Instances.Preorder.
 Implicit Type S A B C : Type.
 Implicit Type M : Type → Type.
 
+Section Identity_Monad.
+  Definition bind_id {A B} 
+    (i : Identity A) (f : A → Identity B) : Identity B := 
+      match i with
+      | identity a => f a
+      end.
+  
+  Lemma bind_id_id_left : ∀ (A B : Type) (f : A → Identity B) (a : A),
+    bind_id (identity a) f = f a.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma bind_id_id_right : ∀ (A : Type) (ia : Identity A),
+    bind_id ia identity = ia.
+  Proof.
+    intros. destruct ia. reflexivity.
+  Qed.
+
+  Lemma bind_id_assoc : ∀ (A B C : Type) (ia : Identity A)
+    (f : A → Identity B) (g : B → Identity C),
+    bind_id (bind_id ia f) g = bind_id ia (λ a : A, bind_id (f a) g).
+  Proof.
+    intros. destruct ia; simpl. reflexivity.
+  Qed.
+
+  Lemma identity_inj : ∀ A (x y : A),
+    identity x = identity y → x = y.
+  Proof.
+    intros A x y H. inversion H. reflexivity.
+  Qed.
+
+  Global Instance monad_identity : Monad Identity :=
+  {
+    returnM_inj := identity_inj;
+    bind_id_left := bind_id_id_left;
+    bind_id_right := bind_id_id_right;
+    bind_assoc := bind_id_assoc;
+  }.
+End Identity_Monad.
+
 Section Maybe_Monad.
   Definition bind_maybe {A B} 
     (m : Maybe A) (k : A -> Maybe B) : Maybe B :=

@@ -14,6 +14,9 @@ Notation "f '$' x" := (f x)
 Notation "f ∘ g" := (compose g f).
 Definition id := fun {A : Type} (a : A) => a.
 
+Inductive Identity (A : Type) : Type := identity : A → Identity A.
+Arguments identity {A} a.
+
 Lemma id_refl : forall {A : Type} (x : A), id x = x.
 Proof. reflexivity. Qed.
 Lemma id_compose_left : forall {A B} (f : A -> B), id ∘ f = f.
@@ -25,6 +28,7 @@ Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 
 Definition flip {A B C : Type} (f : A → B → C) (x : B) (y : A) : C :=
   f y x.
+
 
 Ltac ext := let x := fresh "x" in extensionality x.
 
