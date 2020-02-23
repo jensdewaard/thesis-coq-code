@@ -249,6 +249,32 @@ Section state_preorder.
   }.
 End state_preorder.
 
+Section identity_preorder.
+  Context {A} `{A_preorder : PreorderedSet A}.
+
+  Definition identity_le (i1 i2 : Identity A) : Prop :=
+    match i1, i2 with
+    | identity a1, identity a2 => preorder a1 a2
+    end.
+
+  Lemma identity_le_trans : Transitive identity_le.
+  Proof.
+    unfold Transitive. intros. destruct x, y, z.
+    simpl in *. pre_trans.
+  Qed.
+
+  Lemma identity_le_refl : Reflexive identity_le.
+  Proof.
+    unfold Reflexive. destruct x; simpl. apply preorder_refl.
+  Qed.
+
+  Global Instance identity_preorder : PreorderedSet (Identity A) :=
+  {
+    preorder_refl := identity_le_refl;
+    preorder_trans := identity_le_trans;
+  }.
+End identity_preorder.
+
 Section maybe_preorder.
   Context {A} `{A_preorder : PreorderedSet A}.
 
