@@ -314,6 +314,45 @@ Section state_joinable.
   }.
 End state_joinable.
 
+Section identity_joinable.
+  Context {A : Type} `{Joinable A}.
+
+  Definition identity_join (i j : Identity A) : Identity A :=
+    match i, j with
+    | identity a, identity a' => identity (join_op a a')
+    end.
+
+  Lemma identity_join_left : ∀ i j, preorder i (identity_join i j).
+  Proof.
+    destruct i, j. simpl. apply join_upper_bound_left.
+  Qed.
+
+  Lemma identity_join_right : ∀ i j, preorder j (identity_join i j).
+  Proof.
+    destruct i, j; simpl. apply join_upper_bound_right.
+  Qed.
+
+  Lemma identity_join_assoc : ∀ x y z,
+    identity_join x (identity_join y z) = identity_join (identity_join x y) z.
+  Proof.
+    intros. destruct x, y, z; simpl. rewrite join_assoc. reflexivity.
+  Qed.
+
+  Lemma identity_join_refl : ∀ x,
+    identity_join x x = x.
+  Proof. 
+    destruct x; simpl. rewrite join_refl. reflexivity. 
+  Qed.
+
+  Global Instance identity_joinable : Joinable (Identity A) :=
+  {
+    join_refl := identity_join_refl;
+    join_assoc := identity_join_assoc;
+    join_upper_bound_left := identity_join_left;
+    join_upper_bound_right := identity_join_right;
+  }.
+End identity_joinable.
+
 Section maybe_joinable.
   Context {A : Type} `{A_joinable : Joinable A}.
 

@@ -165,6 +165,28 @@ Section galois_pairs.
 End galois_pairs.
 Hint Constructors gamma_pairs : soundness.
 
+Section galois_identity.
+  Context {A A'} `{A_galois : Galois A A'}.
+
+  Definition gamma_identity (ia' : Identity A') 
+                            (ia : Identity A) : Prop :=
+    match ia', ia with
+    | identity a', identity a => gamma a' a
+    end.
+
+  Lemma gamma_identity_monotone : monotone gamma_identity. 
+  Proof.
+    unfold monotone. intros ia ia' Hpre. simpl.
+    constructor. intros x Hx.  destruct ia, ia', x. simpl in *.
+    apply_widen.
+  Qed.
+
+  Global Instance galois_identity : Galois (Identity A) (Identity A') :=
+  {
+    gamma_monotone := gamma_identity_monotone;
+  }.
+End galois_identity.
+
 Section galois_maybe.
   Context {A A'} `{A_galois : Galois A A'}.
 

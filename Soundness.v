@@ -508,10 +508,10 @@ Qed.
 
 (* Soundness of interpreters *)
 
-Definition ConcreteState := MaybeT (StateT store Maybe).
+Definition ConcreteState := MaybeT (StateT store (MaybeT Identity)).
 
 Definition AbstractState := 
-  MaybeAT (StateT abstract_store Maybe).
+  MaybeAT (StateT abstract_store (MaybeT Identity)).
 
 Section joinable_abstract_state.
   Context {A : Type} `{Joinable A}.
@@ -573,7 +573,7 @@ Hint Resolve extract_build_val_sound : soundness.
 
 Theorem eval_expr_sound : forall a,
   gamma 
-    (shared_eval_expr (M:=MaybeAT (StateT abstract_store Maybe)) (nat_inst:=isnat_parity AbstractState) 
+    (shared_eval_expr (M:=AbstractState) (nat_inst:=isnat_parity AbstractState) 
       (bool_inst:=(abstract_boolean_type)) (valType:=avalue) a) 
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) a).
 Proof.
