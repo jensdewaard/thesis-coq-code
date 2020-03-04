@@ -7,9 +7,10 @@ Require Import Types.Maps.
 Require Import Types.Maybe.
 Require Import Types.State.
 Require Import Types.Stores.
+Require Import Classes.Joinable.
 
 Section store_state.
-  Context {S : Type} `{!Inhabited S}.
+  Context {S : Type} `{!Inhabited S} `{Joinable S}.
   Definition state_get := λ s : S, (s, s).
   Definition state_put := λ s : S, λ _ : S, (tt, s).
 
@@ -22,7 +23,7 @@ End store_state.
 
 Section store_stateT.
   Context (M : Type -> Type) `{M_monad : Monad M}.
-  Context {S : Type} `{!Inhabited S}.
+  Context {S : Type} `{!Inhabited S} `{Joinable S}.
 
   Definition stateT_get := fun s : S => returnM (s, s).
 

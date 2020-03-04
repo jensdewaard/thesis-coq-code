@@ -47,9 +47,18 @@ Section Identity_Monad.
     intros A x y H. inversion H. reflexivity.
   Qed.
 
+  Definition widen_id {A : Type} (i : Identity A) : Identity A := i.
+
+  Lemma widen_id_return : ∀ (A : Type) (a : A), widen_id (identity a) = identity a.
+  Proof.
+    intros. unfold widen_id. reflexivity.
+  Qed.
+
   Global Instance monad_identity : Monad Identity :=
   {
     returnM_inj := identity_inj;
+    widen := @widen_id;
+    widen_return := widen_id_return;
     bind_id_left := bind_id_id_left;
     bind_id_right := bind_id_id_right;
     bind_assoc := bind_id_assoc;
@@ -88,9 +97,19 @@ Section Maybe_Monad.
     intros A x y Heq. inversion Heq. reflexivity.
   Qed.
 
+  Definition widen_maybe {A : Type} (m : Maybe A) := (id (A:=Maybe A) m).
+
+  Lemma widen_maybe_return : ∀ (A : Type) (a : A),
+    widen_maybe (Just a) = Just a.
+  Proof.
+    unfold widen_maybe. intros. rewrite id_refl. reflexivity.
+  Qed.
+
   Global Instance monad_maybe : Monad Maybe :=
   {
     returnM_inj := just_inj;
+    widen := @widen_maybe;
+    widen_return := widen_maybe_return;
     bind_id_left := bind_maybe_id_left;
     bind_id_right := bind_maybe_id_right;
     bind_assoc := bind_maybe_assoc;
@@ -136,10 +155,19 @@ Section AbstractMaybe_Monad.
     intros A x y Heq. inversion Heq. reflexivity.
   Qed.
 
+  Definition widen_maybeA {A : Type} (am : AbstractMaybe A) := id am.
+
+  Lemma widen_maybeA_return : ∀ A (a : A),
+    widen_maybeA (JustA a) = JustA a.
+  Proof.
+    intros. unfold widen_maybeA. rewrite id_refl. reflexivity.
+  Qed.
+
   Global Instance monad_abstract_maybe : Monad AbstractMaybe :=
   {
     returnM_inj := justA_inj;
     bindM := bind_maybeA;
+    widen_return := widen_maybeA_return;
     bind_id_left := bind_maybeA_id_left;
     bind_id_right := bind_maybeA_id_right;
     bind_assoc := bind_maybeA_assoc;
@@ -190,9 +218,20 @@ Section MaybeT_Monad.
   Qed.
   Arguments bind_maybeT_assoc [A B C] MA f g.
 
+  Definition widen_maybeT {A : Type} (m : MaybeT M A) : MaybeT M A := 
+    (id (widen (M:=M) m)).
+
+  Lemma widen_maybeT_return : ∀ A (a : A),
+    widen_maybeT (returnM (M:=M) (Just a)) = returnM (M:=M) (Just a).
+  Proof.
+    intros. unfold widen_maybeT. rewrite id_refl. rewrite widen_return.
+    reflexivity.
+  Qed.
+
   Global Instance monad_maybeT : Monad (MaybeT M) :=
   {
     returnM_inj := justT_inj;
+    widen_return := widen_maybeT_return;
     bind_id_left := bind_maybeT_id_left;
     bind_id_right := bind_maybeT_id_right;
     bind_assoc := bind_maybeT_assoc;
@@ -280,10 +319,20 @@ Section MaybeAT_Monad.
   Qed.
   Arguments bind_maybeAT_assoc [A B C] MA f g.
 
+  Definition widen_maybeAT {A : Type} (m : MaybeAT M A) : MaybeAT M A := 
+    (id (widen (M:=M) m)).
+
+  Lemma widen_maybeAT_return : ∀ A (a : A),
+    widen_maybeAT (returnM (M:=M) (JustA a)) = returnM (M:=M) (JustA a).
+  Proof.
+    intros. unfold widen_maybeAT. rewrite id_refl, widen_return. reflexivity.
+  Qed.
+
   Global Instance monad_maybeAT 
   : Monad (MaybeAT M) :=
   {
     returnM_inj := justAT_inj;
+    widen_return := widen_maybeAT_return;
     bind_id_left := bind_maybeAT_id_left;
     bind_id_right := bind_maybeAT_id_right;
     bind_assoc := bind_maybeAT_assoc;
@@ -323,7 +372,7 @@ Section MaybeAT_MonadT.
 End MaybeAT_MonadT.
 
 Section State_Monad.
-  Context {S : Type} `{S_inhabited : !Inhabited S}.
+  Context {S : Type} `{S_inhabited : !Inhabited S} `{S_joinable : Joinable S}.
 
   Definition return_state {A} (a :A) : State S A := 
     λ st : S, (a, st).
@@ -331,15 +380,14 @@ Section State_Monad.
   Lemma return_state_inj : ∀ A (x y : A),
     return_state x = return_state y → x = y.
   Proof.
-    intros. unfold return_state in H. unfold Inhabited in S_inhabited.
+    intros A x y H. unfold return_state in H. unfold Inhabited in S_inhabited.
     eapply equal_f in H. Unshelve. inversion H. reflexivity. apply S_inhabited.
   Qed.
 
   Definition bind_state {A B} 
     (p : State S A) (k : A -> State S B) : State S B :=
-    fun st => match (p st) with
-              | (x, st') => k x st'
-              end.
+    λ st, let (x, st') := (p st) in k x st'.
+
   Arguments bind_state [A B] p k.
   Hint Unfold bind_state : soundness.
 
@@ -356,10 +404,21 @@ Section State_Monad.
     bind_state (bind_state MA f) g =
     bind_state MA (λ a : A, bind_state (f a) g).
   Proof. simple_solve. Qed.
+
+  Definition widen_state {A : Type} (s : State S A) :=
+    λ st, let (a, st') := (s st) in (a, st ⊔ st').
+
+  Lemma widen_state_return : ∀ A (a : A),
+    widen_state (return_state a) = return_state a.
+  Proof.
+    unfold return_state, widen_state. intros. ext. rewrite join_idem.
+    reflexivity.
+  Qed.
   
   Global Instance monad_state : Monad (State S) :=
   {
     returnM_inj := return_state_inj;
+    widen_return := widen_state_return;
     bind_id_left := bind_state_id_left;
     bind_id_right := bind_state_id_right;
     bind_assoc := bind_state_assoc;
@@ -367,10 +426,9 @@ Section State_Monad.
 End State_Monad.
 Hint Unfold bind_state : soundness.
 
-
 Section Monad_StateT.
   Context {M} `{M_monad : Monad M}.
-  Context {S : Type} `{S_inhabited : !Inhabited S}.
+  Context {S : Type} `{S_inhabited : !Inhabited S} `{S_joinable : Joinable S}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
@@ -418,10 +476,21 @@ Section Monad_StateT.
     destruct x0. reflexivity.
   Qed.
   Arguments bind_stateT_assoc [A B C] MA f g.
+
+  Definition widen_stateT {A : Type} (s : StateT S M A) :=
+    λ st, let m := (s st) in widen m.
+
+  Lemma widen_stateT_return : ∀ A (a : A),
+    widen_stateT (return_stateT a) = return_stateT a.
+  Proof.
+    intros. unfold widen_stateT, return_stateT. ext. rewrite widen_return.
+    reflexivity.
+  Qed.
   
   Global Instance monad_stateT : Monad (StateT S M) :=
   {
     returnM_inj := return_stateT_inj;
+    widen_return := widen_stateT_return;
     bind_id_left := bind_stateT_id_left;
     bind_id_right := bind_stateT_id_right;
     bind_assoc := bind_stateT_assoc;
