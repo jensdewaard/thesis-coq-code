@@ -19,8 +19,11 @@ Class Monad M : Type :=
 Arguments bindM : simpl never.
 Arguments returnM: simpl never.
 Hint Unfold bindM : soundness.
-
 Hint Rewrite @bind_id_left @bind_id_right @bind_assoc : soundness.
+
+Definition join {M} `{Monad M} {A} 
+  (mma : M (M A)) : M A :=
+  bindM mma id.
 
 Ltac solve_monad := repeat (simplify; simple_solve;
   match goal with

@@ -10,8 +10,7 @@ Require Import Types.AbstractBool.
 Inductive parity : Type :=
   | par_even : parity
   | par_odd : parity
-  | par_top : parity
-  | par_bottom : parity.
+  | par_top : parity.
 
 Inductive parity_ensemble : parity -> Prop :=
   | par_ens_all : forall p, parity_ensemble p.
@@ -22,7 +21,6 @@ Inductive parity_ensemble : parity -> Prop :=
 Definition parity_plus (p q : parity) : parity :=
   match p with 
   | par_top => match q with
-               | par_bottom => par_bottom
                | _ => par_top
                end
   | par_even => q
@@ -30,9 +28,7 @@ Definition parity_plus (p q : parity) : parity :=
                | par_top => par_top
                | par_even => par_odd
                | par_odd => par_even
-               | par_bottom => par_bottom
                end
-  | par_bottom => par_bottom
   end.
 Hint Unfold parity_plus : soundness.
 
@@ -63,7 +59,6 @@ Definition parity_mult (p q : parity) : parity :=
   | par_even => par_even
   | par_odd => q
   | par_top => par_top
-  | par_bottom => par_bottom
   end.
 Hint Unfold parity_mult : soundness.
 
@@ -72,17 +67,15 @@ Definition parity_eq (p1 p2 : parity) : abstr_bool :=
   match p1, p2 with
   | par_even, par_odd => ab_false
   | par_odd, par_even => ab_false
-  | par_bottom, _ | _, par_bottom => ab_bottom
   | _, _ => ab_top
   end.
 
 Definition parity_leb (p1 p2 : parity) : abstr_bool :=
   match p1, p2 with
-  | par_bottom, _ => ab_true
   | _, par_top    => ab_true
   | par_even, par_odd | par_odd, par_even => ab_top
   | par_even, par_even | par_odd, par_odd => ab_top
-  | par_top, _ | _, par_bottom => ab_false
+  | par_top, _  => ab_top
   end.
 
 (* Some lemmas regarding Nat.Even and Nat.Odd that are missing but are included

@@ -13,13 +13,60 @@ Require Import Types.Parity.
 Require Import Types.State.
 Require Import Types.Stores.
 
+Section joinable_functions.
+  Context {A B : Type} `{Joinable B}.
+
+  Definition fun_join (f g : A → B) : A → B :=
+    λ a : A, (f a) ⊔ (g a).
+
+  Lemma fun_join_idem : ∀ f, fun_join f f = f.
+  Proof.
+    intro f. unfold fun_join. extensionality a.
+    rewrite join_idem. reflexivity.
+  Qed.
+
+  Lemma fun_join_assoc : ∀ f g h, 
+    fun_join f (fun_join g h) = fun_join (fun_join f g) h.
+  Proof.
+    intros f g h. unfold fun_join. extensionality a.
+    rewrite join_assoc. reflexivity.
+  Qed.
+
+  Lemma fun_join_comm : ∀ f g,
+    fun_join f g = fun_join g f.
+  Proof.
+    intros f g. unfold fun_join. extensionality a.
+    rewrite join_comm. reflexivity.
+  Qed.
+
+  Lemma fun_join_left : ∀ f g,
+    f ⊑ (fun_join f g).
+  Proof.
+    intros f g. unfold preorder; simpl. constructor. intro a.
+    unfold fun_join. apply join_upper_bound_left.
+  Qed.
+
+  Lemma fun_join_right : ∀ f g,
+    g ⊑ (fun_join f g).
+  Proof.
+    intros f g. unfold preorder; simpl. constructor. intros a.
+    unfold fun_join. apply join_upper_bound_right.
+  Qed.
+
+  Global Instance functions_joinable : Joinable (A → B) :=
+  {
+    join_idem := fun_join_idem;
+    join_assoc := fun_join_assoc;
+    join_comm := fun_join_comm;
+    join_upper_bound_left := fun_join_left;
+    join_upper_bound_right := fun_join_right;
+  }.
+End joinable_functions.
+
 Definition parity_join (p1 p2 : parity) : parity :=
   match p1, p2 with
   | par_even, par_even => par_even
   | par_odd, par_odd => par_odd
-  | par_bottom, par_bottom => par_bottom
-  | par_even, par_bottom | par_bottom, par_even => par_even
-  | par_odd, par_bottom | par_bottom, par_odd => par_odd
   | _, _ => par_top
   end.
 
@@ -47,28 +94,25 @@ Proof.
   intros. destruct_all parity; constructor.
 Qed.
 
-Lemma parity_join_refl : ∀ p, parity_join p p = p.
+Lemma parity_join_idem : ∀ p, parity_join p p = p.
 Proof.
   destruct p; reflexivity.
 Qed.
 
 Instance parity_joinable : Joinable parity :=
 {
-  join_refl := parity_join_refl;
+  join_idem := parity_join_idem;
   join_upper_bound_left := parity_join_upper_bound_left;
   join_upper_bound_right := parity_join_upper_bound_right;
   join_assoc := parity_join_assoc;
+  join_comm := parity_join_comm;
 }.
 
 Definition abstract_bool_join(b1 b2 : abstr_bool) : abstr_bool :=
   match b1, b2 with
   | ab_true, ab_true => ab_true
   | ab_false, ab_false => ab_false
-  | ab_true, ab_bottom | ab_bottom, ab_true => ab_true
-  | ab_false, ab_bottom | ab_bottom, ab_false => ab_false
-  | ab_bottom, ab_bottom => ab_bottom
-  | ab_true, ab_false | ab_false, ab_true => ab_top
-  | ab_top, _ | _, ab_top => ab_top
+  | _, _ => ab_top
   end.
 
 Lemma abstract_bool_join_assoc : ∀ b1 b2 b3,
@@ -78,7 +122,7 @@ Proof.
   intros. destruct_all abstr_bool; reflexivity.
 Qed.
 
-Lemma abstract_bool_join_refl : ∀ b,
+Lemma abstract_bool_join_idem : ∀ b,
   abstract_bool_join b b = b.
 Proof.
   destruct b; reflexivity.
@@ -96,10 +140,17 @@ Proof.
   intros. destruct_all abstr_bool; constructor.
 Qed.
 
+Lemma abstract_bool_join_comm : ∀ b1 b2,
+  abstract_bool_join b1 b2 = abstract_bool_join b2 b1.
+Proof.
+  intros. destruct_all abstr_bool; constructor.
+Qed.
+
 Instance abstr_bool_joinable : Joinable abstr_bool :=
 {
-  join_refl := abstract_bool_join_refl;
+  join_idem := abstract_bool_join_idem;
   join_assoc := abstract_bool_join_assoc;
+  join_comm := abstract_bool_join_comm;
   join_upper_bound_left := abstract_bool_join_upper_bound_left;
   join_upper_bound_right := abstract_bool_join_upper_bound_right;
 }.
@@ -124,11 +175,10 @@ Proof.
   rewrite Nat.max_assoc. reflexivity.
 Qed.
 
-Lemma interval_join_refl : ∀ i,
+Lemma interval_join_idem : ∀ i,
   interval_join i i = i.
 Proof.
-  intros. unfold interval_join. destruct i. simpl.
-  apply interval_eq. apply Nat.min_idempotent. apply Nat.max_idempotent.
+  intros. unfold interval_join. destruct i. simpl. apply interval_eq; lia.
 Qed.
 
 Lemma interval_join_upper_bound_left : 
@@ -143,12 +193,19 @@ Proof.
   intros. unfold interval_join. constructor; simpl; lia.
 Qed.
 
+Lemma interval_join_comm : ∀ i j,
+  interval_join i j = interval_join j i.
+Proof.
+  intros. unfold interval_join. simpl. apply interval_eq; lia.
+Qed.
+
 Instance interval_joinable : Joinable interval :=
 {
-  join_refl := interval_join_refl;
+  join_idem := interval_join_idem;
   join_assoc := interval_join_assoc;
   join_upper_bound_left := interval_join_upper_bound_left;
   join_upper_bound_right := interval_join_upper_bound_right;
+  join_comm := interval_join_comm;
 }.
 
 Definition avalue_join (a1 a2 : avalue) : avalue :=
@@ -170,9 +227,9 @@ Definition avalue_join (a1 a2 : avalue) : avalue :=
   | VBottom, VBottom => VBottom
   end.
 
-Lemma avalue_join_refl : ∀ a, avalue_join a a = a.
+Lemma avalue_join_idem : ∀ a, avalue_join a a = a.
 Proof.
-  destruct a; simpl; try rewrite join_refl; reflexivity.
+  destruct a; simpl; try rewrite join_idem; reflexivity.
 Qed.
 
 Lemma avalue_join_assoc : ∀ a1 a2 a3,
@@ -193,23 +250,31 @@ Proof.
   intros. destruct a1, a2; eauto with soundness.
 Qed.
 
+Lemma avalue_join_comm : ∀ a1 a2,
+  avalue_join a1 a2 = avalue_join a2 a1.
+Proof.
+  intros. destruct a1, a2; eauto with soundness; simpl; rewrite join_comm;
+  reflexivity.
+Qed.
+
 Instance avalue_joinable : Joinable avalue :=
 {
-  join_refl := avalue_join_refl;
+  join_idem := avalue_join_idem;
   join_assoc := avalue_join_assoc;
   join_upper_bound_left := avalue_join_upper_bound_left;
   join_upper_bound_right := avalue_join_upper_bound_right;
+  join_comm := avalue_join_comm;
 }.
 
 Definition abstract_store_join
   (ast1 ast2 : abstract_store) : abstract_store :=
   fun x => join_op (ast1 x) (ast2 x).
 
-Lemma abstract_store_join_refl : ∀ ast,
+Lemma abstract_store_join_idem : ∀ ast,
   abstract_store_join ast ast = ast.
 Proof.
   unfold abstract_store_join. intros. ext.
-  rewrite join_refl. reflexivity.
+  rewrite join_idem. reflexivity.
 Qed.
 
 Lemma abstract_store_join_assoc : forall ast1 ast2 ast3,
@@ -230,11 +295,19 @@ Lemma abstract_store_join_upperbound_right :
   forall s s', preorder s' (abstract_store_join s s').
 Proof. eauto with soundness. Qed.
 
+Lemma abstract_store_join_comm : ∀ s s',
+  abstract_store_join s s' = abstract_store_join s' s.
+Proof.
+  intros. unfold abstract_store_join. ext. rewrite join_comm.
+  reflexivity.
+Qed.
+
 Global Instance abstract_store_joinable : Joinable abstract_store := {
-  join_refl := abstract_store_join_refl;
+  join_idem := abstract_store_join_idem;
   join_upper_bound_left := abstract_store_join_upperbound_left;
   join_upper_bound_right := abstract_store_join_upperbound_right;
   join_assoc := abstract_store_join_assoc;
+  join_comm := abstract_store_join_comm;
 }.
 
 Definition unit_join : unit -> unit -> unit :=
@@ -255,17 +328,23 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma unit_join_refl : ∀ u, unit_join u u = u.
+Lemma unit_join_idem : ∀ u, unit_join u u = u.
 Proof. 
   destruct u. reflexivity.
 Qed.
 
+Lemma unit_join_comm : ∀ u v, unit_join u v = unit_join v u.
+Proof.
+  destruct u, v. reflexivity.
+Qed.
+
 Global Instance unit_joinable : Joinable unit :=
 {
-  join_refl := unit_join_refl;
+  join_idem := unit_join_idem;
   join_upper_bound_left := unit_join_upperbound_left;
   join_upper_bound_right := unit_join_upperbound_right;
   join_assoc := unit_join_assoc;
+  join_comm := unit_join_comm;
 }.
 
 Section state_joinable.
@@ -299,18 +378,26 @@ Section state_joinable.
     reflexivity.
   Qed.
 
-  Lemma state_join_refl : ∀ st,
+  Lemma state_join_idem : ∀ st,
     state_join st st = st.
   Proof.
-    intros. unfold state_join. ext. repeat rewrite join_refl.
+    intros. unfold state_join. ext. repeat rewrite join_idem.
     simpl. rewrite <- surjective_pairing. reflexivity.
   Qed.
 
+  Lemma state_join_comm : ∀ st st',
+    state_join st st' = state_join st' st.
+  Proof.
+    intros. unfold state_join. ext. rewrite join_comm. 
+    rewrite (join_comm (snd (st x)) _). reflexivity.
+  Qed.
+
   Global Instance state_joinable : Joinable (State S A) := {
-    join_refl := state_join_refl;
+    join_idem := state_join_idem;
     join_upper_bound_left := state_join_upper_bound_left;
     join_upper_bound_right := state_join_upper_bound_right;
     join_assoc := state_join_assoc;
+    join_comm := state_join_comm;
   }.
 End state_joinable.
 
@@ -338,18 +425,26 @@ Section identity_joinable.
     intros. destruct x, y, z; simpl. rewrite join_assoc. reflexivity.
   Qed.
 
-  Lemma identity_join_refl : ∀ x,
+  Lemma identity_join_idem : ∀ x,
     identity_join x x = x.
   Proof. 
-    destruct x; simpl. rewrite join_refl. reflexivity. 
+    destruct x; simpl. rewrite join_idem. reflexivity. 
+  Qed.
+
+  Lemma identity_join_comm : ∀ x y,
+    identity_join x y = identity_join y x.
+  Proof.
+    intros. destruct x, y. unfold identity_join. rewrite join_comm.
+    reflexivity.
   Qed.
 
   Global Instance identity_joinable : Joinable (Identity A) :=
   {
-    join_refl := identity_join_refl;
+    join_idem := identity_join_idem;
     join_assoc := identity_join_assoc;
     join_upper_bound_left := identity_join_left;
     join_upper_bound_right := identity_join_right;
+    join_comm := identity_join_comm;
   }.
 End identity_joinable.
 
@@ -377,17 +472,23 @@ Section maybe_joinable.
     simpl. rewrite join_assoc. reflexivity.
   Qed.
 
-  Lemma maybe_join_refl : ∀ m, maybe_join m m = m.
+  Lemma maybe_join_idem : ∀ m, maybe_join m m = m.
   Proof.
-    destruct m; simpl; try rewrite join_refl; reflexivity.
+    destruct m; simpl; try rewrite join_idem; reflexivity.
+  Qed.
+
+  Lemma maybe_join_comm : ∀ x y, maybe_join x y = maybe_join y x.
+  Proof.
+    destruct x, y; simpl. rewrite join_comm. all: reflexivity.
   Qed.
 
   Global Instance maybe_joinable : Joinable (Maybe A) :=
   {
-    join_refl := maybe_join_refl;
+    join_idem := maybe_join_idem;
     join_upper_bound_left := maybe_join_left;
     join_upper_bound_right := maybe_join_right;
     join_assoc := maybe_join_assoc;
+    join_comm := maybe_join_comm;
   }.
 End maybe_joinable.
 
@@ -423,18 +524,25 @@ Proof.
   all: repeat rewrite join_assoc; reflexivity.
 Qed.
 
-Lemma abstract_maybe_join_refl : ∀ am, 
+Lemma abstract_maybe_join_idem : ∀ am, 
   abstract_maybe_join am am = am.
 Proof.
-  destruct am; simpl; try rewrite join_refl; reflexivity.
+  destruct am; simpl; try rewrite join_idem; reflexivity.
+Qed.
+
+Lemma abstract_maybe_join_comm : ∀ x y,
+  abstract_maybe_join x y = abstract_maybe_join y x.
+Proof.
+  intros. destruct x, y; simpl; try rewrite join_comm; reflexivity.
 Qed.
 
 Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) := 
 {
-  join_refl := abstract_maybe_join_refl;
+  join_idem := abstract_maybe_join_idem;
   join_upper_bound_left := abstract_maybe_join_upperbound_left;
   join_upper_bound_right := abstract_maybe_join_upperbound_right;
   join_assoc := abstract_maybe_join_assoc;
+  join_comm := abstract_maybe_join_comm;
 }.
 End abstract_maybe_joinable.
 
@@ -462,18 +570,25 @@ Section joinable_pairs.
     reflexivity.
   Qed.
 
-  Lemma pair_join_refl : ∀ p, pair_join p p = p.
+  Lemma pair_join_idem : ∀ p, pair_join p p = p.
   Proof.
-    destruct p. unfold pair_join. simpl. repeat rewrite join_refl.
+    destruct p. unfold pair_join. simpl. repeat rewrite join_idem.
     reflexivity.
+  Qed.
+
+  Lemma pair_join_comm : ∀ p q, pair_join p q = pair_join q p.
+  Proof.
+    intros. destruct p, q. unfold pair_join. simpl. 
+    rewrite (join_comm a0 a). rewrite (join_comm b0 b). reflexivity.
   Qed.
 
   Global Instance joinable_pairs : Joinable (A*B) :=
   {
-    join_refl := pair_join_refl;
+    join_idem := pair_join_idem;
     join_upper_bound_left := pair_join_left;
     join_upper_bound_right := pair_join_right;
     join_assoc := pair_join_assoc;
+    join_comm := pair_join_comm;
   }.
 End joinable_pairs.
 
@@ -487,10 +602,11 @@ Section joinable_maybeT.
     Joinable (MaybeT M A) :=
   {
     join_op := join_op;
-    join_refl := join_refl;
+    join_idem := join_idem;
     join_upper_bound_left := join_upper_bound_left;
     join_upper_bound_right := join_upper_bound_right;
     join_assoc := join_assoc;
+    join_comm := join_comm;
   }.
 End joinable_maybeT.
 
@@ -504,10 +620,11 @@ Section joinable_maybeAT.
     Joinable (MaybeAT M A) :=
   {
     join_op := join_op;
-    join_refl := join_refl;
+    join_idem := join_idem;
     join_upper_bound_left := join_upper_bound_left;
     join_upper_bound_right := join_upper_bound_right;
     join_assoc := join_assoc;
+    join_comm := join_comm;
   }.
 End joinable_maybeAT.
 
@@ -541,17 +658,24 @@ Section joinable_stateT.
     intros. unfold stateT_join. ext. rewrite join_assoc. reflexivity.
   Qed.
 
-  Lemma stateT_join_refl : ∀ st,
+  Lemma stateT_join_idem : ∀ st,
     stateT_join st st = st.
   Proof.
-    intros. unfold stateT_join. ext. rewrite join_refl. reflexivity.
+    intros. unfold stateT_join. ext. rewrite join_idem. reflexivity.
+  Qed.
+
+  Lemma stateT_join_comm : ∀ st st',
+    stateT_join st st' = stateT_join st' st.
+  Proof.
+    unfold stateT_join. intros. ext. rewrite join_comm. reflexivity.
   Qed.
 
   Global Instance stateT_joinable : Joinable (StateT S M A) :=
   {
-    join_refl := stateT_join_refl;
+    join_idem := stateT_join_idem;
     join_upper_bound_left := stateT_join_upper_bound_left;
     join_upper_bound_right := stateT_join_upper_bound_right;
     join_assoc := stateT_join_assoc;
+    join_comm := stateT_join_comm;
   }.
 End joinable_stateT.

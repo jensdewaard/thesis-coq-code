@@ -30,7 +30,6 @@ Definition eval_if_abstract `{M_fail : MonadFail M} `{M_joinable : Joinable (M (
   | ab_true   => st1
   | ab_false  => st2
   | ab_top    => join_op st1 st2
-  | ab_bottom => fail
   end.
 
 Definition extract_ab (b : bool) : abstr_bool := 

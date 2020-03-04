@@ -20,3 +20,5 @@ Ltac pre_trans :=
   | H : preorder ?a ?b, K : preorder ?b ?c  |- preorder ?a ?c =>
       eapply preorder_trans; [apply H|assumption]
   end.
+
+Infix "⊑" := preorder (at level 40).

@@ -245,7 +245,6 @@ Lemma parity_eq_sound :
   gamma parity_eq Nat.eqb. 
 Proof. 
   repeat constructor. intros. destruct a', a'0; simpl; try constructor.
-  2: eauto with soundness. 3-8: eauto with soundness.
   gamma_destruct. assert (a ≠ a0). unfold not. intro; subst.
   apply (Nat.Even_Odd_False a0); auto. rewrite Nat.eqb_neq; auto.
   gamma_destruct. assert (a ≠ a0). unfold not. intro; subst.
@@ -519,10 +518,10 @@ Section joinable_abstract_state.
   Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A
     := λ st, join_op (st1 st) (st2 st).
 
-  Lemma join_abstract_state_refl : ∀ st,
+  Lemma join_abstract_state_idem : ∀ st,
     join_abstract_state st st = st.
   Proof.
-    intro st. ext. unfold join_abstract_state. rewrite join_refl.
+    intro st. ext. unfold join_abstract_state. rewrite join_idem.
     reflexivity.
   Qed.
   
@@ -548,13 +547,21 @@ Section joinable_abstract_state.
     rewrite join_assoc. reflexivity.
   Qed.
 
+  Lemma join_abstract_state_comm : ∀ a b, 
+    join_abstract_state a b = join_abstract_state b a.
+  Proof.
+    intros. unfold join_abstract_state. ext. rewrite join_comm.
+    reflexivity.
+  Qed.
+
   Global Instance joinable_abstract_state :
   Joinable (AbstractState A) :=
   {
-    join_refl := join_abstract_state_refl;  
+    join_idem := join_abstract_state_idem;  
     join_upper_bound_left := join_abstract_state_upper_bound_left;
     join_upper_bound_right := join_abstract_state_upper_bound_right;
     join_assoc := join_abstract_state_assoc;
+    join_comm := join_abstract_state_comm;
   }.
 End joinable_abstract_state.
 

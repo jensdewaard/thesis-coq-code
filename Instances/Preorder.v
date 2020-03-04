@@ -22,7 +22,6 @@ Global Instance preorder_nat : PreorderedSet nat :=
 }.
 
 Inductive ab_le : abstr_bool → abstr_bool → Prop :=
-  | ab_le_bottom : ∀ ab, ab_le ab_bottom ab
   | ab_le_top    : ∀ ab, ab_le ab ab_top
   | ab_le_true   : ab_le ab_true ab_true
   | ab_le_false  : ab_le ab_false ab_false.
@@ -140,7 +139,6 @@ Global Instance preorder_interval : PreorderedSet interval :=
 }.
 
 Inductive parity_le : parity → parity → Prop :=
-  | par_le_bottom : ∀ p, parity_le par_bottom p
   | par_le_top    : ∀ p, parity_le p par_top
   | par_le_refl   : ∀ p, parity_le p p.
 Hint Constructors parity_le : soundness.
