@@ -234,12 +234,12 @@ Section MaybeAT_Monad.
   Definition bind_maybeAT {A B} 
     (Mma : MaybeAT M A)
     (f : A -> MaybeAT M B) : MaybeAT M B :=
-  @bindM M _ (AbstractMaybe A) (AbstractMaybe B) Mma (fun ma =>
+  bindM (M:=M) Mma (fun ma =>
     match ma with
     | NoneA => returnM NoneA
     | JustA a => f a
     | JustOrNoneA a => (
-        @bindM M _ (AbstractMaybe B) (AbstractMaybe B) (f a) (fun mfa =>
+        bindM (M:=M) (f a) (fun mfa =>
                        match mfa with
                        | NoneA => returnM NoneA
                        | JustA b => returnM (JustOrNoneA b)
