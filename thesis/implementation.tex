@@ -1,5 +1,5 @@
-\section{Implementation}
-In this section we will describe how the framework was implemented in Coq and
+\chapter{Implementation}
+In this chapter we will describe how the framework was implemented in Coq and
 the theory behind the implementation. First, we will delve into the theory
 behind monads~\cite{wadler1995monads}. We borrow these constructs from the 
 Haskell Prelude and reimplement them in Coq. Secondly, we shall describe the 
@@ -9,22 +9,26 @@ structure. After that, we
 dive into the theory behind Galois connections. After defining Galois
 connections, we show how there is a Galois connection between the previously
 defined concrete interpreter and an example of an abstract interpreter.
-Finally, we show what it means for such an abstract interpreter to be sound.
+In Section~\ref{sec:soundness}, we show what it means for such an abstract
+interpreter to be sound. Finally, in Section~\ref{sec:challenges} we describe
+the challenges we faced in defining sound approximations of our concrete
+values.
 
-\subsection{Monads}
+\section{Monads}~\label{sec:monads}
 Many tutorials explaining monads exist and monads are generally regarded as
-difficult to understand. We will briefly try to explain them here, though
-a complete understanding monads is not neccessary to follow later sections.
-Understanding that we can decompose the program along the lines of the methods
-provided by the Monad typeclass is sufficient.
+difficult to understand~\cite{petricek2018we}. We will briefly try to explain
+them here, though a complete understanding monads is not neccessary to follow 
+later sections. Understanding that we can decompose the program along the 
+lines of the methods provided by the Monad typeclass is sufficient.
 
 Monads are a way to add impure effects to a pure language. Examples of impure
 effects are modifying a global state, throwing and handlings exceptions and
-perform IO operations. It is often said that monads represent
-\textit{computations}. 
+perform IO operations. A Computer Science course at the University of
+Pennsylvania likens monads to a recipe, a description of steps to take. Such
+descriptions are values themselves, which makes using monads pure.
 
-In Coq we can implement monads in the form of a typeclass, as it is done in
-Haskell~\cite{sozeau2008first}. Typeclasses are somewhat like interfaces in 
+In Coq we can implement monads in the form of a typeclass~\cite{sozeau2008first}, 
+as it is done in Haskell. Typeclasses are somewhat like interfaces in 
 object-oriented programming languages. A programmer can write functions 
 operating on typeclasses instead of concrete types, and those functions can
 accept all types that implement the functions defined in that specific typeclass. 
@@ -199,7 +203,7 @@ monad. To facilitate this, we introduce another typeclass.
 \end{minted}
 \end{listing}
 
-The notation \textit{`Monad (T M)} indicates that whenever we define an
+The notation \textit{`\{Monad T M)\}} indicates that whenever we define an
 typeclass instance for a type T, we require that (T M), which should be of type
 Type -> Type, is also a monad instance. That means that all the returnM and
 bindM methods, as well as the monad laws, apply to the transformed monad (T M).
@@ -243,11 +247,15 @@ chained bind calls.
 \label{lst:bind_maybeT}
 \end{listing}
 
-\begin{itemize}
-    \item {MonadExcept: AbstractMaybe not catch\_assoc}
-\end{itemize}
+Aside from State and Maybe, we also implemented the Identity monad. This monad,
+like the identity function, adds no extra functionality. Its value lies in the
+ability to use it where we would a monad in cases where we don't want to add
+extra functionality. To reduce our code base, we implemented State as the
+StateT transformer applied to the Identity monad. The resulting monad
+simplifies to our prior definition of State, without us needing to prove
+soundness of the new monad.
 
-\subsubsection{An alternative definition for MaybeT}
+\subsection{An alternative definition for MaybeT}
 The above definition for MaybeT defines MaybeT in terms of Maybe, and utilizes
 the Definition keyword. Another way would be to use the Induction keyword, as
 shown in listing~\ref{lst:alternative_maybeT}.
@@ -300,7 +308,7 @@ we write code that reasons about possible side effects, we do not wish the
 remember the exact number of lifts required to get to the underlying monad that
 encodes those side effects. 
 
-For this use case, we have ported MonadFail, MonadExcept and MonadState from
+For this usecase, we have ported MonadFail, MonadExcept and MonadState from
 Haskell. The easiest way to explain why we use these typeclasses is that 
 the typeclasses Maybe and State were more concerned with
 \textit{how} the side effects were implemented, whereas these typeclasses deal 
@@ -414,16 +422,21 @@ and a put method that updates the carried state with the given value.
 
 \begin{listing}
 \begin{minted}{coq}
-Section store_state_concrete.
-  Definition state_get := fun s : store => (s, s).
-  Definition state_put := fun s : store => fun _ : store => (tt, s).
+Section store_stateT.
+  Context (M : Type -> Type) `{M_monad : Monad M}.
+  Context {S : Type} `{!Inhabited S}.
 
-  Global Instance store_state : MonadState store (State _) :=
+  Definition stateT_get := fun s : S => returnM (s, s).
+
+  Definition stateT_put := fun s : S => fun _ : S => returnM (tt, s).
+
+  Global Instance store_stateT : 
+  MonadState S (StateT _ M) :=
   {
-    get := state_get;
-    put := state_put;
+    get := stateT_get;
+    put := stateT_put;
   }.
-End store_state_concrete.
+End store_stateT.
 \end{minted}
 \caption{The State instance of MonadState}
 \label{lst:monadstate_state}
@@ -434,9 +447,9 @@ theories behind them, we turn to the implementation of the concrete
 interpreter. In the next section, we start by defining the language that is to
 be interpreted, and how we compose the monads to do so.
 
-\subsection{The Concrete Interpreter}
+\section{The Concrete Interpreter}
 
-\subsubsection{Language Syntax}
+\subsection{Language Syntax}
 \label{sec:lang}
 Programs consist of statements and expressions. These programs are evaluated by
 interpreters. In this subsection, we shall describe the syntax of a toy
@@ -504,6 +517,10 @@ from strings to cvalues. The store is implemented as a total map, which is a
 map that returns a default value when a key is requested that is not present in
 the map. Values can be added to the map via the \mintinline{coq}{t_update }
 function.
+
+We could also have used a partial map. Partial maps instead return an option,
+the Coq equivalent of our Maybe, instead of the basic type.
+Returning the default None value would be akin to throwing an exception.
 % maybe explain why I didn't use a partial map?
 
 \begin{listing}
@@ -667,14 +684,16 @@ that the monad M that is used is an instance of both MonadExcept and
 MonadState. This gives us access to get, put, catch and fail, which we need for
 variables and exceptions.
 
-\subsection{Galois Connections}
-In this section we will describe the notion of Galois definitions. However, to
-do so  we require some other concepts. We define type classes for
+\section{Galois Connections}
+In this section we will describe the notion of Galois definitions. However,
+because the required function for a Galois definition has to be monotone, we
+need a definition for monotonicity. For this, we need to be able to define
+orderings. We define type classes for
 preordered sets, before moving on to define a type class for Galois
 connections.
 
-\subsubsection{Preordered sets}
-The first definition we shall implenent is the notion of a preordered set. 
+\subsection{Preordered sets}
+The first definition we shall implement is the notion of a preordered set. 
 A preordered set is any set S on which we can define a preorder relation
 $\sqsubseteq$ such that the preorder relation is reflexive and transitive. That
 is, for all $a, a \sqsubseteq a$ (reflexivity) and for all $a$ $b$ $c$, if $a
@@ -693,12 +712,11 @@ Class PreorderedSet (X : Type) : Type :=
   preorder_refl: Reflexive preorder;
   preorder_trans: Transitive preorder;
 }.
+Infix "⊑" := preorder (at level 40).
 \end{minted}
 \end{listing}
 
-Defining an instance of this typeclass requires providing a type and a preorder
-relation, in addition to proofs of the reflexive and transitive properties of
-that preorder. 
+In addition, we introduce the notation $⊑$ to denote a preorder.
 
 \subsubsection{Galois connections}
 We require the definition of a preordered set in order to be able to define a
@@ -706,7 +724,7 @@ Galois connection.
 
 Traditionally, Galois connections are defined on two partially ordered sets.
 However, they can also be defined on preordered sets, and for our purposes that
-works too. %TODO Why?
+works too. 
 The difference between preordered sets and partially ordered sets is
 that a partial order is antisymmetric in addition to reflexive and transitive.
 We do not require the antisymmetric property, so we can loosen that restraint.
@@ -719,9 +737,9 @@ that $\alpha(a)
 \sqsubseteq b$ iff $a \sqsubseteq \gamma(b)$.
 
 \begin{minted}{Coq}
-Class Galois (A B : Type) `{PreorderedSet B} : Type :=
+Class Galois (A A' : Type) `{PreorderedSet A'} : Type :=
 {
-  gamma : B -> A -> Prop;
+  gamma : A' -> A -> Prop;
   gamma_monotone : monotone gamma;
 }.
 \end{minted}
@@ -756,42 +774,35 @@ The first abstract type defined was \coq{Parity }.
 Inductive parity : Type :=
   | par_even : parity
   | par_odd : parity
-  | par_top : parity
-  | par_bottom : parity.
+  | par_top : parity.
 \end{minted}
 \end{listing}
 
 The parity of a natural number is whether it is even or odd; e.g.\ the parity
-of the number 2 is even, and the parity of the number 9 is odd.
-
-The top value represents any natural number, and the bottom value is the empty
-set of numbers. As such, it should not occur during normal execution of the 
-program.
+of the number 2 is even, and the parity of the number 9 is odd. The top value
+represents any natural number.
 
 We can define a Galois connection between natural numbers and the parity type.
 To do so, we must provide a gamma function and prove its monotonicity. Recall
-that the signature is of the form $A \rightarrow B \rightarrow Prop$. In this
-case, we shall use \coq{parity } as $A$ and \coq{nat } as $B$.
+that the signature is of the form $A \rightarrow A' \rightarrow Prop$. In this
+case, we shall use \coq{parity } as $A$ and \coq{nat } as $A'$.
 
-Any type of the form $B \rightarrow Prop$ can be seen as sets of $B$. We define
+Any type of the form $B \rightarrow Prop$ can be seen as sets of $A'$. We define
 a function \coq{gamma_par } as taking a parity as a parameter and returning
 sets of natural numbers.
 
 \begin{listing}
 \begin{minted}{Coq}
-Definition gamma_par (p : parity) : nat -> Prop :=
-  match p with
-  | par_even => even 
-  | par_odd => odd 
-  | par_top => (fun n => True)
-  | par_bottom => fun n => False
-  end.
+Inductive gamma_par : parity → nat → Prop :=
+  | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
+  | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n
+  | gamma_par_top  : ∀ n, gamma_par par_top n.
 \end{minted}
 \end{listing}
 
 In the provided code, the even and odd symbols are imported from the Coq
 standard library. They are the sets of even and odd numbers respectively. Each
-of the four possible values of parity is mapped to a set of natural numbers.
+of the three possible values of parity is mapped to a set of natural numbers.
 
 \begin{listing}
 \begin{minted}{Coq}
@@ -810,9 +821,8 @@ brevity.
 
 \subsubsection{Intervals}
 Parities are only one possible abstraction of natural numbers. Another
-possibility would be to use intervals. We have not implemented this in our
-work, but we will explain how this abstraction would work as another example,
-to further clarify the concept of abstractions.
+possibility would be to use intervals. In this section, we describe the
+implementation of intervals using dependent records.
 
 An interval of natural numbers is a valid abstraction of a set of natural
 numbers if each of the natural numbers in the set falls within the interval.
@@ -828,9 +838,11 @@ Adding the intervals $[1,3]$ and $[4, 7]$ would result in the interval $[5,
 
 \begin{listing}
 \begin{minted}{coq}
-Definition interval := (nat * nat) % type.
-Definition min (i : interval) : nat := Nat.min (fst i) (snd i).
-Definition max (i : interval) : nat := Nat.max (fst i) (snd i).
+Record interval := Interval {
+  min: nat;
+  max : nat;
+  min_max : min <= max;
+}.
 
 Inductive gamma_interval : interval -> nat -> Prop :=
   | gamma_interval_cons : forall i n, 
@@ -842,15 +854,14 @@ Inductive gamma_interval : interval -> nat -> Prop :=
 \subsubsection{Abstract Booleans}
 The abstract booleans are only slightly different from their concrete
 counterpart. We supplement the normal boolean values (true and false) with
-values for top and bottom. As with the parities, these abstract values
-represent all concrete values and no concrete values respectively.
+a value for top. As with the parities, the abstract value ab\_top
+represent both concrete values.
 
 \begin{minted}{Coq}
 Inductive abstr_bool : Type :=
   | ab_true   : abstr_bool
   | ab_false  : abstr_bool
-  | ab_top    : abstr_bool
-  | ab_bottom : abstr_bool.
+  | ab_top    : abstr_bool.
 \end{minted}
 
 \begin{minted}{Coq}
@@ -859,15 +870,14 @@ Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
   | ab_true   => Is_true b
   | ab_false  => ~Is_true b
   | ab_top    => True
-  | ab_bottom => False
   end.
 \end{minted}
 
-The gamma function for booleans is very straightforward due to the limited
-number of concrete values. As with \coq{gamma_par }, the top and bottom
-values are mapped to True and False.
+The gamma function for booleans is straightforward due to the limited
+number of concrete values. As with \coq{gamma_par }, the top 
+value is mapped to True.
 
-\subsection{The Abstract Interpreter}
+\section{The Abstract Interpreter}
 As with the concrete interpeter, the abstract interpreter has the
 \coq{ensure_* } functions for the abstract types. 
 They are very similar to the ensure functions above and are omitted for brevity. 
@@ -982,7 +992,7 @@ As with Maybe, we have monad transformer that adds this functionality to a
 monad. We call this transformer MaybeAT, and we define it as \\
 \coq{Definition MaybeAT M A := M (AbstractMaybe A). }
 
-\subsection{Extracting the Shared Interpreter}\label{sec:shared_interpreter}
+\section{Extracting the Shared Interpreter}\label{sec:shared_interpreter}
 As observed in the previous section, the abstract and concrete interpreter
 share many similarities. This leads us to the question of whether we can
 decompose the interpreters along the shared structure in a way that eases the
@@ -990,7 +1000,7 @@ proof burden. In this section, we look at how we've extracted the shared
 interpreter and how this shared structure can be instantiated to create
 abstract and concrete interpreters like those defined earlier.
 
-\subsubsection{IsBool and IsNat}
+\subsection{IsBool and IsNat}
 The shared interpreter needs to have a uniform way of handling values, as it
 can be instantiated with either abstract or concrete values. For every type of
 concrete value we will require a corresponding interface. In our case, this
@@ -1039,7 +1049,6 @@ Definition eval_if_abstract {M} `{MonadFail M}
   | ab_true   => st1
   | ab_false  => st2
   | ab_top    => join_op st1 st2
-  | ab_bottom => fail
   end.
 
 Definition extract_ab (b : bool) : abstr_bool := 
@@ -1182,7 +1191,7 @@ Fixpoint shared_ceval
 
 The required instances are added as implicited contraints to the definitions of
 the shared interpreter. By doing this, we can get the type engine of Coq to
-find the required instances for us. This greatly simplifies how we can now
+infer the required instances for us. This greatly simplifies how we can now
 define the abstract and concrete interpreters. We only need to supply the
 desired monad and the desired abstraction.
 
@@ -1206,23 +1215,20 @@ typeclasses. In the next section, we shall discuss how defining the abstract
 and concrete interpreters as implementations of the shared interpreter aids in
 proving the soundness of the abstract interpreter.
 
-\subsection{Soundness}\label{sec:soundness}
+\section{Soundness}\label{sec:soundness}
 The main focus of this thesis is the soundness of the abstract interpreter. In
-this section, we will define what it means for a abstract function to be sound
+this section, we will define what it means for an abstract function to be sound
 with regards to a concrete function, and show how we prove the abstract 
 interpreter is sound with regards to the concrete interpreter. 
 
-\begin{minted}{Coq}
-Definition sound {A B A' B' : Type} := gamma b a.
-\end{minted}
+Our definition of sound is analogue to our definition of gamma: a abstract 
+function is sound if its output approximates the output of a concrete function,
+provided the inputs of the abstract function approximated the inputs of the
+concrete function.
 
-To put it in plain language, the definition of sound as defined in Coq means 
-that something is sound if the gamma property holds. This goes for everything
-from parities and natural numbers to two functions.
-
-For example, \textbf{if} we have two functions $f : B \rightarrow B'$ and $f' 
-: A \rightarrow A'$, where there are two Galois connections 
-between $B$ and $A$, and $B'$ and $A'$ respectively, \textbf{then} when if 
+For example, \textbf{if} we have two functions $f : A \rightarrow B$ and $f' 
+: A' \rightarrow B'$, where there are two Galois connections 
+between $A$ and $A'$, and $B$ and $B'$ respectively, \textbf{then} when 
 there is a gamma relation between the input values, there will be a gamma
 relation between the output values.
 
@@ -1234,51 +1240,45 @@ natural numbers.
 \begin{minted}{Coq}
 Definition parity_plus (p q : parity) : parity :=
   match p with 
-  | par_top => match q with
-               | par_bottom => par_bottom
-               | _ => par_top
-               end
+  | par_top => par_top
   | par_even => q
   | par_odd => match q with
                | par_top => par_top
                | par_even => par_odd
                | par_odd => par_even
-               | par_bottom => par_bottom
                end
-  | par_bottom => par_bottom
   end.
 \end{minted}
 
-So in more concrete terms, the function \coq{parity_plus} is sound with 
-regards to \coq{plus}
+So in more concrete terms, the function \coq{parity_plus } is sound with 
+regards to \coq{plus }
 if when, if the inputs are related, the output is also related. In Coq, this 
 notion of relatedness is written as follows
 
 \begin{minted}{Coq}
-gamma p1 n1 -> gamma p2 n2 -> gamma (parity_plus p1 p2) (plus n1 n2).
+Lemma parity_plus_sound : forall p1 p2 n1 n2, 
+    gamma p1 n1 -> gamma p2 n2 -> 
+    gamma (parity_plus p1 p2) (plus n1 n2).
 \end{minted}
 
-If \coq{p1} is an abstract representation of \coq{n1}, and \coq{p2} is an 
-abstract representation of \coq{n2}, then \coq{parity_plus p1 p2} should be an 
-abstract representation of \coq{plus n1 n2}. 
+If \coq{p1 } is an abstract representation of \coq{n1 }, and \coq{p2 } is an 
+abstract representation of \coq{n2 }, then \coq{parity_plus p1 p2 } should be an 
+abstract representation of \coq{plus n1 n2 }. 
 
 Due to the automation capabilities of Coq, the actual proof for the soundness
-of the \coq{parity_plus} function is very short.
+of the \coq{parity_plus } function is very short.
 
 \begin{minted}{Coq}
-Lemma sound_parity_plus :
-  sound plus parity_plus.
-Proof. intros.
-  unfold sound. simpl. unfold gamma_fun; intros. simpl. 
-  destruct a, a0; simpl in *; try tauto;
-  auto using even_even_plus, odd_plus_r, odd_plus_l, odd_even_plus.
+Proof. 
+  autounfold with soundness. repeat constructor. intros.
+  destruct p1, p2; eauto with soundness.
 Qed.
 \end{minted}
 
 The proof is written using case analysis. It considers all possible
-constructors of the parities and simplies the result of the \coq{parity_plus}
-function. Then it uses the built-in proofs of adding combinations of even and
-odd numbers to solve the subgoals.
+constructors of the parities and simplies the result of the \coq{parity_plus }
+function. Then it uses the lemmas from the standard libraries of adding 
+combinations of even and odd numbers to solve the subgoals.
 
 We have similar proofs for each of the operations on values. We will not list
 all those proofs here, as they are all short and of similar structure. Examine
@@ -1289,21 +1289,16 @@ More interesting are the soundness proofs for the interpreters. Because the
 abstract and concrete interpreters both consist of the same structure, the
 shared interpreter, the interpreters can be decomposed along the same lines.
 
-We have the \coq{bind_state} and \coq{bind_state_abstract} functions that 
-serve to control the flow of the program. The bind functions execute a function
-and use the result of the function in the remaining functions. We can proof
-that if the functions that are called are sound, and the remaining functions
-are sound, the entire bind function is sound. Because the remaining functions
-are also chains of bind functions, we need to proof the pairwise soundness of 
-the functions to proof the entire interpreter sound.
+As discussed in Section~\ref{sec:monads}, we can decompose the program along
+the lines of the bind methods. If we can proof that the bind methods of our
+chosen monads are sound and that the functions called by the bind methods are
+sound, than the entire interpreter is sound. 
 
-The soundness proof for \coq{bind_state} and \coq{bind_state_abstract} is
-rather long and involved, and so it omitted here for brevity. We can use the
-soundness of the bind functions to decompose the soundness proof of the
-interpreter. We create a custom tactic we call \coq{solve_binds}. Be repeating
-the application of the soundness lemma of bind, we can turn a goal concering a
-series of binds into a series of subgoals, each concering only a pair of
-functions.
+By repeating the application of the soundness lemma of bindM, 
+we can turn a goal concerning a series of binds into a series of subgoals, each
+concerning only a pair of functions. These pairs will correspond to each of the
+functions we've already proven the soundness of, such as \coq{parity_plus }, or
+methods from the MonadExcept and MonadState typeclasses.
 
 \begin{minted}{Coq}
 Theorem eval_expr_sound : forall a,
@@ -1320,10 +1315,6 @@ Proof.
   induction c; simpl; repeat solve_binds; auto with soundness.
 Qed.
 \end{minted}
-
-After we obtain a series of subgoals, we can call Coq's automation functions on
-those subgoals. To do so, we need only create a hint database containing lemmas
-for all the function pairs in the concrete and abstract interpreters.
 
 \subsection{Sample Programs}
 Now that we have a proof of the soundness of the abstract interpreter for every
@@ -1367,7 +1358,8 @@ not less than 4. As such, it evaluates the first branch of the if statement and
 ignores the second. As such, it will end up with a store that contains
 \textit{true} as the value of $x$.
 
-In contrast, the abstract interpreter extracts the abstract values for 5 and 4
+In contrast, the abstract interpreter, when using parities, extracts the 
+abstract values for 5 and 4
 and will end up with an if statement that compares the set of odd numbers with
 the set of even numbers. It is unable to determine which of these is smaller
 than the other so it evaluates to the top value for the abstract booleans. In
@@ -1389,4 +1381,8 @@ same behaviour. Because adding a boolean to an integer is illegal, both
 interpreters crash on that expression. Any concrete state is approximated by
 the crashed abstract state, including a crashed concrete state, so the
 interpreter is sound when analyzing this program.
+
+Of course, these examples have been simplified for clarity. A more advanced
+implementation would be able to combine information from multiple abstractions,
+such as intervals and parities, to correctly infer the path. 
 

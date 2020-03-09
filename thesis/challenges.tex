@@ -1,0 +1,211 @@
+\chapter{Challenges}
+
+In this chapter, we describe some of the challenges we faced in implementing
+the decomposition of the intepreters and proving their soundness. Specifically,
+we cover the bind method of the MaybeAT monad and the injectivity of returnM.
+
+\section{MaybeAT}~\label{sec:challenges-maybeat}
+
+The AbstractMaybe monad is the abstract analogue of the Maybe monad, a monad
+designed to add the possibility of failure to a program. Aside from
+constructors \coq{NoneA } and \coq{JustA }, which correspond to \coq{None } and
+\coq{Just }, the AbstractMaybe monad also has a \coq{JustOrNoneA } constructor.
+We use this constructor in the cases where the interpreter cannot ascertain
+whether the program has encountered an error or not. The MaybeAT monad is the
+monad transformer that adds the capabilities of AbstractMaybe to another monad.
+
+In our work, we use the AbstractMaybe monad to model exceptions, as opposed to
+program crashes. It is possible to write a valid program in which in an
+IF-statement only one of the branches raises an exception. If the abstract
+interpreter cannot tell which path would be taken, the results of both branches
+are joined into the \coq{JustOrNoneA } value.
+
+The challenge posed by the MaybeAT monad comes from its bind method. Our
+first implementation of \coq{bind_maybeAT } is given below.
+
+\begin{listing}[H]
+\begin{minted}{coq}
+  Definition bind_maybeAT {A B} 
+    (Mma : MaybeAT M A)
+    (f : A -> MaybeAT M B) : MaybeAT M B :=
+  bindM (M:=M) Mma (fun ma =>
+    match ma with
+    | NoneA => returnM NoneA
+    | JustA a => f a
+    | JustOrNoneA a => (
+        bindM (M:=M) (f a) (fun mfa =>
+                       match mfa with
+                       | NoneA => returnM NoneA
+                       | JustA b => returnM (JustOrNoneA b)
+                       | JustOrNoneA b => returnM (JustOrNoneA b)
+                       end))
+    end).
+\end{minted}
+\caption{First attempt at bind\_maybeAT}
+\label{lst:bind_maybeAT}
+\end{listing}
+
+At a first glance, this implementation appears correct. Exceptions are properly
+propagated throughout the binds, because whenever NoneA is found the total
+result will also be NoneA. In cases of uncertainty, the value is properly
+wrapped in the uncertain \coq{JustOrNoneA } constructor. Additionally, this bind
+method satisfies all the requirements imposed on it via the monad laws.
+
+However, when we attempt to prove the soundness of the function we run into a
+problem. Because \coq{bind_maybeAT } is a method of a monad transformer, the
+value of \coq{f a } is a transformed monad. That means that by evaluating it as
+we do in the \coq{JustOrNoneA } case, we also run the side effects of the
+encapsulating monad. 
+
+These are the side effects from the case where the first computation did not 
+fail. However, to be sound, the \coq{JustOrNoneA } case also needs to consider
+the possibility that the computation did fail. This is exactly where the
+soundness proof begins to break down if we use the above definition. We end up
+with the unprovable and incorrect goal of 
+
+\begin{minted}{coq}
+gamma 
+    (f' a >>= fun mfa => 
+       | JustA b | JustOrNoneA b => returnM (JustOrNoneA b) 
+       | NoneA => returnM NoneA) 
+    (returnM None).
+\end{minted}
+
+We require some way to broaden the encapsulated monad so that the side-effects of
+both branches are included. We will detail a few of our attempts in the
+following sections.
+
+\subsubsection{Attempt 1: Joinable}~\label{sec:maybeat_join}
+An important part of the definition of the Galois connections was that the
+abstract values are part of a lattice. The abstract values consist of a set
+equipped with a preorder. Because we have a lattice for all abstract values, we
+can define the least upper bound for two abstract values.
+
+We define a Joinable typeclass, with the requirement that instances of the
+typeclass are also instances of the PreorderedSet typeclass. Instances of
+Joinable have a \coq{join_op } method, which takes two values and returns their
+least upper bound. We use this typeclass to merge the values of two branches.
+This makes it seem like Joinable is the way to solve the challenge of MaybeAT
+as well.
+
+\begin{listing}
+\begin{minted}{coq}
+Class Joinable (T : Type) `{PreorderedSet T} : Type :=
+{
+  join_op : T -> T -> T;
+  join_idem : forall x, join_op x x = x;
+  join_upper_bound_left: forall t t', preorder t (join_op t t');
+  join_upper_bound_right: forall t t', preorder t' (join_op t t');
+  join_assoc : forall x y z : T, 
+    join_op x (join_op y z) = join_op (join_op x y) z;
+  join_comm : forall x y, join_op x y = join_op y x;
+}.
+\end{minted}
+\caption{The Joinable typeclass}
+\label{lst:joinable_typeclass}
+\end{listing}
+
+Included in the Joinable typeclass are two lemmas, join\_upper\_bound left and
+right. These make sure that the result of the join\_op is a valid approximation
+of all the concrete values approximated by either of the two input values. 
+The interval [1,3] approximates the number 1, and the interval [2,5]
+approximates 4. The join of those intervals is [1,5], which approximates both 1
+and 4. Because we want the branch of \coq{JustOrNoneA } to approximate both
+\coq{None } and \coq{Just }, this looks promising.
+
+Unfortunately, we run into problems when deciding to use join\_op in the
+definition for a bind method. Say that we were the replace the earlier
+definition of \coq{bind_maybeAT } with the following.
+
+\begin{listing}[H]
+\begin{minted}{coq}
+  Definition bind_maybeAT {A B} `{Joinable B}
+    (Mma : MaybeAT M A)
+    (f : A -> MaybeAT M B) : MaybeAT M B :=
+  bindM (M:=M) Mma (fun ma =>
+    match ma with
+    | NoneA => returnM NoneA
+    | JustA a => f a
+    | JustOrNoneA a => join_op (returnM NoneA) (f a)
+    end).
+\end{minted}
+\caption{bind\_maybeAT with a join\_op}
+\label{lst:bind_maybeAT_join}
+\end{listing}
+
+In the case of JustOrNoneA, we now join the results of both branches. As long
+as the cases for NoneA and JustA are sound with respects to the cases None and
+Just in the bind method for Maybe, the result for JustOrNoneA is sound as well.
+This is by virtue of the laws for join we discussed above.
+
+However, in order for us to have access to a join operator, we need to have the
+encapsulated monad be an instance of Joinable. Because \coq{MaybeAT M A } is 
+an alias for \coq{M (AbstractMaybe A) }, that means that we need the
+encapsulated monad M to be Joinable. 
+
+This poses a problem. For example, say that we would encapsulate the Maybe
+monad. The Joinable instance for Maybe is predicated on the fact that the inner
+value $A$ is also joinable. This is necessary to be able to join two values of
+\coq{Just } constructors. This constraint would then pass on to our MaybeAT
+moand, but monads should not place restrictions on the values they wrap.
+
+The same goes for if we were to wrap MaybeAT around a State monad. The join
+operator for State is 
+\coq{fun m1 => fun m2 => fun st => join_op (m1 st) (m2 st) }.
+Because states have the type signature \coq{S -> (A * S) }, we are calling the
+join operator for pairs, which also requires both components of the pair to be
+joinable. Again, we end up with a constraint for the wrapped value A.
+
+However, joining the wrapped value is also not what we were looking for. In
+order for the bind method to be sound, it needs to join on the side effects,
+not on the wrapped value. The actual function we are looking for, in the case
+of State, looks more like 
+\coq{fun m => fun st => let (a, st') := m st in (a, join_op st st'). }
+
+\section{Injectivity of returnM}
+Our implementation of the monad typeclass has an extra law, on top of the three
+standard monadic laws. We require that the return function of monads is
+injective. That is, returnM $x$ = returnM $y \rightarrow x = y$. In this
+section, we explore the necessity for this law.
+
+When defining Galois connections, we require the one of the categories is a
+preordered set. We use, among others,  a Galois connection between MaybeT and 
+MaybeT, and a connection between MaybeT and MaybeAT. This means that we need to
+define  preorders for MaybeT and MaybeAT.
+
+Because both those monad transformers use the constructors of Maybe and
+AbstractMaybe respectively, we wish to reuse the structure imposed by the
+preorder on those constructors.
+
+\begin{listing}
+\begin{minted}{coq}
+  Inductive maybeT_le : MaybeT M A -> MaybeT M A -> Prop :=
+    | maybeT_le_noneT : forall m, maybeT_le m NoneT
+    | maybeT_le_justT : forall x y, 
+        preorder x y -> maybeT_le (JustT x) (JustT y)
+    | maybeT_le_refl : forall x, maybeT_le x x.
+\end{minted}
+\caption{Preorder on MaybeT}
+\label{lst:preorder_maybeT}
+\end{listing}
+
+The definition of the ordering on \coq{MaybeT }, shown in Listing
+\ref{lst:preorder_maybeT}, follows the same pattern as that on Maybe itself. We
+also added an explicit case for the required reflexivity property, as we are
+unable to proof it separately with case analysis on MaybeT.
+
+When proving the transistivity of \coq{maybeT_le }, we perform case analysis on
+the hypothesis, which gives us more hypothesis in the form of $returnM y =
+returnM y'$. We require the injectivity property to be able to determine 
+$y = y'$
+from that, which is often the missing piece in a chain $x \le y = y' \le z$.
+
+In our thesis we've implemented three base monads, Identity, Maybe and State.
+Proving the injectivity of returnM for Identity and Maybe is trivial, as this
+follows from Coqs requirement to have constructors be injective. The defintion
+of returnM for State is \coq{fun a => fun s => (a, s) }. The injectivity of
+this fuction depends on assuming the axiom of functional extensionality.
+We assume this axiom in this thesis, as it is seen as harmless and is in fact
+mentioned as a safe axiom to include in the Coq
+wiki~\cite{coqwiki_extensionality}.
+

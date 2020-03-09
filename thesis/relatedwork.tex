@@ -1,24 +1,68 @@
-\section{Related Work}
-
+\chapter{Related Work}
+In this section we'll discuss recent advances made by others in the field of 
+abstract interpretation. We'll discuss different ways of defining interpreters,
+defining Galois connections in a constructive way and decomposing interpreters.
 % Beginning of abstract interpretation who then expanded on it, what was added
 %
 % about using proof assistants to do abstract interpretation
+\section{Definitional interpreters}
 Proof assistants can be used to mechanize the proof of abstract interpreters.
 However, as this can be tedious work, much effort has been put into easing the
 proof burden. Darais et al~\cite{darais2017abstracting} have focused on
 abstracting definitional interpreters in order to increase the modularity of
-the abstract interpreters. Definitional interpreters leave certain aspects of
-the computations implicit by defining a new language that describes the
-language that is to be analyzed~\cite{reynolds1972definitional}. Unlike in our
-work, where there is a heavy emphasis on continuations through the use of our
-AbstractState and State monads, the abstract definitional interpreter
-constructed by Darais has no explicit representation of continuations.
+the abstract interpreters. 
 
-One of the problems Darais had to work around was non-termination of the
-definitional interpreter. To counteract this required extra work on his part.
-Because Coq does not allow writing non-terminating functions, we had no such
-problems.
+Definitional interpreters leave certain aspects of the computations implicit 
+by defining the language that is to be analyzed in a different 
+language~\cite{reynolds1972definitional}, like how we define our Toy language 
+in Coq. 
 
+One of the problems Darais described was non-termination of the abstract
+definitional interpreter. This was solved by using a cache that mapped program
+configuration pairs of values and stores. This prevented the interpreter from
+entering an infinite loop.
+
+\section{Constructive Galois connections}
+Sergey et al.\cite{sergey2013monadic} have described a method to create a
+monadic abstract interpreter
+from concrete semantics in Haskell. Like in this thesis, they extract elements
+such as access to a store in a monadic typeclass that is then instantiated in a
+concrete and abstract manner. Because their work is in Haskell as opposed to
+Coq, they do not have to deal with the limitations of the calculus of inductive
+constructions. Mostly, they are able to define both alpha and gamma in their
+work. 
+
+When we defined our Galois connections, we were only able to define the gamma
+functions. Normally, Galois connections are made from two functions, the
+other being alpha. The alpha function would be responsible for transforming
+the concrete values into the abstract values that best encompass those concrete
+values. However, defining the alpha function in Coq requires the use of
+non-constructive axioms~\cite{Monniaux3}.
+
+In \cite{darais2019constructive}, Darais et al. describe constructive Galois
+connections. Instead of defining the functions $\gamma : A \rightarrow C$ 
+and $\alpha : C \rightarrow A$, they define an extraction function 
+$\eta : \mathbb N \rightarrow \mathbb P $ and
+an interpretation function $\mu : \mathbb P \rightarrow \mathbb N \rightarrow
+Prop$.
+
+When defining Galois connections in terms of $\eta$ and $\mu$, Darais et al.
+are able to derive an abstract interpreter via the calculational approach.
+Our work, in contrast, requires explicitly constructed concrete and abstract
+interpreters.
+
+The extraction function $\eta$ is comparable to the extract functions in the
+IsNat and IsBool typeclasses that we've implemented. If we moved those to the
+Galois typeclass, we would have obtained something similar to the constructive
+Galois connections. 
+
+In \cite{darais2015galois}, Darais uses NonDetT to capture the possibility of
+failure instead of MaybeT. This also imposes a requirement of a
+join-semilattice on the inner monad, like we encountered in
+Section~\ref{sec:maybeAT_join}. Darais achieves this by redefining the domain
+of the store to a powerset.
+
+\section{Shared intepreters}
 Keidel et al.~\cite{keidel2018compositional} instead propose a way to split up
 the concrete and abstract interpreters by defining a shared structure. By
 implementing the concrete and abstract interpreters as instances of a shared

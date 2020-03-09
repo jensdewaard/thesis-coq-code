@@ -1,10 +1,12 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper]{report}
 
 \title{Implementing the Decomposition of Soundness Proofs of Abstract
 Interpreters in Coq}
 \usepackage{listings}
 \usepackage{parskip}
+\usepackage{amssymb}
 \usepackage{amsmath}
+\usepackage[mathscr]{euscript}
 \usepackage{todonotes}
 \usepackage{hyperref}
 \newcommand{\todoin}[1][]{\todo[inline, #1]}
@@ -15,12 +17,21 @@ Interpreters in Coq}
 
 \begin{document}
 \maketitle
+
+\input{preface}
+\tableofcontents
 %\listoftodos
+
+\todoin{Describe thesis of polish guy}
+\todoin{Look up coq-ext-lib}
+\todoin{Describe injectivity requirements}
 
 \input{introduction}
 \input{methodology}
 \input{implementation}
+\input{challenges}
 \input{relatedwork}
+\input{conclusion}
 
 \bibliographystyle{plain}
 \bibliography{references}
