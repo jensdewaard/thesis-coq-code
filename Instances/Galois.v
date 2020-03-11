@@ -248,6 +248,8 @@ Hint Unfold gamma_unit : soundness.
 Section galois_maybeT.
   Context {A A' : Type} `{A_galois : Galois A A'}.
   Context {M M' : Type → Type} `{M_monad : Monad M, M'_monad : Monad M'}
+    {M_preorderset : ∀ B, PreorderedSet B → PreorderedSet (M B)}
+    {M'_preorderset : ∀ B, PreorderedSet B → PreorderedSet (M' B)}
     {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.
@@ -262,6 +264,8 @@ End galois_maybeT.
 Section galois_maybeAT.
   Context {A A' : Type} `{A_galois : Galois A A'}.
   Context {M M' : Type → Type} `{M_monad : Monad M, M'_monad : Monad M'} 
+    {M_preorderset : ∀ B, PreorderedSet B → PreorderedSet (M B)}
+    {M'_preorderset : ∀ B, PreorderedSet B → PreorderedSet (M' B)}
     {M_galois : ∀ (T T' : Type) {HT : PreorderedSet T'} 
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.

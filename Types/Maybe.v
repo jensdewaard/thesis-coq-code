@@ -21,12 +21,6 @@ Section maybeT_laws.
   Definition NoneT {A} : MaybeT M A := returnM None.
   Definition JustT {A} (a : A) : MaybeT M A := returnM (Just a).
 
-  Lemma justT_inj : ∀ A (x y : A),
-    JustT x = JustT y → x = y.
-  Proof.
-    intros A x y H. 
-    apply (returnM_inj (A:=Maybe A)) in H. inv H. reflexivity.
-  Qed.
 End maybeT_laws.
 
 Definition MaybeAT (M : Type → Type) (A : Type) : Type := M (AbstractMaybe A).
@@ -39,11 +33,4 @@ Section maybeAT_laws.
     returnM (JustA a).
   Definition JustOrNoneAT {A} (a : A) : MaybeAT M A := 
     returnM (JustOrNoneA a).
-
-  Lemma justAT_inj : ∀ A (x y : A),
-    JustAT x = JustAT y → x = y.
-  Proof.
-    intros A x y H. 
-    apply (returnM_inj (A:=AbstractMaybe A)) in H. inv H. reflexivity.
-  Qed.
 End maybeAT_laws.

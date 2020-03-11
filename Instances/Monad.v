@@ -56,7 +56,6 @@ Section Identity_Monad.
 
   Global Instance monad_identity : Monad Identity :=
   {
-    returnM_inj := identity_inj;
     widen := @widen_id;
     widen_return := widen_id_return;
     bind_id_left := bind_id_id_left;
@@ -107,7 +106,6 @@ Section Maybe_Monad.
 
   Global Instance monad_maybe : Monad Maybe :=
   {
-    returnM_inj := just_inj;
     widen := @widen_maybe;
     widen_return := widen_maybe_return;
     bind_id_left := bind_maybe_id_left;
@@ -165,7 +163,6 @@ Section AbstractMaybe_Monad.
 
   Global Instance monad_abstract_maybe : Monad AbstractMaybe :=
   {
-    returnM_inj := justA_inj;
     bindM := bind_maybeA;
     widen_return := widen_maybeA_return;
     bind_id_left := bind_maybeA_id_left;
@@ -230,7 +227,6 @@ Section MaybeT_Monad.
 
   Global Instance monad_maybeT : Monad (MaybeT M) :=
   {
-    returnM_inj := justT_inj;
     widen_return := widen_maybeT_return;
     bind_id_left := bind_maybeT_id_left;
     bind_id_right := bind_maybeT_id_right;
@@ -331,7 +327,6 @@ Section MaybeAT_Monad.
   Global Instance monad_maybeAT 
   : Monad (MaybeAT M) :=
   {
-    returnM_inj := justAT_inj;
     widen_return := widen_maybeAT_return;
     bind_id_left := bind_maybeAT_id_left;
     bind_id_right := bind_maybeAT_id_right;
@@ -417,7 +412,6 @@ Section State_Monad.
   
   Global Instance monad_state : Monad (State S) :=
   {
-    returnM_inj := return_state_inj;
     widen_return := widen_state_return;
     bind_id_left := bind_state_id_left;
     bind_id_right := bind_state_id_right;
@@ -433,14 +427,6 @@ Section Monad_StateT.
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
   Hint Unfold return_stateT : soundness.
-
-  Lemma return_stateT_inj : ∀ A (x y : A),
-    return_stateT x = return_stateT y → x = y.
-  Proof.
-    intros A x y Heq. unfold return_stateT in Heq. eapply equal_f in Heq.
-    apply returnM_inj in Heq. inversion Heq. reflexivity. Unshelve.
-    apply S_inhabited.
-  Qed.
 
   Definition bind_stateT {A B} (MA : StateT S M A) 
     (f : A -> StateT S M B) : StateT S M B :=
@@ -489,7 +475,6 @@ Section Monad_StateT.
   
   Global Instance monad_stateT : Monad (StateT S M) :=
   {
-    returnM_inj := return_stateT_inj;
     widen_return := widen_stateT_return;
     bind_id_left := bind_stateT_id_left;
     bind_id_right := bind_stateT_id_right;

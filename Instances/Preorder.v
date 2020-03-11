@@ -303,30 +303,15 @@ Hint Constructors maybe_le : soundness.
 
 Section maybeT_preorder.
   Context {A} `{A_preorder : PreorderedSet A}.
-  Context {M : Type → Type} `{M_monad : Monad M}.
-
-  Inductive maybeT_le : MaybeT M A → MaybeT M A → Prop :=
-    | maybeT_le_noneT : ∀ m, maybeT_le m NoneT
-    | maybeT_le_justT : ∀ x y, preorder x y → maybeT_le (JustT x) (JustT y)
-    | maybeT_le_refl : ∀ x, maybeT_le x x.
-  Hint Constructors maybeT_le : soundness.
-
-  Lemma maybeT_le_trans : Transitive maybeT_le.
-  Proof.
-    unfold Transitive. intros x y z Hxy Hyz. 
-    inversion Hxy as [m Hm Heq | m n Hpre Hm Hn | m Hm Heq]; subst;
-    inversion Hyz as [p Hp Hz | p q Hp Hq Hz | p Hp Hz ]; eauto with soundness.
-    unfold JustT, NoneT in Hq. apply (returnM_inj (A:=Maybe A)) in Hq.
-    inversion Hq.
-    apply justT_inj in Hq. subst.
-    constructor. pre_trans.
-  Qed.
+  Context {M : Type → Type} `{M_monad : Monad M,
+                              M_preordered : ∀ B, PreorderedSet B →
+                              PreorderedSet (M B)}.
 
   Global Instance maybeT_preorder : PreorderedSet (MaybeT M A) :=
   {
-    preorder := maybeT_le;
-    preorder_trans := maybeT_le_trans;
-    preorder_refl := maybeT_le_refl;
+    preorder := preorder;
+    preorder_trans := preorder_trans;
+    preorder_refl := preorder_refl;
   }.
 End maybeT_preorder.
 
@@ -365,62 +350,22 @@ Hint Constructors maybea_le : soundness.
 
 Section maybeAT_preorder.
   Context {A : Type} `{A_preorder : PreorderedSet A}.
-  Context {M : Type -> Type} `{M_monad : Monad M}.
-
-  Inductive maybeat_le : MaybeAT M A → MaybeAT M A → Prop :=
-    | maybeat_le_none : maybeat_le NoneAT NoneAT
-    | maybeat_le_none_justornone : ∀ y, maybeat_le NoneAT (JustOrNoneAT y)
-    | maybeat_le_just : ∀ x y, 
-        preorder x y → maybeat_le (JustAT x) (JustAT y)
-    | maybeat_le_justornone_r : ∀ x y, preorder x y →
-        maybeat_le (JustAT x) (JustOrNoneAT y)
-    | maybeat_le_justornone : ∀ x y, preorder x y →
-        maybeat_le (JustOrNoneAT x) (JustOrNoneAT y)
-    | maybeat_le_refl : ∀ x, maybeat_le x x.
-  Hint Constructors maybeat_le : soundness.
-
-  Lemma maybeat_le_trans : ∀ x y z, 
-    maybeat_le x y → maybeat_le y z → maybeat_le x z.
-  Proof.
-    intros x y z Hxy Hyz. 
-    inversion Hxy; subst; try constructor; try assumption.
-    - inversion Hyz; subst; try constructor; try assumption.
-      apply (returnM_inj (A:=AbstractMaybe A)) in H. inv H.
-    - inversion Hyz; subst; try constructor; try assumption.
-      apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
-      apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
-      apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-      eapply preorder_trans. apply H. assumption.
-      apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-      eapply preorder_trans. apply H. assumption.
-      apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-    - inversion Hyz; subst; try constructor; try assumption.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-        eapply preorder_trans. apply H. assumption.
-    - inversion Hyz; subst; try constructor; try assumption.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H1. inv H1.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-      + apply (returnM_inj (A:=AbstractMaybe A)) in H0. inv H0.
-        eapply preorder_trans. apply H. apply H1.
-  Qed.
+  Context {M : Type -> Type} `{M_monad : Monad M,
+                               M_preorder : ∀ B, PreorderedSet B →
+                               PreorderedSet (M B)}.
 
   Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=
   {
-    preorder := maybeat_le;
-    preorder_refl := maybeat_le_refl;
-    preorder_trans := maybeat_le_trans;
+    preorder := preorder;
+    preorder_refl := preorder_refl;
+    preorder_trans := preorder_trans;
   }.
 End maybeAT_preorder.
 
 Section statet_preorder.
   Context {S A : Type} `{A_preorder : PreorderedSet A, S_preorder : PreorderedSet S}.
-  Context {M : Type -> Type} `{M_preorder : PreorderedSet (M (A*S)%type)}.
+  Context {M : Type -> Type} `{M_preorder : ∀ B, PreorderedSet B → 
+                                PreorderedSet (M (B))}.
 
   Global Instance statet_preorder : PreorderedSet (StateT S M A) :=
   {
