@@ -7,8 +7,6 @@ Implicit Type A B C D : Type.
 Class Monad M : Type :=
 {
   returnM : ∀ {A}, A → M A;
-  widen : ∀ {A}, M A → M A;
-  widen_return : ∀ {A} (a : A), widen (returnM a) = returnM a;
   bindM : ∀ {A B}, M A  → (A → M B) → M B;
   bind_id_left : ∀ {A B} (f : A → M B) (a : A), 
     bindM (returnM a) f = f a;
