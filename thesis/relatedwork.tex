@@ -2,9 +2,7 @@
 In this section we'll discuss recent advances made by others in the field of 
 abstract interpretation. We'll discuss different ways of defining interpreters,
 defining Galois connections in a constructive way and decomposing interpreters.
-% Beginning of abstract interpretation who then expanded on it, what was added
-%
-% about using proof assistants to do abstract interpretation
+
 \section{Definitional interpreters}
 Proof assistants can be used to mechanize the proof of abstract interpreters.
 However, as this can be tedious work, much effort has been put into easing the
@@ -39,42 +37,50 @@ the concrete values into the abstract values that best encompass those concrete
 values. However, defining the alpha function in Coq requires the use of
 non-constructive axioms~\cite{Monniaux3}.
 
-In \cite{darais2019constructive}, Darais et al. describe constructive Galois
+Darais et al~\cite{darais2019constructive}, describe a method to define
+constructive Galois connections.
 connections. Instead of defining the functions $\gamma : A \rightarrow C$ 
 and $\alpha : C \rightarrow A$, they define an extraction function 
 $\eta : \mathbb N \rightarrow \mathbb P $ and
 an interpretation function $\mu : \mathbb P \rightarrow \mathbb N \rightarrow
-Prop$.
-
-When defining Galois connections in terms of $\eta$ and $\mu$, Darais et al.
-are able to derive an abstract interpreter via the calculational approach.
+Prop$. When defining Galois connections in terms of $\eta$ and $\mu$, they
+are able to derive an abstract interpreter via the calculational approach, a
+method to calculate the abstract interpreter from the concrete interpreter.
 Our work, in contrast, requires explicitly constructed concrete and abstract
 interpreters.
 
 The extraction function $\eta$ is comparable to the extract functions in the
 IsNat and IsBool typeclasses that we've implemented. If we moved those to the
 Galois typeclass, we would have obtained something similar to the constructive
-Galois connections. 
+Galois connections. Because we work with explicit concrete and abstract
+interpreters derived from a shared intepreter, we've kept our definition of a
+Galois connection closer to the classical definition, albeit without an alpha
+function.
 
-In \cite{darais2015galois}, Darais uses NonDetT to capture the possibility of
-failure instead of MaybeT. This also imposes a requirement of a
-join-semilattice on the inner monad, like we encountered in
-Section~\ref{sec:maybeAT_join}. Darais achieves this by redefining the domain
-of the store to a powerset.
+%In \cite{darais2015galois}, Darais uses NonDetT to capture the possibility of
+%failure instead of MaybeT. This also imposes a requirement of a
+%join-semilattice on the inner monad, like we encountered in
+%Section~\ref{sec:maybeAT_join}. Darais achieves this by redefining the domain
+%of the store to a powerset.
 
 \section{Shared intepreters}
-Keidel et al.~\cite{keidel2018compositional} instead propose a way to split up
-the concrete and abstract interpreters by defining a shared structure. By
-implementing the concrete and abstract interpreters as instances of a shared
-intrepreter, the soundness proof of the abstract interpreter can be decomposed
-into smaller lemmas, each focusing on how the two instances differ from the
-shared part. It is this paper that serves as the basis for this thesis. However,
-the proofs in Keidels work are pen-and-paper proofs. By implenting the ideas
-presented in Coq instead of Haskell, we can mechanize these pen-and-paper
-proofs, making abstract interpreters that are proven sound more accessible.
+%Keidel et al.~\cite{keidel2018compositional} instead propose a way to split up
+%the concrete and abstract interpreters by defining a shared structure. By
+%implementing the concrete and abstract interpreters as instances of a shared
+%intrepreter, the soundness proof of the abstract interpreter can be decomposed
+%into smaller lemmas, each focusing on how the two instances differ from the
+%shared part. It is this paper that serves as the basis for this thesis. However,
+%the proofs in Keidels work are pen-and-paper proofs. By implenting the ideas
+%presented in Coq instead of Haskell, we can mechanize these pen-and-paper
+%proofs, making abstract interpreters that are proven sound more accessible.
 
-One large difference between Keidel's paper and this thesis lies in that we use
-Monads instead of Arrows to represent effects such as stores and exceptions. As
+One large difference between the paper by Keidel\cite{keidel2018compositional}
+and this thesis lies in that we use Monads instead of Arrows to represent 
+effects such as stores and exceptions. As
 arrows are generalizations of monads~\cite{hughes2000generalising}, we could
 rewrite our implementation to use arrows instead, but we have not seen the need
 to do so (yet).
+
+\section{Mechanization of Abstract Analysis}
+
+\section{Mechanization of Monads}

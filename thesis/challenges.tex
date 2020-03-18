@@ -2,7 +2,7 @@
 
 In this chapter, we describe some of the challenges we faced in implementing
 the decomposition of the intepreters and proving their soundness. Specifically,
-we cover the bind method of the MaybeAT monad and the injectivity of returnM.
+we cover the bind method of the MaybeAT monad.
 
 \section{MaybeAT}~\label{sec:challenges-maybeat}
 
@@ -161,51 +161,3 @@ order for the bind method to be sound, it needs to join on the side effects,
 not on the wrapped value. The actual function we are looking for, in the case
 of State, looks more like 
 \coq{fun m => fun st => let (a, st') := m st in (a, join_op st st'). }
-
-\section{Injectivity of returnM}
-Our implementation of the monad typeclass has an extra law, on top of the three
-standard monadic laws. We require that the return function of monads is
-injective. That is, returnM $x$ = returnM $y \rightarrow x = y$. In this
-section, we explore the necessity for this law.
-
-When defining Galois connections, we require the one of the categories is a
-preordered set. We use, among others,  a Galois connection between MaybeT and 
-MaybeT, and a connection between MaybeT and MaybeAT. This means that we need to
-define  preorders for MaybeT and MaybeAT.
-
-Because both those monad transformers use the constructors of Maybe and
-AbstractMaybe respectively, we wish to reuse the structure imposed by the
-preorder on those constructors.
-
-\begin{listing}
-\begin{minted}{coq}
-  Inductive maybeT_le : MaybeT M A -> MaybeT M A -> Prop :=
-    | maybeT_le_noneT : forall m, maybeT_le m NoneT
-    | maybeT_le_justT : forall x y, 
-        preorder x y -> maybeT_le (JustT x) (JustT y)
-    | maybeT_le_refl : forall x, maybeT_le x x.
-\end{minted}
-\caption{Preorder on MaybeT}
-\label{lst:preorder_maybeT}
-\end{listing}
-
-The definition of the ordering on \coq{MaybeT }, shown in Listing
-\ref{lst:preorder_maybeT}, follows the same pattern as that on Maybe itself. We
-also added an explicit case for the required reflexivity property, as we are
-unable to proof it separately with case analysis on MaybeT.
-
-When proving the transistivity of \coq{maybeT_le }, we perform case analysis on
-the hypothesis, which gives us more hypothesis in the form of $returnM y =
-returnM y'$. We require the injectivity property to be able to determine 
-$y = y'$
-from that, which is often the missing piece in a chain $x \le y = y' \le z$.
-
-In our thesis we've implemented three base monads, Identity, Maybe and State.
-Proving the injectivity of returnM for Identity and Maybe is trivial, as this
-follows from Coqs requirement to have constructors be injective. The defintion
-of returnM for State is \coq{fun a => fun s => (a, s) }. The injectivity of
-this fuction depends on assuming the axiom of functional extensionality.
-We assume this axiom in this thesis, as it is seen as harmless and is in fact
-mentioned as a safe axiom to include in the Coq
-wiki~\cite{coqwiki_extensionality}.
-

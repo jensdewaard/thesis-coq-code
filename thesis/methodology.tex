@@ -1,12 +1,12 @@
 \section{Methodology}
-We have decided on an incremental approach to developing the framework. I will
+We have decided on an incremental approach to developing the framework. We will
 start out by defining the requisite mathematical constructs, such as the
-orderings and Galois connections, in Coq. Building on these definitions, I
+orderings and Galois connections, in Coq. Building on these definitions, we
 should then be able to define what it means for an abstract interpreter to be
 sound, and provide a rudimentary implementation of a concrete and abstract
 interpreter for a toy language.
 
-After defining these basics steps, I will then improve upon it by incorporating
+After defining these basics steps, we will then improve upon it by incorporating
 the design of~\cite{keidel2018compositional}, extracting a shared interpreter
 from the concrete and abstract interpreters. By proving lemmas about the
 shared interpreter and the concrete and abstract implementations, it is hoped
@@ -26,9 +26,19 @@ framework will indeed result in easier proofs by performing a case study on an
 abstract interpreter.
 
 \subsection{Coq}
-We have used the interactive theorem prover Coq to write our definitions and
-prove the soundness of the abstract interpreter. Coq is a proof assistant that
-helps to define lemmas and theorems and write formal proofs. Coq can also be
-used to write programs and proof that those programs correspond to their
-specifications~\cite{coqintroduction}.
+The work of Coquand et al~\cite{coquand1986calculus} eventually led to the
+development of Coq, an interactive proof assistant. Coq implements the calculus
+of constructions, a system for constructive proofs. By using proof assistants 
+we can mechanically prove the soundness of analyzers. 
+However, this is still not often done. It is difficult to
+pinpoint the exact reason for this, but we will proceed under the assumption
+that the required effort remains to large for the perceived gains. 
+
+We have used Coq to write our definitions and
+prove the soundness of the abstract interpreter. ~\cite{coqintroduction}.
+In this section, we will give some examples of Coq code along with an
+explanation of what is meant by the code. Readers familiar with Coq can skip
+this section. Other readers may wish to read it to help understand later code
+listings.
+\todoin{coq examples}
 

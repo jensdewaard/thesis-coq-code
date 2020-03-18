@@ -1,18 +1,19 @@
 \chapter{Implementation}
-In this chapter we will describe how the framework was implemented in Coq and
-the theory behind the implementation. First, we will delve into the theory
+In this chapter we will describe how the framework is implemented in Coq and
+the theory behind the implementation. First, in Section \ref{sec:monads} 
+we will delve into the theory
 behind monads~\cite{wadler1995monads}. We borrow these constructs from the 
-Haskell Prelude and reimplement them in Coq. Secondly, we shall describe the 
+Haskell Prelude and reimplement them in Coq. We also leverage the ability of
+Coq to directly add laws to our definitions. This makes it impossible for us to
+define invalid monads. Secondly, in Section \ref{sec:concrete} we shall describe the 
 syntax of a toy language and define a concrete interpreter of this language. We
 will show how we can decompose the concrete interpreter due to its monadic
-structure. After that, we
-dive into the theory behind Galois connections. After defining Galois
-connections, we show how there is a Galois connection between the previously
-defined concrete interpreter and an example of an abstract interpreter.
+structure. After that, we dive into the theory behind Galois connections. 
+After defining Galois connections, we show how there is a Galois connection
+between the previously defined concrete interpreter and an example of an
+abstract interpreter.
 In Section~\ref{sec:soundness}, we show what it means for such an abstract
-interpreter to be sound. Finally, in Section~\ref{sec:challenges} we describe
-the challenges we faced in defining sound approximations of our concrete
-values.
+interpreter to be sound. 
 
 \section{Monads}~\label{sec:monads}
 Many tutorials explaining monads exist and monads are generally regarded as
@@ -23,12 +24,12 @@ lines of the methods provided by the Monad typeclass is sufficient.
 
 Monads are a way to add impure effects to a pure language. Examples of impure
 effects are modifying a global state, throwing and handlings exceptions and
-perform IO operations. A Computer Science course at the University of
+perform IO operations. A Computer Science course~\cite{upenn_monads} at the University of
 Pennsylvania likens monads to a recipe, a description of steps to take. Such
 descriptions are values themselves, which makes using monads pure.
 
 In Coq we can implement monads in the form of a typeclass~\cite{sozeau2008first}, 
-as it is done in Haskell. Typeclasses are somewhat like interfaces in 
+as it is done in Haskell~\cite{wadler1995monads}. Typeclasses are somewhat like interfaces in 
 object-oriented programming languages. A programmer can write functions 
 operating on typeclasses instead of concrete types, and those functions can
 accept all types that implement the functions defined in that specific typeclass. 
@@ -37,24 +38,20 @@ In this case, all types belonging to the Monad typeclass must implement two func
 \textit{return}, originally called \textit{unit}. An implementation of monads
 as a typeclass in Coq is given in Listing \ref{lst:sample_monad}.
 
-\begin{listing}[H]
 \begin{minted}{Coq}
-Class Monad (M : Type -> Type) : Type :=
+Class Monad (M : Type → Type) : Type :=
 {
-  returnM : forall {A}, A -> M A;
-  bindM : forall {A B}, M A -> (A -> M B) -> M B;
+  returnM : ∀ {A}, A → M A;
+  bindM : ∀ {A B}, M A → (A → M B) → M B;
 }.
-Notation "x >>= y" := (bindM x y) (at level 40, left associativity).
+Notation "m >>= f" := (bindM m f) (at level 40, left associativity).
 \end{minted}
-\caption{Example of an implementation of Monad as a Coq typeclass}
-\label{lst:sample_monad}
-\end{listing}
 
-Because return is a reserved keyword in Coq, we rename both \textit{return} and 
-\textit{bind} into \textit{returnM} and \textit{bindM} respectively.
-\textit{returnM} takes a value and \"wraps\" it in the monad. \textit{bindM} is
+Because return is a reserved keyword in Coq, we rename both \coq{return } and 
+\coq{bind } into \coq{returnM } and \coq{bindM } respectively.
+\coq{returnM } takes a value and \"wraps\" it in the monad. \coq{bindM } is
 a function that can apply a function to a monadic value. As is the convention
-in Haskell, we will use $>>=$ as an infix notation for the bindM
+in Haskell, we will use \coq{>>= } as an infix notation for the bindM
 function.
 
 One of the advantages that Coq typeclasses have over those in Haskell is the
@@ -67,22 +64,22 @@ written in the original paper
     m >>= (\lambda a.n >>= \lambda b.o) =&\ (m >>= \lambda a.n) >>= \lambda b.o
 \end{align*}
 
-In English, these mean that binding \textit{returnM} to a function f is
-equivalent to just applying $f$ to the value wrapped by \textit{returnM}. The
-second law states that binding to \textit{returnM} is effectively a no-op, and
-the last law requires \textit{bindM} to be associative. In Coq, we can add the
+In English, these mean that binding \coq{returnM } to a function f is
+equivalent to just applying $f$ to the value wrapped by \coq{returnM }. The
+second law states that binding to \coq{returnM } is effectively a no-op, and
+the last law requires \coq{bindM } to be associative. In Coq, we can add the
 following lemmas to the Monad typeclass to ensure that all typeclass instances
 are valid monads, which is something that Haskell cannot guarantee. 
 
 \begin{listing}[H]
 \begin{minted}{Coq}
-Class Monad (M : Type -> Type) : Type := {
-  bind_id_left : forall {A B} (f : A -> M B) (a : A), 
+Class Monad (M : Type → Type) : Type := {
+  bind_id_left : ∀ {A B} (f : A → M B) (a : A), 
     bindM (returnM a) f = f a;
-  bind_id_right : forall {A} (MA : M A),
-    bindM MA returnM = MA;
-  bind_assoc : forall {A B C} (MA : M A) (f : A -> M B) (g : B -> M C),
-    bindM (bindM MA f) g = bindM MA (λ a, bindM (f a) g);
+  bind_id_right : ∀ {A} (m : M A),
+    bindM m returnM = m;
+  bind_assoc : ∀ {A B C} (m : M A) (f : A → M B) (g : B → M C),
+    bindM (bindM m f) g = bindM m (λ a, bindM (f a) g);
 }
 \end{minted}
 \caption{Lemmas for the monad laws}
@@ -90,47 +87,77 @@ Class Monad (M : Type -> Type) : Type := {
 \end{listing}
 
 In this thesis, we consider monads that add two different side effects. The
-first is the Maybe monad, also known as Option. The Maybe monad adds the
+first is the Maybe monad, also known as option in the Coq standard libarry. 
+The Maybe monad adds the
 possibility of failure to an operation. The other is the State monad, which
 allows us to keep track of a global state. In the next few sections we will
 discuss the implementation of these monads.
 
 \subsection{Maybe}
-\begin{listing}[H]
 \begin{minted}{coq}
-Inductive Maybe A : Type :=
-    | Just : A -> Maybe A
-    | None : Maybe A.
+Inductive Monad A : Type :=
+    | Just : A → Maybe A
+    | Nothing : Maybe A.
 \end{minted}
-\caption{The Maybe monad}
-\label{lst:maybe_monad}
-\end{listing}
 
 The first monad we implemented was the Maybe monad. Values of the type
 \mintinline{coq}{Maybe A } can be of either the form 
 \mintinline{coq}{Just a }, where $a$ is a value of type $A$ or 
-\mintinline{coq}{None }. Here, \mintinline{latex}{None} represent a failed
-computation. For example, a monadic version of division \mintinline{coq}{nat ->
-nat -> Maybe nat } could return \mintinline{coq}{None } when dividing by zero,
-and a \mintinline{coq}{Just } value with the right answer in other cases.
+\mintinline{coq}{Nothing }. Here, \coq{None } represent a failed
+computation. For example, a monadic version of division \coq{nat →
+nat → Maybe nat } could return \coq{None } when dividing by zero,
+and a \coq{Just } value with the right answer in other cases.
 
-The return method of Maybe is the same as the Just constructor. 
-The bind method of the Maybe monad performs a case analysis on the provided
-value. In the case of Just, it extracts the inner value and applies the given
-function to it. In the case of None, it returns None. This allows the chaining
+The return method of \coq{Maybe } is the same as the \coq{Just } constructor. 
+The \coq{bindM } method of the \coq{Maybe } monad performs a case analysis on the provided
+value. In the case of \coq{Just }, it extracts the inner value and applies the given
+function to it. In the case of \coq{None }, it returns \coq{None }. This allows the chaining
 of multiple operations without explicit error handling between each step.
 
-\begin{listing}[H]
 \begin{minted}{coq}
   Definition bind_maybe {A B} 
-  (m : Maybe A) (k : A -> Maybe B) : Maybe B :=
+  (m : Maybe A) (k : A → Maybe B) : Maybe B :=
     match m with
     | None => None
     | Just a => k a
-    end.
+    end
 \end{minted}
-\caption{The bind method for Maybe}
-\label{lst:bind_maybe}
+
+Because we can use \coq{Just } as the \coq{returnM } method of \coq{Maybe }, we
+can now move on to proven the monadic laws. These laws require that
+\coq{returnM } is a left and right identity for \coq{bind }, and that \coq{bind
+} is associative. If we've proven this, we can combine those three lemma's
+together with the definition of \coq{bind_maybe } and \coq{Just } into an
+instance for the \coq{Monad } typeclass. The Coq code for this can be seen in
+Listing \ref{lst:monad_maybe}. Note that the proofs have been omitted for
+brevity.
+
+\begin{listing}
+\begin{minted}{coq}
+  Lemma bind_maybe_id_left : ∀ {A B} (f : A → Maybe B) (a : A), 
+    bind_maybe (Just a) f = f a.
+  Admitted.
+
+  Lemma bind_maybe_id_right : ∀ {A} (m : Maybe A), 
+    bind_maybe m Just = m.
+  Admitted.
+
+  Lemma bind_maybe_assoc : ∀ {A B C} (m : Maybe A) 
+    (f : A → Maybe B) (g : B → Maybe C),
+  bind_maybe (bind_maybe m f) g = bind_maybe m (λ a : A, bind_maybe (f a) g).
+  Admitted.
+
+  Global Instance monad_maybe : Monad Maybe :=
+  {
+    returnM := Just;
+    bindM := bind_maybe;
+    bind_id_left := bind_maybe_id_left;
+    bind_id_right := bind_maybe_id_right;
+    bind_assoc := bind_maybe_assoc;
+  }. 
+\end{minted}
+\caption{Instance of the Monad typeclass for Maybe}
+\label{lst:monad_maybe}
 \end{listing}
 
 \subsection{State}
@@ -141,30 +168,27 @@ values $V$,  modelling the use of variables in our program. The specific type
 of V will be described in a later section.
 
 The State monad allows us to add the ability for tracking state to a pure
-program. It is defined as 
-\mintinline{coq}{Definition State (S A : Type) := S -> (A * S). } The State
-monad wraps a value in a function that keeps track of an additional value of
+program. It is defined as \coq{Definition State (S A : Type) := S → (A * S). } 
+The State monad wraps a value in a function that keeps track of an additional value of
 type S. Looking at the types of State and return shows us how we ought to
-implement the return function for State. When using return, the type for S 
-is automatically inferred from the context.
+implement the return function for State. 
 
-\begin{listing}[H]
 \begin{minted}{coq}
-Definition return_state := fun a : A => fun st : S => (a, st).
+Definition return_state {S A} : A → State A := 
+    λ a : A, λ st : S, (a, st).
 \end{minted}
-\end{listing}
 
-The bind method for State passes the state variable along to the next
+The \coq{bindM } method for State passes the state variable along to the next
 computation. Updates states are passed along and the current state is
-accessible at each step of the computation.operation.
+accessible at each step of the computation operation.
 
 \begin{listing}[H]
 \begin{minted}{coq}
   Definition bind_state {A B} 
-    (p : State S A) (k : A -> State S B) : State S B :=
-    fun st => match (p st) with
-              | (x, st') => k x st'
-              end.
+    (m : State S A) (f : A → State S B) : State S B :=
+    λ st, match (m st) with
+          | (x, st') => f x st'
+          end.
 \end{minted}
 \caption{The implementation of bind for the State monad}
 \label{lst:bind_state}
@@ -187,25 +211,27 @@ There is a way to combine the functionalities of monads via the use of monad
 transformers. 
 
 \subsection{Monad Transformers}~\label{sec:monad_transformers}
-Monad transformers are a way to add the side effects of a monad to another
-monad. To facilitate this, we introduce another typeclass.
+Monad transformers\cite{liang1995monad} are a way to add the side effects of a
+monad to another monad. To facilitate this, we introduce another typeclass.
 
 \begin{listing}
 \begin{minted}{coq}
-  Class MonadT {M} `{Monad M} (T : (Type -> Type) -> Type -> Type) 
-    `{Monad (T M)} : Type :=
+  Class MonadT (T : (Type → Type) → (Type → Type)) 
+    `{∀ M, Monad M → Monad (T M)} : Type :=
   {
-    liftT : forall {A}, M A -> T M A;
-    lift_return : forall  {A} (x : A), liftT (returnM x) = returnM x;
-    lift_bind : forall {A B} (x : M A) (f : A -> M B),
-      liftT (x >>= f) = liftT x >>= (compose f liftT);
+    liftT : ∀ {M} `{Monad M} {A}, 
+      M A → T M A;
+    lift_return : ∀  {M} `{Monad M} {A} (a : A), 
+      liftT (returnM a) = returnM a;
+    lift_bind : ∀ {M} `{Monad M} {A B} (m : M A) (f : A → M B),
+      liftT (m >>= f) = liftT m >>= (f ∘ liftT);
   }.
 \end{minted}
 \end{listing}
 
-The notation \textit{`\{Monad T M)\}} indicates that whenever we define an
+The notation \coq{`{∀ M, Monad M → Monad (T M)} } indicates that whenever we define an
 typeclass instance for a type T, we require that (T M), which should be of type
-Type -> Type, is also a monad instance. That means that all the returnM and
+Type → Type, is also a monad instance. That means that all the returnM and
 bindM methods, as well as the monad laws, apply to the transformed monad (T M).
 In addition, we also have access to a new method liftT, which allows us to
 utilize methods defined for the underlying monad by "lifting" them to the
@@ -218,7 +244,7 @@ and the ability to retain a global state.
 \begin{listing}
 \begin{minted}{coq}
 Definition MaybeT M A: Type := M (Maybe A).
-Definition StateT S M A : Type := S -> M (A*S)%type.
+Definition StateT S M A : Type := S → M (A*S)%type.
 \end{minted}
 \caption{Definitions for the monad transformers}
 \end{listing}
@@ -226,16 +252,17 @@ Definition StateT S M A : Type := S -> M (A*S)%type.
 When providing instances for the Monad typeclass for these types, we require
 the use of the bind and return methods of the wrapping monad $M$.
 For example, in listing~\ref{lst:bind_maybeT}, we see that the implementation 
-of  bind for MaybeT
+of  bind for \coq{MaybeT }
 unwraps the monad M, exposing the underlying Maybe value. We perform a case
-analyis on this value in a way that is similar to how we defined bind\_maybe,
-None values are propagated and values wrapped with Just are threaded through
-chained bind calls.
+analyis on this value in a way that is similar to how we defined
+\coq{bind_maybe },
+\coq{None } values are propagated and values wrapped with \coq{Just } are 
+threaded through chained bind calls.
 
 \begin{listing}
 \begin{minted}{coq}
   Definition bind_maybeT {A B} (x : MaybeT M A) 
-    (f : A -> MaybeT M B) : MaybeT M B :=
+    (f : A → MaybeT M B) : MaybeT M B :=
     bindM (M:=M) x (λ v : Maybe A,
       match v with
       | None => returnM None
@@ -248,68 +275,29 @@ chained bind calls.
 \end{listing}
 
 Aside from State and Maybe, we also implemented the Identity monad. This monad,
-like the identity function, adds no extra functionality. Its value lies in the
+like the identity function, adds no extra functionality. 
+\begin{minted}{coq}
+Inductive Identity (A : Type) : Type := 
+    identity : A → Identity A.
+\end{minted}
+
+Its value lies in the
 ability to use it where we would a monad in cases where we don't want to add
 extra functionality. To reduce our code base, we implemented State as the
 StateT transformer applied to the Identity monad. The resulting monad
 simplifies to our prior definition of State, without us needing to prove
 soundness of the new monad.
 
-\subsection{An alternative definition for MaybeT}
-The above definition for MaybeT defines MaybeT in terms of Maybe, and utilizes
-the Definition keyword. Another way would be to use the Induction keyword, as
-shown in listing~\ref{lst:alternative_maybeT}.
-
-\begin{listing}
-\begin{minted}{coq}
-Inductive MaybeT (M : Type -> Type) (A : Type) :=
-    | JustT : A -> MaybeT M A
-    | NoneT : MaybeT M A.
-\end{minted}
-\caption{Alternative definition for MaybeT}
-\label{lst:alternative_maybeT}
-\end{listing}
-
-In fact, at first glance this definition would be much easier to use. Our
-proofs become much easier to reason about, because we can utilize the tactics
-induction and discriminate for case analysis. The inductive definition tells us
-that there are only two possible constructors for constructing MaybeT values.
-The other definition has as many possible constructors as the wrapping monad M
-has. To make matters worse, in most cases we don't know anything about this
-monad M, as our proofs are generic.
-
-The reason for us to still choose the Definition based approach lies in the
-type signature for liftT. As stated in Section~\ref{sec:monad_tranformers},
-this signature, for a given monad tranformers M, is 
-\mintinline{coq}{M A -> T M A }. In other words, in order to define a valid
-lift function for MaybeT, we need to define a function that takes a value of
-type M A and returns a value of type MaybeT M A.
-
-Considering that our only ways to construct a value of type MaybeT M A is to
-utilize the constructors JustT or NoneT, we will require a way to "unwrap" the
-contained value from the M A instance. We can visualize the required methods
-with the following signature.
-
-\begin{equation}
-    M\ A\ \rightarrow\ A \rightarrow \text{MaybeT}\ M\ A
-\end{equation}
-
-Unfortunately, there exists no method to extract the value A from M A. There is
-the bind function, with the signature 
-$M\ A\ \rightarrow (A\ \rightarrow M B) \rightarrow M B$, but it is of no use
-to us in this instance. It does not support returning a different type of
-monad. This means we are unable to construct a valid definition for lift, and
-are therefore unable to use this definition of MaybeT.
 
 \subsection{MonadFail, MonadExcept and MonadState}
 With the use of monad transformers and lifting we are able to build a so-called 
 monad stack to encode any side effects we may want in a pure way. However, when
 we write code that reasons about possible side effects, we do not wish the
-remember the exact number of lifts required to get to the underlying monad that
+remember to exact number of lifts required to get to the underlying monad that
 encodes those side effects. 
 
 For this usecase, we have ported MonadFail, MonadExcept and MonadState from
-Haskell. The easiest way to explain why we use these typeclasses is that 
+Haskell~\cite{gibbons2011just}. The easiest way to explain why we use these typeclasses is that 
 the typeclasses Maybe and State were more concerned with
 \textit{how} the side effects were implemented, whereas these typeclasses deal 
 more with \textit{what} side effects a type can cause.
@@ -317,8 +305,8 @@ more with \textit{what} side effects a type can cause.
 \begin{listing}
 \begin{minted}{coq}
 Class MonadFail M `{M_monad : Monad M} : Type := {
-  fail {A : Type} : M A;
-  fail_left: forall {A B} (m : A -> M B), (@fail A) >>= m = fail;
+  fail : ∀ {A}, M A;
+  fail_left: ∀ {A B} (m : A → M B), (@fail A) >>= m = fail;
 }.
 \end{minted}
 \caption{Definition of the MonadFail typeclass}
@@ -326,7 +314,7 @@ Class MonadFail M `{M_monad : Monad M} : Type := {
 \end{listing}
 
 Listing~\ref{lst:monadfail} shows the definition for the MonadFail typeclass.
-The definition tells us to things: all instances of MonadFail have a value
+The definition tells us two things: all instances of MonadFail have a value
 called fail, and when this value is used on the left-hand side of a bind, the
 resulting value is also fail.
 
@@ -344,12 +332,12 @@ if the underlying monad is an instance of MonadFail.
 \begin{listing}
 \begin{minted}{coq}
 Section fail_stateT.
-  Context {M : Type -> Type} `{M_fail : MonadFail M}.
-  Context {S : Type} `{!Inhabited S}.
+  Context {M : Type → Type} `{M_fail : MonadFail M}.
+  Context {S : Type}.
 
   Definition fail_stateT {A} : StateT S M A := lift_stateT fail.
 
-  Lemma fail_stateT_left : forall (A B : Type) (s : A -> StateT S M B),
+  Lemma fail_stateT_left : ∀ (A B : Type) (s : A → StateT S M B),
     fail_stateT (A:=A) >>= s = fail_stateT.
   Proof.
     intros. unfold fail_stateT, lift_stateT. ext. 
@@ -381,10 +369,10 @@ the MonadExcept typeclass.
 \begin{listing}
 \begin{minted}{coq}
 Class MonadExcept M `{M_fail : MonadFail M} A := {
-  catch : M A -> M A -> M A;
-  catch_left : forall (x : M A), catch fail x = x;
-  catch_right : forall (x : M A), catch x fail = x;
-  catch_return : forall (x : M A) (a : A),
+  catch : M A → M A → M A;
+  catch_left : ∀ (x : M A), catch fail x = x;
+  catch_right : ∀ (x : M A), catch x fail = x;
+  catch_return : ∀ (x : M A) (a : A),
     catch (returnM a) x = returnM a;
 }.
 \end{minted}
@@ -404,10 +392,10 @@ functionality is encoded in the lemmas attached to the typeclass.
 
 \begin{listing}
 \begin{minted}{coq}
-Class MonadState (S : Type) (M : Type -> Type) `{M_monad : Monad M} :=
+Class MonadState (S : Type) (M : Type → Type) `{M_monad : Monad M} :=
 {
   get : M S;
-  put : S -> M unit;
+  put : S → M unit;
 }.
 \end{minted}
 \caption{The MonadState typeclass}
@@ -423,12 +411,12 @@ and a put method that updates the carried state with the given value.
 \begin{listing}
 \begin{minted}{coq}
 Section store_stateT.
-  Context (M : Type -> Type) `{M_monad : Monad M}.
+  Context (M : Type → Type) `{M_monad : Monad M}.
   Context {S : Type} `{!Inhabited S}.
 
-  Definition stateT_get := fun s : S => returnM (s, s).
+  Definition stateT_get := λ s : S, returnM (s, s).
 
-  Definition stateT_put := fun s : S => fun _ : S => returnM (tt, s).
+  Definition stateT_put := λ s : S, λ _ : S, returnM (tt, s).
 
   Global Instance store_stateT : 
   MonadState S (StateT _ M) :=
@@ -447,7 +435,7 @@ theories behind them, we turn to the implementation of the concrete
 interpreter. In the next section, we start by defining the language that is to
 be interpreted, and how we compose the monads to do so.
 
-\section{The Concrete Interpreter}
+\section{The Concrete Interpreter}\label{sec:concrete}
 
 \subsection{Language Syntax}
 \label{sec:lang}
@@ -458,8 +446,8 @@ language.
 \begin{listing}
 \begin{minted}{Coq}
 Inductive cvalue : Type :=
-  | VNat : nat -> cvalue
-  | VBool : bool -> cvalue.
+  | VNat : nat → cvalue
+  | VBool : bool → cvalue.
 \end{minted}
 \end{listing}
 
@@ -474,14 +462,14 @@ implemented as an inductive type called \mintinline{coq}{expr }.
 \begin{listing}
 \begin{minted}{coq}
 Inductive expr : Type :=
-  | EVal : cvalue -> expr
-  | EVar : string -> expr
-  | EPlus : expr -> expr -> expr
-  | EMult : expr -> expr -> expr
-  | EEq : expr -> expr -> expr
-  | ELe : expr -> expr -> expr
-  | ENot : expr -> expr
-  | EAnd : expr -> expr -> expr.
+  | EVal : cvalue → expr
+  | EVar : string → expr
+  | EPlus : expr → expr → expr
+  | EMult : expr → expr → expr
+  | EEq : expr → expr → expr
+  | ELe : expr → expr → expr
+  | ENot : expr → expr
+  | EAnd : expr → expr → expr.
 \end{minted}
 \end{listing}
 
@@ -493,10 +481,10 @@ saved in a store (see Section~\ref{sec:stores}) and operations on these values
 \begin{minted}{coq}
 Inductive com : Type :=
   | CSkip : com
-  | CSeq : com -> com -> com
-  | CAss : string -> expr -> com
-  | CIf  : expr -> com -> com -> com
-  | CTryCatch : com -> com -> com
+  | CSeq : com → com → com
+  | CAss : string → expr → com
+  | CIf  : expr → com → com → com
+  | CTryCatch : com → com → com
   | CThrow : com. 
 \end{minted}
 \end{listing}
@@ -512,7 +500,7 @@ expression \mintinline{coq}{EVar }, the interpreter should write to and read fro
 storage. We call these stores. 
 
 The concrete store is a map\footnote{The \textit{total\_map} comes from 
-	Map.v from the public Software Foundations course.} 
+	Map.v from the public Software Foundations course.\cite{softwarefoundations}} 
 from strings to cvalues. The store is implemented as a total map, which is a
 map that returns a default value when a key is requested that is not present in
 the map. Values can be added to the map via the \mintinline{coq}{t_update }
@@ -529,7 +517,7 @@ Definition store := total_map cvalue.
 
 Definition t_update {A:Type} (m : total_map A)
                     (x : string) (v : A) :=
-  fun x' => if beq_string x x' then v else m x'.
+  λ x', if beq_string x x' then v else m x'.
 
 \end{minted}
 \end{listing}
@@ -540,7 +528,7 @@ Because of this, we introduce a special notation for the function.
 
 \begin{listing}
 \begin{minted}{Coq}
-Notation "x '<<' y ; z" := (bind y (fun x => z))
+Notation "x '<<' y ; z" := (bind y (λ x, z))
   (at level 20, y at level 100, 
    z at level 200, only parsing).
 \end{minted}
@@ -561,8 +549,8 @@ Definition do_notation :=
 	returnM (VBool (negb b)).
 
 Definition nested_notation :=
-	(eval_expr e) >>= (fun v =>
-		(ensure_bool v) >>= (fun b =>
+	(eval_expr e) >>= (λ v,
+		(ensure_bool v) >>= (λ b,
 			returnM (VBool (negb b)))).
 \end{minted}
 \end{listing}
@@ -649,7 +637,7 @@ Fixpoint eval_expr (e : expr) : M cvalue :=
 \end{minted}
 \end{listing}
 
-The concrete interpeter follows the same structure for each kind of operator.
+The concrete interpreter follows the same structure for each kind of operator.
 The smaller expressions are evaluated first via recursive calls to the
 evaluation function and the interpreter
 ensures they are of the proper types. Then, the built-in operator corresponding
@@ -685,12 +673,12 @@ MonadState. This gives us access to get, put, catch and fail, which we need for
 variables and exceptions.
 
 \section{Galois Connections}
-In this section we will describe the notion of Galois definitions. However,
-because the required function for a Galois definition has to be monotone, we
-need a definition for monotonicity. For this, we need to be able to define
-orderings. We define type classes for
-preordered sets, before moving on to define a type class for Galois
-connections.
+In this section we will describe the notion of Galois
+connections~\cite{cousot1992comparing}. 
+Before we do
+so, we will take a quick detour to preordered sets. We define type classes for
+preordered sets and define monotonicity before moving on to define a type 
+class for Galois connections.
 
 \subsection{Preordered sets}
 The first definition we shall implement is the notion of a preordered set. 
@@ -708,7 +696,7 @@ following definition of the preorderd set as a Coq type class.
 \begin{minted}{Coq}
 Class PreorderedSet (X : Type) : Type :=
 {
-  preorder : X -> X -> Prop;
+  preorder : X → X → Prop;
   preorder_refl: Reflexive preorder;
   preorder_trans: Transitive preorder;
 }.
@@ -716,7 +704,7 @@ Infix "⊑" := preorder (at level 40).
 \end{minted}
 \end{listing}
 
-In addition, we introduce the notation $⊑$ to denote a preorder.
+In addition, we introduce the notation ⊑ to denote a preorder.
 
 \subsubsection{Galois connections}
 We require the definition of a preordered set in order to be able to define a
@@ -739,7 +727,7 @@ that $\alpha(a)
 \begin{minted}{Coq}
 Class Galois (A A' : Type) `{PreorderedSet A'} : Type :=
 {
-  gamma : A' -> A -> Prop;
+  gamma : A' → A → Prop;
   gamma_monotone : monotone gamma;
 }.
 \end{minted}
@@ -767,7 +755,7 @@ alone, so we will provide a few examples in the next section, after
 introducing the abstract types.
 
 \subsubsection{Parities}
-The first abstract type defined was \coq{Parity }.
+The first abstract type we define is \coq{Parity }.
 
 \begin{listing}
 \begin{minted}{Coq}
@@ -784,8 +772,8 @@ represents any natural number.
 
 We can define a Galois connection between natural numbers and the parity type.
 To do so, we must provide a gamma function and prove its monotonicity. Recall
-that the signature is of the form $A \rightarrow A' \rightarrow Prop$. In this
-case, we shall use \coq{parity } as $A$ and \coq{nat } as $A'$.
+that the signature is of the form $A' \rightarrow A \rightarrow Prop$. In this
+case, we shall use \coq{parity } as $A'$ and \coq{nat } as $A$.
 
 Any type of the form $B \rightarrow Prop$ can be seen as sets of $A'$. We define
 a function \coq{gamma_par } as taking a parity as a parameter and returning
@@ -834,7 +822,9 @@ precision.
 The same operators than can be defined on natural numbers can be defined on
 intervals. Addition, multiplication and comparisons can all be implemented.
 Adding the intervals $[1,3]$ and $[4, 7]$ would result in the interval $[5,
-10]$, for example. 
+10]$, for example. Whenever we define an interval, we also need to provide a
+proof that the mininum end of the interval is less than the maximum end. This
+is represented in the record by the \coq{min_max } field.
 
 \begin{listing}
 \begin{minted}{coq}
@@ -844,9 +834,9 @@ Record interval := Interval {
   min_max : min <= max;
 }.
 
-Inductive gamma_interval : interval -> nat -> Prop :=
-  | gamma_interval_cons : forall i n, 
-      preorder (min i) n -> preorder n (max i) ->
+Inductive gamma_interval : interval → nat → Prop :=
+  | gamma_interval_cons : ∀ i n, 
+      preorder (min i) n → preorder n (max i) →
       gamma_interval i n.
 \end{minted}
 \end{listing}
@@ -895,6 +885,13 @@ extract function.
 
 \begin{listing}[H]
 \begin{minted}{Coq}
+Inductive avalue : Type :=
+  | VParity : parity -> avalue
+  | VAbstrBool : abstr_bool -> avalue
+  | VInterval : interval -> avalue
+  | VTop : avalue
+  | VBottom : avalue.
+
 Definition extract (v : cvalue) : avalue :=
   match v with
   | VNat x => VParity (extract_par x)
@@ -956,7 +953,7 @@ where the concrete interpreter called the standard plus operator for natural
 numbers, the abstract interpreter calls the parity plus function.
 
 \subsubsection{The AbstractMaybe monad}
-Thus far, we've seen the fail method of Maybe used to model crashed programs
+Thus far, we have seen the fail method of Maybe used to model crashed programs
 due to type mismatches, for exampling when adding booleans. In our language, we
 also wish to model exceptions. Consider the following Java snippet.
 
@@ -968,25 +965,64 @@ else {
 }
 \end{minted}
 
-We can model such a program with the fail value of Maybe, but this proves
-insufficient when this program is interpreted in an abstract way. An abstract
-interpreter may not be able to tell whether $x$ is equal to $0$ or not and has
-to reflect this in the returned value.
+We could try to model such a program with just the fail value of Maybe. 
+This proves insufficient when this program is interpreted in an abstract way, 
+because an abstract interpreter might be uncertain whether $x$ is equal to 
+$0$ or not and has to reflect this in the returned value.
 
-We introduce a new monad AbstractMaybe to capture this side effect.
+We introduce the monad AbstractMaybe~\cite{keidel2018compositional} 
+to capture this side effect.
 
-\begin{listing}[H]
 \begin{minted}{coq}
 Inductive AbstractMaybe (A : Type) : Type :=
-| NoneA : AbstractMaybe A
-| JustA : A -> AbstractMaybe A
-| JustOrNoneA : A -> AbstractMaybe A.
+| NothingA : AbstractMaybe A
+| JustA : A → AbstractMaybe A
+| JustOrNothingA : A → AbstractMaybe A.
 \end{minted}
-\end{listing}
 
 In addition to constructors modeling successful and failed operations, this
 type has a constructor that models uncertainty as to whether the operation has
 succeeded.
+
+As with all abstract types, we need an ordering and a gamma connection. We
+define a lattice with \coq{JustOrNothingA } as the top element. \coq{NothingA } and
+\coq{JustA } correspond to \coq{Nothing } and \coq{Just }, which we see reflected
+in the gamma function in Listing \ref{lst:gamma_maybeA}.
+
+\begin{listing}
+\begin{minted}{coq}
+Inductive maybea_le : AbstractMaybe A → AbstractMaybe A → Prop :=
+| maybea_le_nothing : maybea_le NothingA NothingA
+| maybea_le_nothing_justornothing : ∀ y, 
+    maybea_le NothingA (JustOrNothingA y)
+| maybea_le_just : ∀ x y, 
+    preorder x y → 
+    maybea_le (JustA x) (JustA y)
+| maybea_le_justornothing_r : ∀ x y, 
+    preorder x y →
+    maybea_le (JustA x) (JustOrNothingA y)
+| maybea_le_justornothing : ∀ x y, 
+    preorder x y →
+    maybea_le (JustOrNothingA x) (JustOrNothingA y).
+\end{minted}
+\end{listing}
+
+\begin{listing}
+\begin{minted}{coq}
+Inductive gamma_maybeA : AbstractMaybe A' → Maybe A → Prop :=
+| gamma_nothingA : gamma_maybeA NothingA Nothing
+| gamma_justornothingA_nothing : ∀ a, 
+    gamma_maybeA (JustOrNothingA a) Nothing
+| gamma_justA_just : ∀ a' a, 
+    gamma a' a → 
+    gamma_maybeA (JustA a') (Just a)
+| gamma_justornothing_just : ∀ a' a, 
+    gamma a' a →
+    gamma_maybeA (JustOrNothingA a') (Just a).
+\end{minted}
+\caption{Gamma function for AbstractMaybe}
+\label{lst:gamma_maybeA}
+\end{listing}
 
 As with Maybe, we have monad transformer that adds this functionality to a
 monad. We call this transformer MaybeAT, and we define it as \\
@@ -996,7 +1032,7 @@ monad. We call this transformer MaybeAT, and we define it as \\
 As observed in the previous section, the abstract and concrete interpreter
 share many similarities. This leads us to the question of whether we can
 decompose the interpreters along the shared structure in a way that eases the
-proof burden. In this section, we look at how we've extracted the shared
+proof burden. In this section, we look at how we have extracted the shared
 interpreter and how this shared structure can be instantiated to create
 abstract and concrete interpreters like those defined earlier.
 
@@ -1008,15 +1044,15 @@ means that we will require an interface for boolean types and an interface for
 numerical types.
 
 \begin{minted}{Coq}
-Class IsBool (M : Type -> Type)
+Class IsBool (M : Type → Type)
   (valType boolType : Type) : Type :=
 {
-  ensure_bool  : valType -> M boolType;
-  build_bool   : boolType -> M valType;
-  extract_bool : bool -> M boolType;
-  and_op       : boolType -> boolType -> M boolType;
-  neg_op       : boolType -> M boolType;
-  if_op        : boolType -> M unit -> M unit -> M unit;
+  ensure_bool  : valType → M boolType;
+  build_bool   : boolType → M valType;
+  extract_bool : bool → M boolType;
+  and_op       : boolType → boolType → M boolType;
+  neg_op       : boolType → M boolType;
+  if_op        : boolType → M unit → M unit → M unit;
 }.
 \end{minted}
 
@@ -1077,16 +1113,16 @@ take. The listing also shows how the extract function takes a concrete value
 and turns it into the correct abstraction.
 
 \begin{minted}{Coq}
-Class IsNat (M : Type -> Type)
+Class IsNat (M : Type → Type)
   (valType boolType natType : Type) : Type :=
 {
-  ensure_nat  : valType -> M natType;
-  build_nat   : natType -> M valType;
-  extract_nat : nat -> M natType;
-  plus_op     : natType -> natType -> M natType;
-  mult_op     : natType -> natType -> M natType;
-  eq_op       : natType -> natType -> M boolType;
-  le_op       : natType -> natType -> M boolType;
+  ensure_nat  : valType → M natType;
+  build_nat   : natType → M valType;
+  extract_nat : nat → M natType;
+  plus_op     : natType → natType → M natType;
+  mult_op     : natType → natType → M natType;
+  eq_op       : natType → natType → M boolType;
+  le_op       : natType → natType → M boolType;
 }.
 \end{minted}
 
@@ -1097,7 +1133,7 @@ addition multiplication, equality and less-than.
 Using the above interfaces, we can define the shared interpreter.
 \begin{minted}{Coq}
 Definition extract_build_val 
-    {M : Type -> Type} 
+    {M : Type → Type} 
     {valType boolType natType : Type}
     `{M_monad : Monad M, 
       nat_inst : IsNat M valType boolType natType, 
@@ -1109,7 +1145,7 @@ Definition extract_build_val
   end.
 
 Fixpoint shared_eval_expr 
-    {M : Type -> Type} {valType boolType natType : Type}
+    {M : Type → Type} {valType boolType natType : Type}
     `{M_monad : Monad M, 
       store_inst : MonadState (total_map valType) M,
       nat_inst  : IsNat M valType boolType natType, 
@@ -1164,10 +1200,10 @@ Fixpoint shared_eval_expr
   end.
   
 Fixpoint shared_ceval 
-  {M : Type -> Type} {valType natType boolType : Type}
+  {M : Type → Type} {valType natType boolType : Type}
   `{M_fail : MonadFail M, 
     store : MonadState (total_map valType)  M, 
-    M_except : forall A, MonadExcept M A, 
+    M_except : ∀ A, MonadExcept M A, 
     nat_inst : IsNat M valType boolType natType, 
     bool_inst : IsBool M valType boolType}
   (c : com) : M unit :=
@@ -1256,8 +1292,8 @@ if when, if the inputs are related, the output is also related. In Coq, this
 notion of relatedness is written as follows
 
 \begin{minted}{Coq}
-Lemma parity_plus_sound : forall p1 p2 n1 n2, 
-    gamma p1 n1 -> gamma p2 n2 -> 
+Lemma parity_plus_sound : ∀ p1 p2 n1 n2, 
+    gamma p1 n1 → gamma p2 n2 → 
     gamma (parity_plus p1 p2) (plus n1 n2).
 \end{minted}
 
@@ -1301,7 +1337,7 @@ functions we've already proven the soundness of, such as \coq{parity_plus }, or
 methods from the MonadExcept and MonadState typeclasses.
 
 \begin{minted}{Coq}
-Theorem eval_expr_sound : forall a,
+Theorem eval_expr_sound : ∀ a,
   gamma (eval_expr_abstract a) (eval_expr a).
 Proof.
   intros. unfold eval_expr_abstract, eval_expr. induction a; 
@@ -1309,7 +1345,7 @@ Proof.
 Qed.
 
 Theorem sound_interpreter:
-  forall c, gamma (ceval_abstract c) (ceval c).
+  ∀ c, gamma (ceval_abstract c) (ceval c).
 Proof.
   intros. unfold ceval_abstract, ceval. 
   induction c; simpl; repeat solve_binds; auto with soundness.

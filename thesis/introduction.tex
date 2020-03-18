@@ -24,7 +24,7 @@ an SQL injection attack. Another example of a kind of static analysis is a
 type checker. Type checkers are used in the compilers of many languages and 
 assure that the provided program is well-typed. 
 
-As programs that are not well-typed will crash, it is important
+As programs that are well-typed should not crash, it is important
 that the type checker will not report false positives. To put it in other 
 words, it is important that the static analysis is sound. False positives would
 mean that the analyzer says the program is okay, but will in fact crash during
@@ -37,7 +37,8 @@ encourage the use of the analyzer.
 Proving that static analyzers are sound is a daunting task. Doing it by hand is
 a long and cumbersome process, and error prone as a result of this.
 Research into abstract interpretation started in the 1970s, in part by Cousot 
-and Cousot~\cite{cousot1977abstract}. Their 1977 paper showed how reasoning over
+and Cousot~\cite{cousot1977abstract} in their 1977 paper. They showed how 
+reasoning over
 the abstract properties of values could be used to perform program analysis,
 despite the resulting abstractions being imprecise. A few years later, they
 build upon theirs and other work to define a generic framework to capture the
@@ -45,23 +46,28 @@ program flow using abstract interpretation~\cite{cousot1979systematic}.
 Cousot then provided a method for designing an abstract interpreter
 based on a provided concrete interpreter~\cite{cousot1999calculational}.
 Using the Galois connections between
-the concrete and abstract values, he showed that it is possible to calcuate 
-a sound abstract interpreter.
+the concrete and abstract values, they showed that it is possible to calculate 
+a sound abstract interpreter in what they called the calculational approach.
+% TODO does not flow
 
-The work of Coquand et al~\cite{coquand1986calculus} eventually led to the
-development of Coq, an interactive proof assistant. Coq implements the calculus
-of constructions, a system for constructive proofs. By using proof assistants 
-we can mechanically prove the soundness of analyzers. 
-However, this is still not often done. It is difficult to
-pinpoint the exact reason for this, but we will proceed under the assumption
-that the required effort remains to large for the perceived gains.
 
 So how can we further improve upon this situation? Keidel et al. developed a 
 framework for decomposing these soundness proofs into smaller,
 independent pieces~\cite{keidel2018compositional}.
 The idea is that by reusing lemmas and reasoning about 
 shared parts between the abstract and concrete interpreters, the resulting 
-proof can be shrunk significantly.
+proof can be shrunk significantly. The abstract and concrete interpreters are 
+instantiantions of a shared 
+interpreter; this shared interpreter only uses methods exposes by an interface,
+and the abstract and concrete interpreters provide abstract and concrete
+implementations respectivally of this interface. The problem of proving the
+soundness of the abstract interpreter then simplifies to proving the soundness
+of the corresponding methods of the interfaces. This paper serves as the basis
+for this thesis. 
+
+The proofs in Keidels work are pen-and-paper proofs. By implenting the ideas
+presented in Coq instead of Haskell, we can mechanize these pen-and-paper
+proofs, making abstract interpreters that are proven sound more accessible.
 
 Prior work with regards mechanically proving the soundness of abstract
 interpreters has been done before by Monniaux et al~\cite{Monniaux3}. One of the
@@ -76,10 +82,11 @@ constructive.
 % Research in proof assistants, what did it add
 
 \section{Problem Statement}
-The goal of this thesis is to implement a framework in Coq that can be used to 
-ease the development of soundness
-proofs, and perform a case study in which the soundness of an abstract
-interpreter is proven using that framework. The idea is that in the process of
+The goal of this thesis is to implement a framework in Coq based on the work by 
+Keidel et al. that can be used to ease the development of soundness
+proofs of static analyzers, and perform a case study in which the soundness of 
+an abstract interpreter is proven using that framework. 
+The idea is that in the process of
 developing the framework we will be able to articulate best practices for
 writing soundness proofs.
 
