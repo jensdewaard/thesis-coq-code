@@ -29,7 +29,6 @@ Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 Definition flip {A B C : Type} (f : A → B → C) (x : B) (y : A) : C :=
   f y x.
 
-
 Ltac ext := let x := fresh "x" in extensionality x.
 
 Ltac unmatch x :=
@@ -65,5 +64,25 @@ Ltac simple_solve := autounfold with soundness; intros;
  * and unbounded, we set an upperbound here to avoid infinite loops *)
 Global Set Typeclasses Depth 10.
 
-Class Inhabited (S : Type) := inhabitant : S.
-Arguments inhabitant _ {_}.
+Class Inhabited (S : Type) := inhabitent : S.
+Arguments inhabitent _ {_}.
+
+Class SubType (sub : Type) (super : Type) : Type := {
+  inject : sub → super;
+  project : super → option sub
+}.
+
+Instance subtype_l : ∀ {A B}, SubType A (A + B) := {
+  inject := inl;
+  project := λ s, match s with | inl x => Some x | _ => None end
+}.
+
+Instance subtype_self : ∀ {A}, SubType A A := {
+  inject := id;
+  project := λ x, Some x
+}.
+
+Instance subtype_r : ∀ {A B C} `{SubType A B}, SubType A (C + B) := {
+  inject := inject ∘ inr;
+  project := λ s, match s with | inr x => project x | _ => None end
+}.
