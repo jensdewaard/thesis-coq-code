@@ -13,7 +13,6 @@ Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Parity.
 Require Import Types.Stores.
-Require Import Types.Maybe.
 Require Import Types.State.
 
 Inductive gamma_par : parity → nat → Prop :=
@@ -187,49 +186,49 @@ Section galois_identity.
   }.
 End galois_identity.
 
-Section galois_maybe.
+Section galois_option.
   Context {A A'} `{A_galois : Galois A A'}.
 
-  Inductive gamma_maybeA : AbstractMaybe A' → Maybe A → Prop :=
-    | gamma_noneA : gamma_maybeA NoneA None
-    | gamma_justornoneA_none : ∀ a, 
-        gamma_maybeA (JustOrNoneA a) None
-    | gamma_justA_just : ∀ a' a, gamma a' a → gamma_maybeA (JustA a') (Just a)
-    | gamma_justornone_just : ∀ a' a, 
+  Inductive gamma_optionA : optionA A' → option A → Prop :=
+    | gamma_noneA : gamma_optionA NoneA None
+    | gamma_SomeornoneA_none : ∀ a, 
+        gamma_optionA (SomeOrNoneA a) None
+    | gamma_SomeA_Some : ∀ a' a, gamma a' a → gamma_optionA (SomeA a') (Some a)
+    | gamma_Someornone_Some : ∀ a' a, 
         gamma a' a →
-        gamma_maybeA (JustOrNoneA a') (Just a).
-  Hint Constructors gamma_maybeA : soundness.
+        gamma_optionA (SomeOrNoneA a') (Some a).
+  Hint Constructors gamma_optionA : soundness.
 
-  Inductive gamma_maybe : Maybe A' → Maybe A → Prop :=
-    | gamma_none : ∀ m, gamma_maybe None m
-    | gamma_just_just : ∀ a' a, gamma a' a → gamma_maybe (Just a') (Just a).
-  Hint Constructors gamma_maybe : soundness.
+  Inductive gamma_option : option A' → option A → Prop :=
+    | gamma_none : ∀ m, gamma_option None m
+    | gamma_Some_Some : ∀ a' a, gamma a' a → gamma_option (Some a') (Some a).
+  Hint Constructors gamma_option : soundness.
 
-  Lemma gamma_maybeA_monotone : monotone gamma_maybeA.
+  Lemma gamma_optionA_monotone : monotone gamma_optionA.
   Proof.
     unfold monotone. intros a a' Ha. constructor; intros m Hm.
     inv Ha; inv Hm; eauto with soundness; try constructor; try apply_widen.
   Qed.
 
-  Lemma gamma_maybe_monotone : monotone gamma_maybe.
+  Lemma gamma_option_monotone : monotone gamma_option.
   Proof.
     unfold monotone. intros a a' Ha. constructor; intros m Hm.
     inv Ha; inv Hm; eauto with soundness. constructor. apply_widen.
   Qed.
 
-  Global Instance galois_maybeA : Galois (Maybe A) (AbstractMaybe A') :=
+  Global Instance galois_optionA : Galois (option A) (optionA A') :=
   {
-    gamma := gamma_maybeA;
-    gamma_monotone := gamma_maybeA_monotone;
+    gamma := gamma_optionA;
+    gamma_monotone := gamma_optionA_monotone;
   }.
 
-  Global Instance galois_maybe : Galois (Maybe A) (Maybe A') :=
+  Global Instance galois_option : Galois (option A) (option A') :=
   {
-    gamma := gamma_maybe;
-    gamma_monotone := gamma_maybe_monotone;
+    gamma := gamma_option;
+    gamma_monotone := gamma_option_monotone;
   }.
-End galois_maybe.
-Hint Constructors gamma_maybeA gamma_maybe : soundness.
+End galois_option.
+Hint Constructors gamma_optionA gamma_option : soundness.
 
 Section galois_unit.
   Definition gamma_unit (u v : unit) : Prop := True.
@@ -245,7 +244,7 @@ Section galois_unit.
 End galois_unit.
 Hint Unfold gamma_unit : soundness.
 
-Section galois_maybeT.
+Section galois_optionT.
   Context {A A' : Type} `{A_galois : Galois A A'}.
   Context {M M' : Type → Type} `{M_monad : Monad M, M'_monad : Monad M'}
     {M_preorderset : ∀ B, PreorderedSet B → PreorderedSet (M B)}
@@ -254,14 +253,14 @@ Section galois_maybeT.
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.
 
-  Global Instance galois_maybeT : Galois (MaybeT M A) (MaybeT M' A') :=
+  Global Instance galois_optionT : Galois (optionT M A) (optionT M' A') :=
   {
     gamma := gamma;
     gamma_monotone := gamma_monotone;
   }.
-End galois_maybeT.
+End galois_optionT.
 
-Section galois_maybeAT.
+Section galois_optionAT.
   Context {A A' : Type} `{A_galois : Galois A A'}.
   Context {M M' : Type → Type} `{M_monad : Monad M, M'_monad : Monad M'} 
     {M_preorderset : ∀ B, PreorderedSet B → PreorderedSet (M B)}
@@ -270,12 +269,12 @@ Section galois_maybeAT.
       {HM : PreorderedSet (M' T')}, 
       @Galois T T' HT → @Galois (M T) (M' T') HM}.
 
-  Global Instance galois_maybeAT : Galois (MaybeT M A) (MaybeAT M' A') :=
+  Global Instance galois_optionAT : Galois (optionT M A) (optionAT M' A') :=
   {
-    gamma := gamma (Galois:=M_galois (Maybe A) (AbstractMaybe A') _ _ _);
+    gamma := gamma (Galois:=M_galois (option A) (optionA A') _ _ _);
     gamma_monotone := gamma_monotone;
   }.
-End galois_maybeAT.
+End galois_optionAT.
 
 Section galois_stateT.
   Context {A A': Type} `{A_galois : Galois A A'}.

@@ -8,7 +8,6 @@ Require Import Language.Statements.
 Require Import Psatz.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
-Require Import Types.Maybe.
 Require Import Types.Parity.
 Require Import Types.State.
 Require Import Types.Stores.
@@ -448,103 +447,103 @@ Section identity_joinable.
   }.
 End identity_joinable.
 
-Section maybe_joinable.
+Section option_joinable.
   Context {A : Type} `{A_joinable : Joinable A}.
 
-  Definition maybe_join (m n : Maybe A) : Maybe A :=
+  Definition option_join (m n : option A) : option A :=
     match m, n with
-    | Just x, Just y => Just (join_op x y)
+    | Some x, Some y => Some (join_op x y)
     | _, _ => None
     end.
 
-  Lemma maybe_join_left : ∀ m n, preorder m (maybe_join m n).
+  Lemma option_join_left : ∀ m n, preorder m (option_join m n).
   Proof.
     destruct m, n; simpl; auto with soundness. 
   Qed.
 
-  Lemma maybe_join_right : ∀ m n, preorder n (maybe_join m n).
+  Lemma option_join_right : ∀ m n, preorder n (option_join m n).
   Proof. destruct m, n; simpl; auto with soundness. Qed.
 
-  Lemma maybe_join_assoc : ∀ x y z, 
-    maybe_join x (maybe_join y z) = maybe_join (maybe_join x y) z.
+  Lemma option_join_assoc : ∀ x y z, 
+    option_join x (option_join y z) = option_join (option_join x y) z.
   Proof.
     intros. destruct x, y, z; try reflexivity.
     simpl. rewrite join_assoc. reflexivity.
   Qed.
 
-  Lemma maybe_join_idem : ∀ m, maybe_join m m = m.
+  Lemma option_join_idem : ∀ m, option_join m m = m.
   Proof.
     destruct m; simpl; try rewrite join_idem; reflexivity.
   Qed.
 
-  Lemma maybe_join_comm : ∀ x y, maybe_join x y = maybe_join y x.
+  Lemma option_join_comm : ∀ x y, option_join x y = option_join y x.
   Proof.
     destruct x, y; simpl. rewrite join_comm. all: reflexivity.
   Qed.
 
-  Global Instance maybe_joinable : Joinable (Maybe A) :=
+  Global Instance option_joinable : Joinable (option A) :=
   {
-    join_idem := maybe_join_idem;
-    join_upper_bound_left := maybe_join_left;
-    join_upper_bound_right := maybe_join_right;
-    join_assoc := maybe_join_assoc;
-    join_comm := maybe_join_comm;
+    join_idem := option_join_idem;
+    join_upper_bound_left := option_join_left;
+    join_upper_bound_right := option_join_right;
+    join_assoc := option_join_assoc;
+    join_comm := option_join_comm;
   }.
-End maybe_joinable.
+End option_joinable.
 
-Section abstract_maybe_joinable.
-Context {A : Type} `{A_joinable : Joinable A}.
+Section optionA_joinable.
+  Context {A : Type} `{A_joinable : Joinable A}.
 
-Definition abstract_maybe_join
-  (st1 st2 : AbstractMaybe A) : AbstractMaybe A :=
-  match st1, st2 with
-  | NoneA, NoneA => NoneA
-  | JustA x, JustA y => JustA (join_op x y)
-  | JustA x, NoneA | NoneA, JustA x =>  JustOrNoneA x
-  | NoneA, JustOrNoneA x | JustOrNoneA x, NoneA => JustOrNoneA x
-  | JustA x, JustOrNoneA y | JustOrNoneA x, JustA y => 
-      JustOrNoneA (join_op x y)
-  | JustOrNoneA x, JustOrNoneA y => JustOrNoneA (join_op x y)
-  end.
-Hint Unfold abstract_maybe_join : soundness.
+  Definition optionA_join
+    (st1 st2 : optionA A) : optionA A :=
+    match st1, st2 with
+    | NoneA, NoneA => NoneA
+    | SomeA x, SomeA y => SomeA (join_op x y)
+    | SomeA x, NoneA | NoneA, SomeA x =>  SomeOrNoneA x
+    | NoneA, SomeOrNoneA x | SomeOrNoneA x, NoneA => SomeOrNoneA x
+    | SomeA x, SomeOrNoneA y | SomeOrNoneA x, SomeA y => 
+        SomeOrNoneA (join_op x y)
+    | SomeOrNoneA x, SomeOrNoneA y => SomeOrNoneA (join_op x y)
+    end.
+  Hint Unfold optionA_join : soundness.
 
-Lemma abstract_maybe_join_upperbound_left : forall st st',
-  preorder st (abstract_maybe_join st st').
+Lemma optionA_join_upperbound_left : forall st st',
+  preorder st (optionA_join st st').
 Proof. simple_solve. Qed.
 
-Lemma abstract_maybe_join_upperbound_right : forall st st',
-  preorder st' (abstract_maybe_join st st').
+Lemma optionA_join_upperbound_right : forall st st',
+  preorder st' (optionA_join st st').
 Proof. simple_solve. Qed.
 
-Lemma abstract_maybe_join_assoc : ∀ x y z : AbstractMaybe A,
-  abstract_maybe_join x (abstract_maybe_join y z) =
-  abstract_maybe_join (abstract_maybe_join x y) z.
+Lemma optionA_join_assoc : ∀ x y z : optionA A,
+  optionA_join x (optionA_join y z) =
+  optionA_join (optionA_join x y) z.
 Proof.
   intros. destruct x, y, z; simpl; try reflexivity.
   all: repeat rewrite join_assoc; reflexivity.
 Qed.
 
-Lemma abstract_maybe_join_idem : ∀ am, 
-  abstract_maybe_join am am = am.
+Lemma optionA_join_idem : ∀ am, 
+  optionA_join am am = am.
 Proof.
   destruct am; simpl; try rewrite join_idem; reflexivity.
 Qed.
 
-Lemma abstract_maybe_join_comm : ∀ x y,
-  abstract_maybe_join x y = abstract_maybe_join y x.
+Lemma optionA_join_comm : ∀ x y,
+  optionA_join x y = optionA_join y x.
 Proof.
   intros. destruct x, y; simpl; try rewrite join_comm; reflexivity.
 Qed.
 
-Global Instance abstract_maybe_joinable : Joinable (AbstractMaybe A) := 
+Global Instance optionA_joinable : Joinable (optionA A) := 
 {
-  join_idem := abstract_maybe_join_idem;
-  join_upper_bound_left := abstract_maybe_join_upperbound_left;
-  join_upper_bound_right := abstract_maybe_join_upperbound_right;
-  join_assoc := abstract_maybe_join_assoc;
-  join_comm := abstract_maybe_join_comm;
+  join_idem := optionA_join_idem;
+  join_upper_bound_left := optionA_join_upperbound_left;
+  join_upper_bound_right := optionA_join_upperbound_right;
+  join_assoc := optionA_join_assoc;
+  join_comm := optionA_join_comm;
 }.
-End abstract_maybe_joinable.
+End optionA_joinable.
 
 Section joinable_pairs.
   Context {A B} `{A_joinable : Joinable A, B_joinable : Joinable B}.
@@ -592,14 +591,14 @@ Section joinable_pairs.
   }.
 End joinable_pairs.
 
-Section joinable_maybeT.
+Section joinable_optionT.
   Context {M : Type → Type} `{M_monad : Monad M}.
   Context {M_preorder : ∀ T, PreorderedSet (M T)}.
   Context {M_joinable : ∀ T {T_preorder : PreorderedSet T}, 
     Joinable (M T)}.
 
-  Global Instance maybeT_joinable {A} `{A_joinable : Joinable A} :
-    Joinable (MaybeT M A) :=
+  Global Instance optionT_joinable {A} `{A_joinable : Joinable A} :
+    Joinable (optionT M A) :=
   {
     join_op := join_op;
     join_idem := join_idem;
@@ -608,16 +607,16 @@ Section joinable_maybeT.
     join_assoc := join_assoc;
     join_comm := join_comm;
   }.
-End joinable_maybeT.
+End joinable_optionT.
 
-Section joinable_maybeAT.
+Section joinable_optionAT.
   Context {M : Type → Type} `{M_monad : Monad M}.
   Context {M_preorder : ∀ T, PreorderedSet (M T)}.
   Context {M_joinable : ∀ T {T_preorder : PreorderedSet T}, 
     Joinable (M T)}.
 
-  Global Instance maybeAT_joinable {A} `{A_joinable : Joinable A} : 
-    Joinable (MaybeAT M A) :=
+  Global Instance optionAT_joinable {A} `{A_joinable : Joinable A} : 
+    Joinable (optionAT M A) :=
   {
     join_op := join_op;
     join_idem := join_idem;
@@ -626,7 +625,7 @@ Section joinable_maybeAT.
     join_assoc := join_assoc;
     join_comm := join_comm;
   }.
-End joinable_maybeAT.
+End joinable_optionAT.
 
 Section joinable_stateT.
   Context {M : Type → Type} `{M_monad : Monad M}.

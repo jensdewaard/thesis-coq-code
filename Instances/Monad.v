@@ -7,7 +7,6 @@ Require Import Coq.Program.Basics.
 Require Import FunctionalExtensionality.
 Require Import Language.Statements.
 Require Import Types.Maps.
-Require Import Types.Maybe.
 Require Import Types.State.
 Require Import Instances.Joinable.
 Require Import Instances.Preorder.
@@ -55,246 +54,243 @@ Section Identity_Monad.
   }.
 End Identity_Monad.
 
-Section Maybe_Monad.
-  Definition bind_maybe {A B} 
-    (m : Maybe A) (f : A -> Maybe B) : Maybe B :=
+Section option_monad.
+  Definition bind_option {A B} 
+    (m : option A) (f : A -> option B) : option B :=
     match m with
     | None => None
-    | Just a => f a
+    | Some a => f a
     end.
-  Arguments bind_maybe [A B].
-  Hint Unfold bind_maybe : soundness.
+  Hint Unfold bind_option : soundness.
 
-  Lemma bind_maybe_id_left : ∀ {A B} (f : A → Maybe B) (a : A), 
-    bind_maybe (Just a) f = f a.
+  Lemma bind_option_id_left : ∀ {A B} (f : A → option B) (a : A), 
+    bind_option (Some a) f = f a.
   Proof. simple_solve. Qed.
-  Arguments bind_maybe_id_left [A B] f a.
+  Arguments bind_option_id_left [A B] f a.
 
-  Lemma bind_maybe_id_right : ∀ {A} (m : Maybe A), 
-    bind_maybe m Just = m.
+  Lemma bind_option_id_right : ∀ {A} (m : option A), 
+    bind_option m Some = m.
   Proof. simple_solve. Qed.
-  Arguments bind_maybe_id_right [A].
+  Arguments bind_option_id_right [A] m.
 
-  Lemma bind_maybe_assoc : ∀ {A B C} (m : Maybe A) 
-    (f : A → Maybe B) (g : B → Maybe C),
-  bind_maybe (bind_maybe m f) g = bind_maybe m (λ a : A, bind_maybe (f a) g).
+  Lemma bind_option_assoc : ∀ {A B C} (m : option A) 
+    (f : A → option B) (g : B → option C),
+  bind_option (bind_option m f) g = bind_option m (λ a : A, bind_option (f a) g).
   Proof. simple_solve. Qed.
-  Arguments bind_maybe_assoc [A B C] m f g.
+  Arguments bind_option_assoc [A B C] m f g.
 
-  Global Instance monad_maybe : Monad Maybe :=
+  Global Instance option_monad : Monad option :=
   {
-    bind_id_left := bind_maybe_id_left;
-    bind_id_right := bind_maybe_id_right;
-    bind_assoc := bind_maybe_assoc;
+    bind_id_left := bind_option_id_left;
+    bind_id_right := bind_option_id_right;
+    bind_assoc := bind_option_assoc;
   }. 
-End Maybe_Monad.
-Hint Rewrite @bind_maybe_id_left @bind_maybe_id_right : soundness.
+End option_monad.
+Hint Rewrite @bind_option_id_left @bind_option_id_right : soundness.
 
-Section AbstractMaybe_Monad.
-  Definition bind_maybeA {A B : Type}
-    (m : AbstractMaybe A) (f : A -> AbstractMaybe B) : AbstractMaybe B :=
+Section optionA_monad.
+  Definition bind_optionA {A B : Type}
+    (m : optionA A) (f : A -> optionA B) : optionA B :=
     match m with
     | NoneA => NoneA
-    | JustA a => f a
-    | JustOrNoneA a => match (f a) with
+    | SomeA a => f a
+    | SomeOrNoneA a => match (f a) with
                        | NoneA => NoneA
-                       | JustA b => JustOrNoneA b
-                       | JustOrNoneA b => JustOrNoneA b
+                       | SomeA b => SomeOrNoneA b
+                       | SomeOrNoneA b => SomeOrNoneA b
                        end
     end.
-  Arguments bind_maybeA [_ _].
-  Hint Unfold bind_maybeA : soundness.
+  Arguments bind_optionA [_ _].
+  Hint Unfold bind_optionA : soundness.
 
-  Lemma bind_maybeA_id_left : ∀ {A B} (f : A → AbstractMaybe B) (a : A),
-  bind_maybeA (JustA a) f = f a.
+  Lemma bind_optionA_id_left : ∀ {A B} (f : A → optionA B) (a : A),
+  bind_optionA (SomeA a) f = f a.
   Proof. simple_solve. Qed.
-  Arguments bind_maybeA_id_left [A B] f a.
+  Arguments bind_optionA_id_left [A B] f a.
 
-  Lemma bind_maybeA_id_right :  ∀ {A} (m : AbstractMaybe A),
-    bind_maybeA m JustA = m.
+  Lemma bind_optionA_id_right :  ∀ {A} (m : optionA A),
+    bind_optionA m SomeA = m.
   Proof. solve_monad. Qed.
-  Arguments bind_maybeA_id_right [A].
+  Arguments bind_optionA_id_right [A].
 
-  Lemma bind_maybeA_assoc : ∀ {A B C} (m : AbstractMaybe A) 
-    (f : A → AbstractMaybe B) (g : B → AbstractMaybe C),
-    bind_maybeA (bind_maybeA m f) g =
-    bind_maybeA m (λ a : A, bind_maybeA (f a) g).
+  Lemma bind_optionA_assoc : ∀ {A B C} (m : optionA A) 
+    (f : A → optionA B) (g : B → optionA C),
+    bind_optionA (bind_optionA m f) g =
+    bind_optionA m (λ a : A, bind_optionA (f a) g).
   Proof. solve_monad. Qed.
-  Arguments bind_maybeA_assoc [A B C] m f g.
+  Arguments bind_optionA_assoc [A B C] m f g.
 
-  Global Instance monad_abstract_maybe : Monad AbstractMaybe :=
+  Global Instance optionA_monad : Monad optionA :=
   {
-    bind_id_left := bind_maybeA_id_left;
-    bind_id_right := bind_maybeA_id_right;
-    bind_assoc := bind_maybeA_assoc;
+    bind_id_left := bind_optionA_id_left;
+    bind_id_right := bind_optionA_id_right;
+    bind_assoc := bind_optionA_assoc;
   }. 
-End AbstractMaybe_Monad.
-Hint Rewrite @bind_maybeA_id_left @bind_maybeA_id_right : soundness.
+End optionA_monad.
+Hint Rewrite @bind_optionA_id_left @bind_optionA_id_right : soundness.
 
-Section MaybeT_Monad.
+Section optionT_Monad.
   Context {M} `{M_monad : Monad M}.
 
-  Definition bind_maybeT {A B} (m : MaybeT M A) 
-    (f : A -> MaybeT M B) : MaybeT M B :=
-    bindM (M:=M) m (λ v : Maybe A,
+  Definition bind_optionT {A B} (m : optionT M A) 
+    (f : A -> optionT M B) : optionT M B :=
+    bindM (M:=M) m (λ v : option A,
       match v with
-      | None => NoneT
-      | Just a => f a
-      end
-    ).
-  Arguments bind_maybeT [A B] m f.
-  Hint Unfold bind_maybeT : soundness.
+      | None => (returnM None)
+      | Some a => f a
+      end).
+  Arguments bind_optionT [A B] m f.
+  Hint Unfold bind_optionT : soundness.
 
-  Lemma bind_maybeT_id_left : ∀ {A B} (f : A → MaybeT M B) (a : A), 
-    bind_maybeT (JustT a) f = f a.
+  Lemma bind_optionT_id_left : ∀ {A B} (f : A → optionT M B) (a : A), 
+    bind_optionT (returnM (M:=M) (Some a)) f = f a.
   Proof. 
-    intros. unfold bind_maybeT, JustT. 
+    intros. unfold bind_optionT.
     rewrite bind_id_left. reflexivity.
   Qed.
-  Arguments bind_maybeT_id_left [A B] f a.
+  Arguments bind_optionT_id_left [A B] f a.
 
-  Lemma bind_maybeT_id_right : ∀ {A} (m : MaybeT M A),
-    bind_maybeT m JustT = m.
+  Lemma bind_optionT_id_right : ∀ {A} (m : optionT M A),
+    bind_optionT m (λ a, returnM (M:=M) (Some a)) = m.
   Proof. 
-    intros. unfold bind_maybeT, NoneT, JustT. 
+    intros. unfold bind_optionT.
     rewrite <- (bind_id_right (M:=M)). f_equal. 
     ext; destruct x; reflexivity.
   Qed.
-  Arguments bind_maybeT_id_right [A] m.
+  Arguments bind_optionT_id_right [A] m.
 
-  Lemma bind_maybeT_assoc : ∀ {A B C} (m : MaybeT M A) 
-    (f : A → MaybeT M B) (g : B → MaybeT M C),
-    bind_maybeT (bind_maybeT m f) g =
-    bind_maybeT m (λ a : A, bind_maybeT (f a) g).
+  Lemma bind_optionT_assoc : ∀ {A B C} (m : optionT M A) 
+    (f : A → optionT M B) (g : B → optionT M C),
+    bind_optionT (bind_optionT m f) g =
+    bind_optionT m (λ a : A, bind_optionT (f a) g).
   Proof. 
-    intros. unfold bind_maybeT. autorewrite with soundness.
+    intros. unfold bind_optionT. autorewrite with soundness.
     f_equal. ext. destruct x; eauto with soundness.
-    unfold NoneT. autorewrite with soundness. reflexivity.
+    autorewrite with soundness. reflexivity.
   Qed.
-  Arguments bind_maybeT_assoc [A B C] m f g.
+  Arguments bind_optionT_assoc [A B C] m f g.
 
-  Global Instance monad_maybeT : Monad (MaybeT M) :=
+  Global Instance monad_optionT : Monad (optionT M) :=
   {
-    bind_id_left := bind_maybeT_id_left;
-    bind_id_right := bind_maybeT_id_right;
-    bind_assoc := bind_maybeT_assoc;
+    bind_id_left := bind_optionT_id_left;
+    bind_id_right := bind_optionT_id_right;
+    bind_assoc := bind_optionT_assoc;
   }. 
-End MaybeT_Monad.
-Hint Unfold bind_maybeT : soundness.
-Hint Rewrite @bind_maybeT_id_left @bind_maybeT_id_right : soundness.
+End optionT_Monad.
+Hint Unfold bind_optionT : soundness.
+Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : soundness.
 
-Section MaybeT_MonadT.
-  Definition lift_maybeT {M : Type → Type} `{Monad M} {A} (m : M A) : MaybeT M A :=
-    bindM (M:=M) m (λ a, JustT a).
-  Hint Unfold lift_maybeT : soundness.
+Section optionT_monadT.
+  Definition lift_optionT {M : Type → Type} `{Monad M} {A} (m : M A) : optionT M A :=
+    bindM (M:=M) m (λ a, returnM (Some a)).
+  Hint Unfold lift_optionT : soundness.
 
-  Lemma lift_maybeT_pure {M : Type → Type} `{Monad M} : ∀ {A : Type} (a : A),
-    lift_maybeT (returnM (M:=M) a) = JustT a.
-  Proof. solve_monad. Qed.
-
-  Lemma lift_maybeT_bind {M : Type → Type} `{Monad M} : 
-    ∀ (A B : Type) (m : M A) (f : A → M B),
-  lift_maybeT (m >>= f) = bind_maybeT (lift_maybeT m) (f ∘ (lift_maybeT (A:=B))).
+  Lemma lift_optionT_pure {M : Type → Type} `{Monad M} : ∀ {A : Type} (a : A),
+    lift_optionT (returnM (M:=M) a) = returnM (M:=M) (Some a).
   Proof. 
-    intros. unfold lift_maybeT, bind_maybeT, NoneT, JustT. 
+    intros. unfold lift_optionT. 
+    rewrite bind_id_left. reflexivity.
+  Qed.
+
+  Lemma lift_optionT_bind {M : Type → Type} `{Monad M} : 
+    ∀ (A B : Type) (m : M A) (f : A → M B),
+  lift_optionT (m >>= f) = bind_optionT (lift_optionT m) (f ∘ (lift_optionT (A:=B))).
+  Proof. 
+    intros. unfold lift_optionT, bind_optionT.
     autorewrite with soundness. f_equal; ext. autorewrite with soundness.
     reflexivity.
   Qed.
 
-  Global Instance monadT_maybeT : MonadT (MaybeT) :=
+  Global Instance monadT_optionT : MonadT (optionT) :=
   {
-    lift_return := @lift_maybeT_pure;
-    lift_bind := @lift_maybeT_bind;
+    lift_return := @lift_optionT_pure;
+    lift_bind := @lift_optionT_bind;
   }. 
-End MaybeT_MonadT.
+End optionT_monadT.
 
-Section MaybeAT_Monad.
+Section optionAT_monad.
   Context {M} `{M_monad : Monad M}.
 
-  Definition bind_maybeAT {A B} 
-    (Mma : MaybeAT M A)
-    (f : A -> MaybeAT M B) : MaybeAT M B :=
+  Definition bind_optionAT {A B} 
+    (Mma : optionAT M A)
+    (f : A -> optionAT M B) : optionAT M B :=
   bindM (M:=M) Mma (fun ma =>
     match ma with
     | NoneA => returnM NoneA
-    | JustA a => f a
-    | JustOrNoneA a => (
+    | SomeA a => f a
+    | SomeOrNoneA a => (
         bindM (M:=M) (f a) (fun mfa =>
                        match mfa with
                        | NoneA => returnM NoneA
-                       | JustA b => returnM (JustOrNoneA b)
-                       | JustOrNoneA b => returnM (JustOrNoneA b)
+                       | SomeA b => returnM (SomeOrNoneA b)
+                       | SomeOrNoneA b => returnM (SomeOrNoneA b)
                        end))
     end).
-  Hint Unfold bind_maybeAT : soundness.
+  Hint Unfold bind_optionAT : soundness.
 
-  Lemma bind_maybeAT_id_left : ∀ {A B} (f : A → MaybeAT M B) (a : A), 
-    bind_maybeAT (JustAT a) f = f a.
+  Lemma bind_optionAT_id_left : ∀ {A B} (f : A → optionAT M B) (a : A), 
+    bind_optionAT (returnM (M:=M) (SomeA a)) f = f a.
   Proof. 
-    unfold JustAT, bind_maybeAT; simpl. intros.
+    unfold bind_optionAT; simpl. intros.
     rewrite bind_id_left. reflexivity.
   Qed.
-  Arguments bind_maybeAT_id_left [A B] f a.
+  Arguments bind_optionAT_id_left [A B] f a.
 
-  Lemma bind_maybeAT_id_right : ∀ (A : Type) (m : MaybeAT M A), 
-    bind_maybeAT m JustAT = m.
+  Lemma bind_optionAT_id_right : ∀ (A : Type) (m : optionAT M A), 
+    bind_optionAT m (λ a, returnM (M:=M) (SomeA a))= m.
   Proof. 
-    unfold bind_maybeAT, JustAT. intros. rewrite <- (bind_id_right (M:=M)).
+    unfold bind_optionAT.  intros. rewrite <- (bind_id_right (M:=M)).
     f_equal; extensionality x. 
     destruct x; autorewrite with soundness; try reflexivity.
   Qed.
 
-  Lemma bind_maybeAT_assoc : ∀ {A B C} (m : MaybeAT M A) 
-    (f : A → MaybeAT M B) (g : B → MaybeAT M C),
-    bind_maybeAT (bind_maybeAT m f) g =
-    bind_maybeAT m (λ a : A, bind_maybeAT (f a) g).
+  Lemma bind_optionAT_assoc : ∀ {A B C} (m : optionAT M A) 
+    (f : A → optionAT M B) (g : B → optionAT M C),
+    bind_optionAT (bind_optionAT m f) g =
+    bind_optionAT m (λ a : A, bind_optionAT (f a) g).
   Proof. 
-    intros. unfold bind_maybeAT. autorewrite with soundness.
-    f_equal; ext. destruct x; simpl. reflexivity. autorewrite with soundness.
-    f_equal; ext.
-    destruct x; autorewrite with soundness. 1, 3: reflexivity.
-    f_equal; ext. destruct x. autorewrite with soundness.
-    reflexivity. autorewrite with soundness. reflexivity.
-    autorewrite with soundness. reflexivity.
-    autorewrite with soundness. reflexivity.
+    intros. unfold bind_optionAT. autorewrite with soundness.
+    f_equal; ext. destruct x; simpl. 
+    1-2: autorewrite with soundness; reflexivity.
+    autorewrite with soundness. f_equal; ext.
+    destruct x; autorewrite with soundness. 
+    f_equal. reflexivity. f_equal; ext.
+    destruct x; autorewrite with soundness; reflexivity.
   Qed.
-  Arguments bind_maybeAT_assoc [A B C] m f g.
+  Arguments bind_optionAT_assoc [A B C] m f g.
 
-  Global Instance monad_maybeAT 
-  : Monad (MaybeAT M) :=
+  Global Instance monad_optionAT : Monad (optionAT M) :=
   {
-    bind_id_left := bind_maybeAT_id_left;
-    bind_id_right := bind_maybeAT_id_right;
-    bind_assoc := bind_maybeAT_assoc;
+    bind_id_left := bind_optionAT_id_left;
+    bind_id_right := bind_optionAT_id_right;
+    bind_assoc := bind_optionAT_assoc;
   }. 
-End MaybeAT_Monad.
-Hint Unfold bind_maybeAT : soundness.
+End optionAT_monad.
+Hint Unfold bind_optionAT : soundness.
 
-Section MaybeAT_MonadT.
-  Definition lift_maybeAT {M} `{Monad M} {A} (m : M A) : MaybeAT M A :=
-    bindM (M:=M) m (λ a, JustAT a).
-  Hint Unfold lift_maybeAT : soundness.
+Section optionAT_MonadT.
+  Definition lift_optionAT {M} `{Monad M} {A} (m : M A) : optionAT M A :=
+    bindM (M:=M) m (λ a, returnM (M:=M) (SomeA a)).
+  Hint Unfold lift_optionAT : soundness.
 
-  Definition lift_maybeAT_pure {M} `{Monad M} {A} : ∀ (a : A),
-    lift_maybeAT (returnM a) = returnM a.
-  Proof.
-    solve_monad.
-  Qed.
+  Definition lift_optionAT_pure {M} `{Monad M} {A} : ∀ (a : A),
+    lift_optionAT (returnM a) = returnM a.
+  Proof. solve_monad. Qed.
 
-  Definition lift_maybeAT_bind {M} `{Monad M} {A B}: ∀ (m : M A) (f : A → M B),
-    lift_maybeAT (m >>= f) = bind_maybeAT (lift_maybeAT m) (f ∘ lift_maybeAT (A:=B)).
+  Definition lift_optionAT_bind {M} `{Monad M} {A B}: ∀ (m : M A) (f : A → M B),
+    lift_optionAT (m >>= f) = bind_optionAT (lift_optionAT m) (f ∘ lift_optionAT (A:=B)).
   Proof. 
-    unfold lift_maybeAT, bind_maybeAT, JustAT. intros.
+    unfold lift_optionAT, bind_optionAT. intros.
     autorewrite with soundness. f_equal; ext. autorewrite with soundness.
     reflexivity.
   Qed.
 
-  Global Instance monadT_maybeAT : MonadT MaybeAT :=
+  Global Instance monadT_optionAT : MonadT optionAT :=
   {
-    lift_return := @lift_maybeAT_pure;
-    lift_bind := @lift_maybeAT_bind;
+    lift_return := @lift_optionAT_pure;
+    lift_bind := @lift_optionAT_bind;
   }. 
-End MaybeAT_MonadT.
+End optionAT_MonadT.
 
 Section State_Monad.
   Context {S : Type} `{S_joinable : Joinable S}.

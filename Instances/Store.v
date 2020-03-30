@@ -4,7 +4,6 @@ Require Import Classes.Monad.MonadState.
 Require Import Instances.Monad.
 Require Import Language.Statements.
 Require Import Types.Maps.
-Require Import Types.Maybe.
 Require Import Types.State.
 Require Import Types.Stores.
 Require Import Classes.Joinable.
@@ -37,25 +36,25 @@ Section store_stateT.
   }.
 End store_stateT.
 
-Section store_maybeT.
+Section store_optionT.
   Context {M : Type -> Type} `{M_monad : Monad M}.
 
-  Global Instance store_maybeT (S : Type) `{MonadState S M} :
-  MonadState S (MaybeT M) :=
+  Global Instance store_optionT (S : Type) `{MonadState S M} :
+  MonadState S (optionT M) :=
   {
     get := liftT get;
-    put := fun s => put s ;; returnM (Just tt);
+    put := fun s => put s ;; returnM (Some tt);
   }.
-End store_maybeT.
+End store_optionT.
 
-Section store_maybeAT.
+Section store_optionAT.
   Context {M : Type -> Type} `{M_monad : Monad M}.
 
-  Global Instance store_maybeAT (S : Type) `{MonadState S M} :
-  MonadState S (MaybeAT M) :=
+  Global Instance store_optionAT (S : Type) `{MonadState S M} :
+  MonadState S (optionAT M) :=
   {
     get := liftT get;
-    put := fun s => put s ;; returnM (JustA tt);
+    put := fun s => put s ;; returnM (SomeA tt);
   }.
-End store_maybeAT.
+End store_optionAT.
 

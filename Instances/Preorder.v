@@ -3,7 +3,6 @@ Require Import Classes.PreorderedSet.
 Require Import Classes.Monad.
 Require Import Coq.Arith.Le.
 Require Import Coq.Classes.RelationClasses.
-Require Import Types.Maybe.
 Require Import Types.State.
 Require Import Language.Statements.
 Require Import Types.AbstractBool.
@@ -273,94 +272,94 @@ Section identity_preorder.
   }.
 End identity_preorder.
 
-Section maybe_preorder.
+Section option_preorder.
   Context {A} `{A_preorder : PreorderedSet A}.
 
-  Inductive maybe_le : Maybe A → Maybe A → Prop :=
-    | maybe_le_none : ∀ m, maybe_le m None
-    | maybe_le_just : ∀ x y, preorder x y → maybe_le (Just x) (Just y).
-  Hint Constructors maybe_le : soundness.
+  Inductive option_le : option A → option A → Prop :=
+    | option_le_none : ∀ m, option_le m None
+    | option_le_just : ∀ x y, preorder x y → option_le (Some x) (Some y).
+  Hint Constructors option_le : soundness.
 
-  Lemma maybe_le_trans : Transitive maybe_le.
+  Lemma option_le_trans : Transitive option_le.
   Proof. 
     unfold Transitive. intros x y z Hxy Hyz. inv Hxy; inv Hyz;
     eauto with soundness.
   Qed.
 
-  Lemma maybe_le_refl : Reflexive maybe_le.
+  Lemma option_le_refl : Reflexive option_le.
   Proof. 
     unfold Reflexive. intro x. destruct x; auto with soundness.
   Qed.
 
-  Global Instance maybe_preorder : PreorderedSet (Maybe A) :=
+  Global Instance option_preorder : PreorderedSet (option A) :=
   {
-    preorder := maybe_le;
-    preorder_trans := maybe_le_trans;
-    preorder_refl := maybe_le_refl;
+    preorder := option_le;
+    preorder_trans := option_le_trans;
+    preorder_refl := option_le_refl;
   }.
-End maybe_preorder.
-Hint Constructors maybe_le : soundness.
+End option_preorder.
+Hint Constructors option_le : soundness.
 
-Section maybeT_preorder.
+Section optionT_preorder.
   Context {A} `{A_preorder : PreorderedSet A}.
   Context {M : Type → Type} `{M_monad : Monad M,
                               M_preordered : ∀ B, PreorderedSet B →
                               PreorderedSet (M B)}.
 
-  Global Instance maybeT_preorder : PreorderedSet (MaybeT M A) :=
+  Global Instance optionT_preorder : PreorderedSet (optionT M A) :=
   {
     preorder := preorder;
     preorder_trans := preorder_trans;
     preorder_refl := preorder_refl;
   }.
-End maybeT_preorder.
+End optionT_preorder.
 
-Section maybea_preorder.
+Section optionA_preorder.
   Context {A : Type} `{A_preorder : PreorderedSet A}.
 
-  Inductive maybea_le : AbstractMaybe A → AbstractMaybe A → Prop :=
-    | maybea_le_none : maybea_le NoneA NoneA
-    | maybea_le_none_justornone : ∀ y, maybea_le NoneA (JustOrNoneA y)
-    | maybea_le_just : ∀ x y, preorder x y → maybea_le (JustA x) (JustA y)
-    | maybea_le_justornone_r : ∀ x y, preorder x y →
-        maybea_le (JustA x) (JustOrNoneA y)
-    | maybea_le_justornone : ∀ x y, preorder x y →
-        maybea_le (JustOrNoneA x) (JustOrNoneA y).
-  Hint Constructors maybea_le : soundness.
+  Inductive optionA_le : optionA A → optionA A → Prop :=
+    | optionA_le_none : optionA_le NoneA NoneA
+    | optionA_le_none_justornone : ∀ y, optionA_le NoneA (SomeOrNoneA y)
+    | optionA_le_just : ∀ x y, preorder x y → optionA_le (SomeA x) (SomeA y)
+    | optionA_le_justornone_r : ∀ x y, preorder x y →
+        optionA_le (SomeA x) (SomeOrNoneA y)
+    | optionA_le_justornone : ∀ x y, preorder x y →
+        optionA_le (SomeOrNoneA x) (SomeOrNoneA y).
+  Hint Constructors optionA_le : soundness.
 
-  Lemma maybea_le_trans : Transitive maybea_le.
+  Lemma optionA_le_trans : Transitive optionA_le.
   Proof.
     intros x y z Hxy Hyz.
     inv Hxy; inv Hyz; eauto with soundness.
   Qed.
 
-  Lemma maybea_le_refl : Reflexive maybea_le.
+  Lemma optionA_le_refl : Reflexive optionA_le.
   Proof. 
     intro x. destruct x; auto with soundness.
   Qed.
 
-  Global Instance maybea_preorder : PreorderedSet (AbstractMaybe A) :=
+  Global Instance optionA_preorder : PreorderedSet (optionA A) :=
   {
-    preorder := maybea_le;
-    preorder_trans := maybea_le_trans;
-    preorder_refl := maybea_le_refl;
+    preorder := optionA_le;
+    preorder_trans := optionA_le_trans;
+    preorder_refl := optionA_le_refl;
   }.
-End maybea_preorder.
-Hint Constructors maybea_le : soundness.
+End optionA_preorder.
+Hint Constructors optionA_le : soundness.
 
-Section maybeAT_preorder.
+Section optionAT_preorder.
   Context {A : Type} `{A_preorder : PreorderedSet A}.
   Context {M : Type -> Type} `{M_monad : Monad M,
                                M_preorder : ∀ B, PreorderedSet B →
                                PreorderedSet (M B)}.
 
-  Global Instance maybeat_preorder : PreorderedSet (MaybeAT M A) :=
+  Global Instance optionAT_preorder : PreorderedSet (optionAT M A) :=
   {
     preorder := preorder;
     preorder_refl := preorder_refl;
     preorder_trans := preorder_trans;
   }.
-End maybeAT_preorder.
+End optionAT_preorder.
 
 Section statet_preorder.
   Context {S A : Type} `{A_preorder : PreorderedSet A, S_preorder : PreorderedSet S}.

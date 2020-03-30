@@ -6,222 +6,221 @@ Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
 Require Import Instances.Monad.
 Require Import Types.Stores.
-Require Import Types.Maybe.
 Require Import Types.State.
 
 Implicit Type A : Type.
 Implicit Type M : Type → Type.
 
-Section fail_maybe.
-  Lemma none_left : ∀ {A B} (f : A → Maybe B), bind_maybe (@None A) f = None.
+Section fail_option.
+  Lemma none_left : ∀ {A B} (f : A → option B), bind_option (@None A) f = None.
   Proof.
     reflexivity.
   Qed.
       
-  Global Instance fail_maybe : MonadFail Maybe :=
+  Global Instance fail_option : MonadFail option :=
   {
     fail := @None;
     fail_left := @none_left;
   }.
-End fail_maybe.
+End fail_option.
 
-Section except_maybe.
-  Definition catch_maybe {A} (x y : Maybe A) : Maybe A :=
+Section except_option.
+  Definition catch_option {A} (x y : option A) : option A :=
     match x with
     | None => y
     | _ => x
     end.
-  Hint Unfold catch_maybe : soundness.
+  Hint Unfold catch_option : soundness.
 
-  Lemma catch_maybe_throw_left : ∀ {A} (x : Maybe A),
-    catch_maybe None x = x.
+  Lemma catch_option_throw_left : ∀ {A} (x : option A),
+    catch_option None x = x.
   Proof. simple_solve. Qed.
 
-  Lemma catch_maybe_throw_right : ∀ {A} (x : Maybe A),
-    catch_maybe x None = x.
+  Lemma catch_option_throw_right : ∀ {A} (x : option A),
+    catch_option x None = x.
   Proof. simple_solve. Qed.
 
-  Lemma catch_maybe_return : ∀ {A : Type} (x : Maybe A) (a : A),
-    catch_maybe (returnM a) x = returnM a.
+  Lemma catch_option_return : ∀ {A : Type} (x : option A) (a : A),
+    catch_option (returnM a) x = returnM a.
   Proof.
     reflexivity. 
   Qed.
 
-  Global Instance except_maybe : ∀ A, MonadExcept Maybe A :=
+  Global Instance except_option : ∀ A, MonadExcept option A :=
   {
-    catch_left := catch_maybe_throw_left;
-    catch_right := catch_maybe_throw_right;
-    catch_return := catch_maybe_return;
+    catch_left := catch_option_throw_left;
+    catch_right := catch_option_throw_right;
+    catch_return := catch_option_return;
   }.
-End except_maybe.
+End except_option.
 
-Section fail_abstract_maybe.
-  Lemma noneA_left : ∀ (A B : Type) (f : A → AbstractMaybe B), 
+Section fail_optionA.
+  Lemma noneA_left : ∀ (A B : Type) (f : A → optionA B), 
      (@NoneA A) >>= f = NoneA.
   Proof.
     simple_solve.
   Qed.
 
-  Global Instance fail_abstract_maybe : MonadFail AbstractMaybe :=
+  Global Instance fail_optionA : MonadFail optionA :=
   {
     fail := @NoneA;
     fail_left := noneA_left;
   }.
-End fail_abstract_maybe.
+End fail_optionA.
 
-Section except_abstract_maybe.
+Section except_optionA.
   Context {A} `{A_joinable : Joinable A}.
-  Definition catch_abstract_maybe (x y : AbstractMaybe A) : AbstractMaybe A :=
+  Definition catch_optionA (x y : optionA A) : optionA A :=
     match x with
     | NoneA => y
-    | JustA a => x 
-    | JustOrNoneA a => join_op x y
+    | SomeA a => x 
+    | SomeOrNoneA a => join_op x y
     end.
 
-  Lemma catch_abstract_maybe_throw_left : ∀ (x : AbstractMaybe A),
-    catch_abstract_maybe NoneA x = x.
+  Lemma catch_optionA_throw_left : ∀ (x : optionA A),
+    catch_optionA NoneA x = x.
   Proof. reflexivity. Qed.
 
-  Lemma catch_abstract_maybe_throw_right : ∀ (x : AbstractMaybe A),
-    catch_abstract_maybe x NoneA = x.
+  Lemma catch_optionA_throw_right : ∀ (x : optionA A),
+    catch_optionA x NoneA = x.
   Proof.
     intros. destruct x; simpl; unfold join_op; simpl; reflexivity.
   Qed.
 
-  Lemma catch_abstract_maybe_return : ∀ (x : AbstractMaybe A) (a : A),
-    catch_abstract_maybe (returnM a) x = returnM a.
+  Lemma catch_optionA_return : ∀ (x : optionA A) (a : A),
+    catch_optionA (returnM a) x = returnM a.
   Proof.
     reflexivity. 
   Qed.
 
-  Global Instance fail_maybeA : MonadExcept AbstractMaybe A :=
+  Global Instance except_optionA : MonadExcept optionA A :=
   {
-    catch_left := catch_abstract_maybe_throw_left;
-    catch_right := catch_abstract_maybe_throw_right;
-    catch_return := catch_abstract_maybe_return;
+    catch_left := catch_optionA_throw_left;
+    catch_right := catch_optionA_throw_right;
+    catch_return := catch_optionA_return;
   }.
-End except_abstract_maybe.
+End except_optionA.
 
-Section fail_maybeT.
+Section fail_optionT.
   Context {M} `{M_monad : Monad M}.
 
-  Definition fail_maybeT {A} : MaybeT M A := returnM None.
+  Definition fail_optionT {A} : optionT M A := returnM None.
 
-  Lemma fail_maybeT_left : ∀ (A B : Type) (m : A → MaybeT M B), 
-    bind_maybeT fail_maybeT m = fail_maybeT.
+  Lemma fail_optionT_left : ∀ (A B : Type) (m : A → optionT M B), 
+    bind_optionT fail_optionT m = fail_optionT.
   Proof.
-    intros. unfold bind_maybeT, fail_maybeT, NoneT. autorewrite with soundness.
+    intros. unfold bind_optionT, fail_optionT. autorewrite with soundness.
     reflexivity.
   Qed.
 
-  Global Instance monad_fail_maybeT : MonadFail (MaybeT M) :=
+  Global Instance monad_fail_optionT : MonadFail (optionT M) :=
   {
-    fail := @fail_maybeT;
-    fail_left := @fail_maybeT_left;
+    fail := @fail_optionT;
+    fail_left := @fail_optionT_left;
   }.
-End fail_maybeT.
+End fail_optionT.
 
-Section except_maybeT.
+Section except_optionT.
   Context {M} `{M_monad : Monad M}.
 
-  Definition catch_maybeT {A} (mx my : MaybeT M A) : MaybeT M A :=
-    bindM (M:=M) mx (fun x : Maybe A =>
+  Definition catch_optionT {A} (mx my : optionT M A) : optionT M A :=
+    bindM (M:=M) mx (fun x : option A =>
       match x with
       | None => my
-      | Just a => returnM (Just a)
+      | Some a => returnM (Some a)
       end).
-  Hint Unfold catch_maybeT : soundness.
+  Hint Unfold catch_optionT : soundness.
 
-  Lemma catch_maybeT_throw_left : ∀ {A : Type} (x : MaybeT M A), 
-    catch_maybeT fail_maybeT x = x.
+  Lemma catch_optionT_throw_left : ∀ {A : Type} (x : optionT M A), 
+    catch_optionT fail_optionT x = x.
   Proof.
-    intros. unfold catch_maybeT, fail_maybeT.
+    intros. unfold catch_optionT, fail_optionT.
     autorewrite with soundness. reflexivity.
   Qed.
 
-  Lemma catch_maybeT_throw_right : ∀ {A : Type} (x : MaybeT M A), 
-    catch_maybeT x fail_maybeT = x.
+  Lemma catch_optionT_throw_right : ∀ {A : Type} (x : optionT M A), 
+    catch_optionT x fail_optionT = x.
   Proof.
-    unfold catch_maybeT, fail_maybeT. intros.
+    unfold catch_optionT, fail_optionT. intros.
     replace x with (bindM (M:=M) x returnM) at 2.
     f_equal; ext; destruct x0; reflexivity.
     rewrite <- (bind_id_right (M:=M)). f_equal.
   Qed.
 
-  Lemma catch_maybeT_return : ∀ {A : Type} (x : MaybeT M A) (a : A),
-    catch_maybeT (returnM a) x = returnM a.
+  Lemma catch_optionT_return : ∀ {A : Type} (x : optionT M A) (a : A),
+    catch_optionT (returnM a) x = returnM a.
   Proof.
-    unfold catch_maybeT. intros. unfold returnM; simpl; unfold JustT. 
+    unfold catch_optionT. intros. unfold returnM; simpl.
     rewrite bind_id_left. reflexivity.
   Qed.
 
-  Global Instance except_maybeT {A} : MonadExcept (MaybeT M) A :=
+  Global Instance except_optionT {A} : MonadExcept (optionT M) A :=
   {
-    catch_left := catch_maybeT_throw_left;
-    catch_right := catch_maybeT_throw_right;
-    catch_return := catch_maybeT_return;
+    catch_left := catch_optionT_throw_left;
+    catch_right := catch_optionT_throw_right;
+    catch_return := catch_optionT_return;
   }. 
-End except_maybeT.
+End except_optionT.
 
-Section fail_maybeAT.
+Section fail_optionAT.
   Context {M : Type → Type} `{M_monad : Monad M}.
 
-  Definition fail_maybeAT {A} : MaybeAT M A := returnM NoneA.
+  Definition fail_optionAT {A} : optionAT M A := returnM NoneA.
 
-  Lemma fail_maybeAT_left : ∀ (A B : Type) (m : A → MaybeAT M B), 
-    bind_maybeAT (A:=A) (B:=B) fail_maybeAT m = fail_maybeAT (A:=B).
+  Lemma fail_optionAT_left : ∀ (A B : Type) (m : A → optionAT M B), 
+    bind_optionAT (A:=A) (B:=B) fail_optionAT m = fail_optionAT (A:=B).
   Proof. 
-    unfold bind_maybeAT, fail_maybeAT; simpl. intros. 
+    unfold bind_optionAT, fail_optionAT; simpl. intros. 
     autorewrite with soundness. reflexivity.
   Qed.
 
-  Global Instance monad_fail_maybeAT : MonadFail (MaybeAT M) :=
+  Global Instance monad_fail_optionAT : MonadFail (optionAT M) :=
   {
-     fail := @fail_maybeAT;
-     fail_left := @fail_maybeAT_left;
+     fail := @fail_optionAT;
+     fail_left := @fail_optionAT_left;
   }.
-End fail_maybeAT.
+End fail_optionAT.
 
-Section except_maybeAT.
+Section except_optionAT.
   Context {M : Type -> Type} `{M_monad : Monad M}.
 
-  Definition catch_maybeAT {A}
-    (mx my : MaybeAT M A) : MaybeAT M A :=
-    bindM (M:=M) mx (fun x : AbstractMaybe A =>
+  Definition catch_optionAT {A}
+    (mx my : optionAT M A) : optionAT M A :=
+    bindM (M:=M) mx (fun x : optionA A =>
       match x with
-      | JustA a => returnM (JustA a)
-      | JustOrNoneA a => returnM (JustOrNoneA a) (* should be a join_op *)
+      | SomeA a => returnM (SomeA a)
+      | SomeOrNoneA a => returnM (SomeOrNoneA a) (* should be a join_op *)
       | NoneA => my
       end).
 
-  Lemma catch_maybeAT_throw_left : ∀ {A} (x : MaybeAT M A),
-    catch_maybeAT fail_maybeAT x = x.
+  Lemma catch_optionAT_throw_left : ∀ {A} (x : optionAT M A),
+    catch_optionAT fail_optionAT x = x.
   Proof. 
-    intros. unfold catch_maybeAT, fail_maybeAT. autorewrite with soundness.
+    intros. unfold catch_optionAT, fail_optionAT. autorewrite with soundness.
     reflexivity.
   Qed.
 
-  Lemma catch_maybeAT_throw_right : ∀ {A} (x : MaybeAT M A),
-    catch_maybeAT x fail_maybeAT = x.
+  Lemma catch_optionAT_throw_right : ∀ {A} (x : optionAT M A),
+    catch_optionAT x fail_optionAT = x.
   Proof. 
-    intros. unfold catch_maybeAT, fail_maybeAT. rewrite <- (bind_id_right (M:=M)).
+    intros. unfold catch_optionAT, fail_optionAT. rewrite <- (bind_id_right (M:=M)).
     f_equal; extensionality m. destruct m; reflexivity.
   Qed.
 
-  Lemma catch_maybeAT_return : ∀ {A} (x : MaybeAT M A) (a : A),
-    catch_maybeAT (returnM a) x = returnM a.
+  Lemma catch_optionAT_return : ∀ {A} (x : optionAT M A) (a : A),
+    catch_optionAT (returnM a) x = returnM a.
   Proof.
-    unfold catch_maybeAT. intros. unfold returnM; simpl; unfold JustAT. 
+    unfold catch_optionAT. intros. unfold returnM; simpl.
     rewrite bind_id_left. reflexivity.
   Qed.
 
-  Global Instance except_maybeAT {A} : MonadExcept (MaybeAT M) A :=
+  Global Instance except_optionAT {A} : MonadExcept (optionAT M) A :=
     {
-      catch_left := catch_maybeAT_throw_left;
-      catch_right := catch_maybeAT_throw_right;
-      catch_return := catch_maybeAT_return;
+      catch_left := catch_optionAT_throw_left;
+      catch_right := catch_optionAT_throw_right;
+      catch_return := catch_optionAT_return;
     }. 
-End except_maybeAT.
+End except_optionAT.
 
 Section fail_stateT.
   Context {M : Type -> Type} `{M_fail : MonadFail M}.

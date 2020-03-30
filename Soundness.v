@@ -27,7 +27,6 @@ Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Maps.
-Require Import Types.Maybe.
 Require Import Types.Parity.
 Require Import Types.State.
 Require Import Types.Stores.
@@ -35,7 +34,7 @@ Require Import Types.Stores.
 Hint Extern 0 (gamma _ _) => progress gamma_destruct : soundness.
 
 Axiom gamma_pure_none : ∀ {M M' : Type → Type} `{Monad M, Monad M'} {A A' :
-  Type}  `{Galois (M A) (M' (Maybe A'))} (c : M A), gamma (returnM (M:=M') None) c.
+  Type}  `{Galois (M A) (M' (option A'))} (c : M A), gamma (returnM (M:=M') None) c.
 Hint Resolve gamma_pure_none : soundness.
 
 (* Soundness of unit *)
@@ -64,49 +63,49 @@ Qed.
 (*Hint Resolve gamma_fun_applied : soundness.*)
 
 (* Soundness of monadic operations *)
-Lemma just_sound : ∀ (A A' : Type) `{A_galois : Galois A A'},
-  gamma (Just (A:=A')) (Just (A:=A)).
+Lemma some_sound : ∀ (A A' : Type) `{A_galois : Galois A A'},
+  gamma (Some (A:=A')) (Some (A:=A)).
 Proof.
   eauto with soundness.
 Qed.
 
-Lemma bind_maybe_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
-  gamma (bindM (M:=Maybe) (A:=A') (B:=B')) 
+Lemma bind_option_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
+  gamma (bindM (M:=option) (A:=A') (B:=B')) 
         bindM.
 Proof.
   unfold bindM; simpl.
   repeat constructor. intros.
   destruct a', a; eauto with soundness.
 Qed.
-Hint Resolve bind_maybe_sound : soundness.
+Hint Resolve bind_option_sound : soundness.
 
-Instance maybe_sound : SoundMonad Maybe Maybe :=
+Instance option_sound : SoundMonad option option :=
 {
-  return_sound := just_sound;
-  bind_sound := bind_maybe_sound;
+  return_sound := some_sound;
+  bind_sound := bind_option_sound;
 }.
 
-Lemma justA_sound : ∀ A A' `{A_galois : Galois A A'},
-  gamma (JustA (A:=A')) Just.
+Lemma someA_sound : ∀ A A' `{A_galois : Galois A A'},
+  gamma (SomeA (A:=A')) Some.
 Proof.
   eauto with soundness.
 Qed.
 
-Lemma bind_abstract_maybe_sound (A A' B B' : Type) `{Galois A A', Galois B B'} :
-  gamma (bindM (M:=AbstractMaybe) (A:=A') (B:=B')) bindM.
+Lemma bind_optionA_sound (A A' B B' : Type) `{Galois A A', Galois B B'} :
+  gamma (bindM (M:=optionA) (A:=A') (B:=B')) bindM.
 Proof.
   unfold bindM; simpl.
   constructor; intros ma ma' Hma. constructor; intros mf mf' Hmf.
-  destruct ma, ma' as [|a'|]; simpl; eauto with soundness.
+  destruct ma, ma' as [a'| |a']; simpl; eauto with soundness.
   inversion Hma as [Ha |? |? |?? Ha];subst.
   inversion Hmf as [?? Hf]; subst.
   apply Hf in Ha. all: destruct (mf' a'); eauto with soundness.
 Qed.
 
-Instance abstract_maybe_sound : SoundMonad Maybe AbstractMaybe :=
+Instance abstract_option_sound : SoundMonad option optionA :=
 {
-  return_sound := justA_sound;
-  bind_sound := bind_abstract_maybe_sound;
+  return_sound := someA_sound;
+  bind_sound := bind_optionA_sound;
 }.
 
 Lemma bind_state_sound {S S'} `{Galois S S'} : ∀ (A A' B B' : Type)
@@ -149,68 +148,65 @@ Section stateT.
   }.
 End stateT.
 
-Section maybeT.
+Section optionT.
   Context {M M' : Type → Type} `{SoundMonad M M'}.
 
-  Lemma justT_sound : ∀ A A' `{Galois A A'},
-    gamma (JustT (M:=M') (A:=A')) JustT.
+  Lemma someT_sound : ∀ A A' `{Galois A A'},
+    gamma (λ a, returnM (M:=M') (Some (A:=A') a)) (λ a, returnM (M:=M) (Some a)).
   Proof. 
-    unfold JustT, MaybeT. intros. constructor; intros.
-    repeat eapply gamma_fun_apply; eauto with soundness. 
+    intros. constructor. intros. eapply gamma_fun_apply; eauto with soundness. 
   Qed.
 
-  Lemma bind_maybeT_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
-    gamma (bind_maybeT (A:=A') (B:=B') (M:=M')) bind_maybeT.
+  Lemma bind_optionT_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
+    gamma (bind_optionT (A:=A') (B:=B') (M:=M')) bind_optionT.
   Proof. 
-    intros. unfold bind_maybeT, MaybeT, NoneT. repeat constructor; intros. 
+    intros. unfold bind_optionT, optionT. repeat constructor; intros. 
     repeat eapply gamma_fun_apply; eauto with soundness.
   Qed.
 
-  Global Instance maybeT_sound : SoundMonad (MaybeT M) (MaybeT M') :=
+  Global Instance optionT_sound : SoundMonad (optionT M) (optionT M') :=
   {
-    return_sound := justT_sound;
-    bind_sound := bind_maybeT_sound;
+    return_sound := someT_sound;
+    bind_sound := bind_optionT_sound;
   }.
-End maybeT.
+End optionT.
 
-Section maybeAT.
+Section optionAT.
   Context {M M' : Type → Type} `{SoundMonad M M'}.
 
-  Lemma justAT_sound : ∀ A A' `{Galois A A'},
-    gamma (JustAT (M:=M') (A:=A')) JustT.
-  Proof.
-    unfold JustAT, JustT, MaybeAT, MaybeT. eauto with soundness.
-  Qed.
+  Lemma someAT_sound : ∀ A A' `{Galois A A'},
+    gamma (λ a : A', returnM (M:=M') (SomeA a)) (λ a, returnM (M:=M) (Some a)).
+  Proof. eauto with soundness. Qed.
 
-  Lemma bind_maybeAT_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
-    gamma (bind_maybeAT (A:=A') (B:=B') (M:=M')) bind_maybeT.
+  Lemma bind_optionAT_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
+    gamma (bind_optionAT (A:=A') (B:=B') (M:=M')) bind_optionT.
   Proof.
-    intros. unfold bind_maybeAT, bind_maybeT. unfold MaybeT, MaybeAT.
-    constructor; intros Ma Ma' HMa.
-    constructor; intros f f' Hf'.
+    intros. constructor; intros Ma Ma' HMa.
+    constructor; intros f f' Hf'. unfold bind_optionAT, bind_optionT.
+    unfold optionT, optionAT.
     repeat apply gamma_fun_apply; eauto with soundness. 
-    constructor; intros m m' Hm. unfold NoneT.
+    constructor; intros m m' Hm. 
     destruct m; inversion Hm; subst; eauto with soundness.
     - rewrite <- bind_id_right. eapply gamma_fun_apply.
       eauto with soundness.
       constructor; intros m m' Hm'. destruct m'; eauto with soundness.
-    - admit.
+    - eauto with soundness. admit.
   Admitted.
 
-  Lemma lift_maybeAT_sound {A A'} `{Galois A A'} :
-    gamma (lift_maybeAT (M:=M') (A:=A')) (lift_maybeT (A:=A)).
+  Lemma lift_optionAT_sound {A A'} `{Galois A A'} :
+    gamma (lift_optionAT (M:=M') (A:=A')) (lift_optionT (A:=A)).
   Proof.
-    unfold lift_maybeAT, lift_maybeT, MaybeAT, MaybeT, JustAT, JustT.
+    unfold lift_optionAT, lift_optionT, optionAT, optionT.
     repeat constructor. intros.
     repeat eapply gamma_fun_apply; eauto with soundness.
   Qed.
 
-  Global Instance maybeAT_sound : SoundMonad (MaybeT M) (MaybeAT M') :=
+  Global Instance optionAT_sound : SoundMonad (optionT M) (optionAT M') :=
   {
-    return_sound := justAT_sound;
-    bind_sound := bind_maybeAT_sound;
+    return_sound := someAT_sound;
+    bind_sound := bind_optionAT_sound;
   }.
-End maybeAT.
+End optionAT.
 
 (* Soundness of parity operations *)
 
@@ -507,10 +503,10 @@ Qed.
 
 (* Soundness of interpreters *)
 
-Definition ConcreteState := MaybeT (StateT store (MaybeT Identity)).
+Definition ConcreteState := optionT (StateT store (optionT Identity)).
 
 Definition AbstractState := 
-  MaybeAT (StateT abstract_store (MaybeT Identity)).
+  optionAT (StateT abstract_store (optionT Identity)).
 
 Section joinable_abstract_state.
   Context {A : Type} `{Joinable A}.

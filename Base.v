@@ -17,6 +17,16 @@ Definition id := fun {A : Type} (a : A) => a.
 Inductive Identity (A : Type) : Type := identity : A → Identity A.
 Arguments identity {A} a.
 
+Inductive optionA (A : Type) : Type :=
+  | SomeA : A → optionA A
+  | NoneA : optionA A
+  | SomeOrNoneA : A → optionA A.
+Arguments SomeA {A} a.
+Arguments NoneA {A}.
+Arguments SomeOrNoneA {A} a.
+Definition optionT (M : Type → Type) (A : Type) : Type := M (option A).
+Definition optionAT (M : Type → Type) (A : Type) : Type := M (optionA A).
+
 Lemma id_refl : forall {A : Type} (x : A), id x = x.
 Proof. reflexivity. Qed.
 Lemma id_compose_left : forall {A B} (f : A -> B), id ∘ f = f.
