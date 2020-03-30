@@ -184,18 +184,16 @@ Hint Unfold bind_maybeT : soundness.
 Hint Rewrite @bind_maybeT_id_left @bind_maybeT_id_right : soundness.
 
 Section MaybeT_MonadT.
-  Context {M} `{M_monad : Monad M}.
-  
-  Definition lift_maybeT {A} (m : M A) : MaybeT M A :=
+  Definition lift_maybeT {M : Type → Type} `{Monad M} {A} (m : M A) : MaybeT M A :=
     bindM (M:=M) m (λ a, JustT a).
-  Arguments lift_maybeT [_] _.
   Hint Unfold lift_maybeT : soundness.
 
-  Lemma lift_maybeT_pure : ∀ (A : Type) (a : A),
-    lift_maybeT (returnM a) = returnM a.
+  Lemma lift_maybeT_pure {M : Type → Type} `{Monad M} : ∀ {A : Type} (a : A),
+    lift_maybeT (returnM (M:=M) a) = JustT a.
   Proof. solve_monad. Qed.
 
-  Lemma lift_maybeT_bind : ∀ (A B : Type) (m : M A) (f : A → M B),
+  Lemma lift_maybeT_bind {M : Type → Type} `{Monad M} : 
+    ∀ (A B : Type) (m : M A) (f : A → M B),
   lift_maybeT (m >>= f) = bind_maybeT (lift_maybeT m) (f ∘ (lift_maybeT (A:=B))).
   Proof. 
     intros. unfold lift_maybeT, bind_maybeT, NoneT, JustT. 
@@ -205,8 +203,8 @@ Section MaybeT_MonadT.
 
   Global Instance monadT_maybeT : MonadT (MaybeT) :=
   {
-    lift_return := lift_maybeT_pure;
-    lift_bind := lift_maybeT_bind;
+    lift_return := @lift_maybeT_pure;
+    lift_bind := @lift_maybeT_bind;
   }. 
 End MaybeT_MonadT.
 
@@ -273,38 +271,33 @@ End MaybeAT_Monad.
 Hint Unfold bind_maybeAT : soundness.
 
 Section MaybeAT_MonadT.
-  Context {M} `{M_monad : Monad M}.
-
-  Definition lift_maybeAT {A} (m : M A) : MaybeAT M A :=
+  Definition lift_maybeAT {M} `{Monad M} {A} (m : M A) : MaybeAT M A :=
     bindM (M:=M) m (λ a, JustAT a).
-  Arguments lift_maybeAT [A].
   Hint Unfold lift_maybeAT : soundness.
 
-  Definition lift_maybeAT_pure : ∀ {A} (a : A),
+  Definition lift_maybeAT_pure {M} `{Monad M} {A} : ∀ (a : A),
     lift_maybeAT (returnM a) = returnM a.
   Proof.
     solve_monad.
   Qed.
-  Arguments lift_maybeAT_pure [A] a.
 
-  Definition lift_maybeAT_bind : ∀ {A B} (m : M A) (f : A → M B),
+  Definition lift_maybeAT_bind {M} `{Monad M} {A B}: ∀ (m : M A) (f : A → M B),
     lift_maybeAT (m >>= f) = bind_maybeAT (lift_maybeAT m) (f ∘ lift_maybeAT (A:=B)).
   Proof. 
     unfold lift_maybeAT, bind_maybeAT, JustAT. intros.
     autorewrite with soundness. f_equal; ext. autorewrite with soundness.
     reflexivity.
   Qed.
-  Arguments lift_maybeAT_bind [A B] m f.
 
   Global Instance monadT_maybeAT : MonadT MaybeAT :=
   {
-    lift_return := lift_maybeAT_pure;
-    lift_bind := lift_maybeAT_bind;
+    lift_return := @lift_maybeAT_pure;
+    lift_bind := @lift_maybeAT_bind;
   }. 
 End MaybeAT_MonadT.
 
 Section State_Monad.
-  Context {S : Type} `{S_inhabited : !Inhabited S} `{S_joinable : Joinable S}.
+  Context {S : Type} `{S_joinable : Joinable S}.
 
   Definition return_state {A} (a :A) : State S A := 
     λ st : S, (a, st).
@@ -341,7 +334,7 @@ Hint Unfold bind_state : soundness.
 
 Section Monad_StateT.
   Context {M} `{M_monad : Monad M}.
-  Context {S : Type} `{S_inhabited : !Inhabited S}.
+  Context {S : Type}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
@@ -391,35 +384,30 @@ End Monad_StateT.
 Hint Unfold bind_stateT : soundness.
 
 Section MonadT_StateT.
-  Context {M} `{M_monad :Monad M}.
-  Context {S : Type} `{!Inhabited S}.
+  Context {S : Type}.
 
-  Definition lift_stateT {A} (m : M A) : StateT S M A :=
+  Definition lift_stateT {M} `{Monad M} {A} (m : M A) : StateT S M A :=
     λ st, m >>= λ a, returnM (a, st).
-  Arguments lift_stateT [A] m.
   Hint Unfold lift_stateT : soundness.
   
-  Lemma lift_stateT_pure : ∀ (A : Type) (m : A), 
-    lift_stateT (returnM m) = return_stateT m.
+  Lemma lift_stateT_pure {M} `{Monad M} {A} : ∀ (a : A), 
+    lift_stateT (returnM a) = return_stateT a.
   Proof.
     intros. autounfold with soundness. ext.
     autorewrite with soundness. reflexivity.
   Qed.
-  Arguments lift_stateT_pure [A] m.
 
-  Lemma lift_stateT_bind : ∀ (A B : Type) (m : M A) (f : A → M B),
+  Lemma lift_stateT_bind {M} `{Monad M} {A B} : ∀ (m : M A) (f : A → M B),
     lift_stateT (m >>= f) = bind_stateT (lift_stateT m) (f ∘ lift_stateT (A:=B)).
   Proof.
     intros. simpl.
     autounfold with soundness. ext. autorewrite with soundness.
     f_equal. ext. autorewrite with soundness. reflexivity.
   Qed.
-  Arguments lift_stateT_bind [A B] m f.
 
   Global Instance monadT_stateT : MonadT (StateT S) :=
   {
-    liftT := lift_stateT;
-    lift_return := lift_stateT_pure;
-    lift_bind := lift_stateT_bind;
+    lift_return := @lift_stateT_pure;
+    lift_bind := @lift_stateT_bind;
   }. 
 End MonadT_StateT.

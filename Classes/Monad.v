@@ -38,13 +38,12 @@ Notation "x ;; z" := (bindM x (λ _, z))
     (at level 100, z at level 200, only parsing, right associativity).
 
 Section MonadTransformer.
-  Context {M} `{M_monad : Monad M}.
 
-  Class MonadT T `{TM_monad : Monad (T M)} : Type :=
+  Class MonadT T `{TM_monad : ∀ (M : Type → Type) `{Monad M}, Monad (T M)} : Type :=
   {
-    liftT : ∀ {A}, M A → T M A;
-    lift_return : ∀  {A} (x : A), liftT (returnM x) = returnM x;
-    lift_bind : ∀ {A B} (x : M A) (f : A → M B),
+    liftT {M} `{Monad M} {A} : M A → T M A;
+    lift_return {M} `{Monad M} {A} : ∀ (x : A), liftT (returnM x) = returnM x;
+    lift_bind {M} `{Monad M} {A B} : ∀ (x : M A) (f : A → M B),
       liftT (x >>= f) = liftT x >>= (f ∘ liftT);
   }.
 End MonadTransformer.
