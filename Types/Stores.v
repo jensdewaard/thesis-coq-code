@@ -14,4 +14,8 @@ Definition abstract_update (s : abstract_store) (x : string) (v : avalue) :
 Definition concrete_update (s : store) (x : string) (v : cvalue) :
   store := t_update s x v.
 
+Definition generic_store (A : Type) := total_map A.
+
+Definition generic_store_update {A : Type} (s : generic_store A) (x : string) (v : A) :
+  generic_store A := t_update s x v.
 
