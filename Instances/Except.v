@@ -225,7 +225,7 @@ End except_maybeAT.
 
 Section fail_stateT.
   Context {M : Type -> Type} `{M_fail : MonadFail M}.
-  Context {S : Type} `{!Inhabited S}.
+  Context {S : Type}.
 
   Definition fail_stateT {A} : StateT S M A := lift_stateT fail.
 
@@ -248,7 +248,7 @@ End fail_stateT.
 Section except_stateT.
   Context {M : Type → Type} `{M_fail : MonadFail M} 
     `{M_except : ∀ A, MonadExcept M A}.
-  Context {S : Type} `{!Inhabited S}.
+  Context {S : Type}.
 
   Definition catch_stateT {A} (a b : StateT S M A) : StateT S M A := 
     fun s => catch (a s) (b s).
