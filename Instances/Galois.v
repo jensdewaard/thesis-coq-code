@@ -15,6 +15,34 @@ Require Import Types.Parity.
 Require Import Types.Stores.
 Require Import Types.State.
 
+Inductive gamma_bot {A A'} `{Galois A A'} : (A'+⊥) → ℘ A :=
+  | gamma_notbot : ∀ (a' : A') (a : A),
+      γ a' a → gamma_bot (NotBot a') a.
+
+Instance galois_bot {A A'} `{Galois A A'} : Galois A (A'+⊥).
+Proof.
+  split with (γ := gamma_bot).
+  unfold monotone. intros a a' Hpre.
+  constructor. intros x Hgamma.
+  destruct a, a'; simpl in *; try contradiction; inversion Hgamma; subst.
+  constructor. eapply gamma_preorder. apply Hpre. assumption.
+Defined.
+
+Inductive gamma_top {A A'} `{Galois A A'} : (A'+⊤) → ℘ A :=
+  | gamma_nottop : ∀ (a' : A') (a : A),
+    γ a' a → gamma_top (NotTop a') a
+  | gamma_istop : ∀ a : A,
+      gamma_top Top a.
+
+Instance galois_top {A A'} `{Galois A A'} : Galois A (A'+⊤).
+Proof.
+  split with (γ := gamma_top). 
+  unfold monotone. intros a a' Hpre.
+  constructor. intros x Hgamma.
+  destruct a, a'; simpl in *; try contradiction; inversion Hgamma; subst; 
+  constructor. eapply gamma_preorder. apply Hpre. assumption.
+Defined.
+
 Inductive gamma_par : parity → nat → Prop :=
   | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
   | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n
