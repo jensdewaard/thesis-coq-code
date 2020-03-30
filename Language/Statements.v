@@ -5,18 +5,26 @@ Require Import Types.Parity.
 
 Declare Scope com_scope.
 
-Inductive cvalue : Type :=
-  | VNat : nat -> cvalue
-  | VBool : bool -> cvalue.
+Inductive cvalue : Type := 
+  | VNat : nat → cvalue
+  | VBool : bool → cvalue.
 
 Inductive avalue : Type :=
-  | VParity : parity -> avalue
-  | VAbstrBool : abstr_bool -> avalue
-  | VInterval : interval -> avalue
+  | VParity : parity → avalue
+  | VAbstrBool : abstr_bool → avalue
+  | VInterval : interval → avalue
   | VTop : avalue
   | VBottom : avalue.
 
-(* expand on the above *)
+Inductive avalue_int : Type := 
+  | VInt : interval → avalue_int
+  | VAbool1 : abstr_bool → avalue_int
+  | VTop1 : avalue_int.
+
+Inductive avalue_par : Type := 
+  | VPar : parity → avalue_par
+  | VAbool2 : abstr_bool → avalue_par
+  | VTop2 : avalue_par.
 
 Inductive expr : Type :=
   | EVal : cvalue -> expr
@@ -47,8 +55,3 @@ Notation "'TRY' c1 'CATCH' c2" :=
     (CTryCatch c1 c2) (at level 70) : com_scope.
 Notation "'IF2' b 'THEN' c1 'ELSE' c2" :=
     (CIf b c1 c2) (at level 70) : com_scope.
-
-
-(* zoek naar papers over 'auto' in coq, en het maken van proofs
-  mogelijk falen *)
-
