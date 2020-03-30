@@ -508,51 +508,6 @@ Definition ConcreteState := optionT (StateT store (optionT Identity)).
 Definition AbstractState := 
   optionAT (StateT abstract_store (optionT Identity)).
 
-Section joinable_abstract_state.
-  Context {A : Type} `{Joinable A}.
-
-  Definition join_abstract_state (st1 st2 : AbstractState A) : AbstractState A
-    := λ st, join_op (st1 st) (st2 st).
-
-  Lemma join_abstract_state_idem : ∀ st,
-    join_abstract_state st st = st.
-  Proof.
-    intro st. ext. unfold join_abstract_state. rewrite join_idem.
-    reflexivity.
-  Qed.
-  
-  Lemma join_abstract_state_upper_bound_left : 
-    ∀ a a' : (AbstractState A), preorder a (join_abstract_state a a').
-  Proof.
-    intros. unfold join_abstract_state. constructor. intros.
-    apply join_upper_bound_left.
-  Qed.
-
-  Lemma join_abstract_state_assoc : ∀ a b c : (AbstractState A),
-    join_abstract_state a (join_abstract_state b c) =
-    join_abstract_state (join_abstract_state a b) c.
-  Proof. 
-    intros. unfold join_abstract_state. extensionality st.
-    rewrite join_assoc. reflexivity.
-  Qed.
-
-  Lemma join_abstract_state_comm : ∀ a b, 
-    join_abstract_state a b = join_abstract_state b a.
-  Proof.
-    intros. unfold join_abstract_state. ext. rewrite join_comm.
-    reflexivity.
-  Qed.
-
-  Global Instance joinable_abstract_state :
-  Joinable (AbstractState A) :=
-  {
-    join_idem := join_abstract_state_idem;  
-    join_upper_bound_left := join_abstract_state_upper_bound_left;
-    join_assoc := join_abstract_state_assoc;
-    join_comm := join_abstract_state_comm;
-  }.
-End joinable_abstract_state.
-
 Lemma extract_build_val_sound : forall (v : cvalue),
   gamma 
     (extract_build_val (M:=AbstractState) 
