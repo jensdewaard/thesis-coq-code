@@ -103,11 +103,15 @@ Notation "⊤" := top (at level 40).
 Inductive toplift (A: Type) := 
   | Top : top_op (toplift A) 
   | NotTop : A → toplift A.
+Arguments Top {A}.
+Arguments NotTop {A}.
 Notation "t +⊤" := (toplift t) (at level 39).
 
 Inductive botlift (A:Type) : Type := 
   | Bot 
   | NotBot (x:A).
+Arguments Bot {A}.
+Arguments NotBot {A}.
 Notation "t +⊥" := (botlift t) (at level 39).
 
 Notation "℘ A" := (A → Prop) (at level 0).

@@ -13,6 +13,36 @@ Require Import Types.Stores.
 Hint Unfold Reflexive Transitive : soundness.
 Hint Resolve le_trans : soundness.
 
+Definition bot_le {A} `{PreorderedSet A} : (A+⊥) → (A+⊥) → Prop :=
+  λ a, λ b, match a, b with
+            | Bot, _ => True
+            | _, Bot => False
+            | NotBot x, NotBot y => x ⊑ y
+            end.
+
+Instance preorder_bot {A} `{PreorderedSet A} : PreorderedSet (A+⊥).
+Proof.
+  split with (preorder:=bot_le).
+  - intro. destruct x. reflexivity. apply preorder_refl.
+  - intros x y z Hxy Hyz. destruct x, y, z; simpl in *; try reflexivity;
+    try contradiction. eapply preorder_trans. apply Hxy. assumption.
+Defined.
+
+Definition top_le {A} `{PreorderedSet A} : (A+⊤) → (A+⊤) → Prop :=
+  λ a, λ b, match a, b with
+            | _, Top => True
+            | Top, _ => False
+            | NotTop x, NotTop y => x ⊑ y
+            end.
+
+Instance preorder_top {A} `{PreorderedSet A} : PreorderedSet (A+⊤).
+Proof.
+  split with (preorder:=top_le).
+  - intro. destruct x. reflexivity. apply preorder_refl.
+  - intros x y z Hxy Hyz. destruct x, y, z; simpl in *; try reflexivity;
+    try contradiction. eapply preorder_trans. apply Hxy. assumption.
+Defined.
+
 Global Instance preorder_nat : PreorderedSet nat := 
 {
   preorder := le;
