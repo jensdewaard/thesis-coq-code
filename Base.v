@@ -17,6 +17,15 @@ Definition id := fun {A : Type} (a : A) => a.
 Inductive Identity (A : Type) : Type := identity : A → Identity A.
 Arguments identity {A} a.
 
+Lemma id_refl : forall {A : Type} (x : A), id x = x.
+Proof. reflexivity. Qed.
+Lemma id_compose_left : forall {A B} (f : A -> B), id ∘ f = f.
+Proof. reflexivity. Qed.
+Lemma id_compose_right : forall {A B} (f : A -> B), f ∘ id = f.
+Proof. reflexivity. Qed.
+
+Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
+
 Inductive optionA (A : Type) : Type :=
   | SomeA : A → optionA A
   | NoneA : optionA A
@@ -26,15 +35,6 @@ Arguments NoneA {A}.
 Arguments SomeOrNoneA {A} a.
 Definition optionT (M : Type → Type) (A : Type) : Type := M (option A).
 Definition optionAT (M : Type → Type) (A : Type) : Type := M (optionA A).
-
-Lemma id_refl : forall {A : Type} (x : A), id x = x.
-Proof. reflexivity. Qed.
-Lemma id_compose_left : forall {A B} (f : A -> B), id ∘ f = f.
-Proof. reflexivity. Qed.
-Lemma id_compose_right : forall {A B} (f : A -> B), f ∘ id = f.
-Proof. reflexivity. Qed.
-
-Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 
 Definition flip {A B C : Type} (f : A → B → C) (x : B) (y : A) : C :=
   f y x.
@@ -96,3 +96,17 @@ Instance subtype_r : ∀ {A B C} `{SubType A B}, SubType A (C + B) := {
   inject := inject ∘ inr;
   project := λ s, match s with | inr x => project x | _ => None end
 }.
+
+Class top_op (A:Type) : Type := top : A.
+Notation "⊤" := top (at level 40).
+
+Inductive toplift (A: Type) := 
+  | Top : top_op (toplift A) 
+  | NotTop : A → toplift A.
+Notation "t +⊤" := (toplift t) (at level 39).
+
+Inductive botlift (A:Type) : Type := 
+  | Bot 
+  | NotBot (x:A).
+Notation "t +⊥" := (botlift t) (at level 39).
+
