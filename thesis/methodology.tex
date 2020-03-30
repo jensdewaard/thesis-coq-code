@@ -40,5 +40,92 @@ In this section, we will give some examples of Coq code along with an
 explanation of what is meant by the code. Readers familiar with Coq can skip
 this section. Other readers may wish to read it to help understand later code
 listings.
-\todoin{coq examples}
+
+\begin{minted}{coq}
+Inductive avalue_int : Type := 
+  | VInt : interval → avalue_int
+  | VAbool : abstr_bool → avalue_int
+  | VTop : avalue_int.
+\end{minted}
+In Coq, we define new types using the Inductive command. In the above example,
+we define a new type \coq{avalue_int } with three constructors, \coq{VInt },
+\coq{VAbool } and \coq{VTop }. A constructor is a function that can create the
+inductive type. The \coq{VInt } and \coq{VAbool } constructors each take one
+argument and \coq{VTop } doesn't take any.
+
+\begin{minted}{coq}
+Definition MaybeT (M : Type → Type) (A : Type) : Type := M (Maybe A).
+
+Definition parity_plus (p q : parity) : parity :=
+  match p, q with 
+  | par_top, _ | _, par_top => par_top
+  | par_even, par_even | par_odd, par_odd  => par_even
+  | par_odd, par_even  | par_even, par_odd => par_odd
+  end.
+\end{minted}
+
+The Definition command creates type aliases or functions. In the first case, we
+bind the identifier \coq{MaybeT M A } to \coq{M (Maybe A) }. The definition
+also requires that the parameters \coq{M } and \coq{A } be of types \coq{Type
+-> Type} and \coq{Type} respectively.
+
+The second Definition defines a function \coq{parity_plus } that takes 
+two parities \coq{p } and \coq{q } and returns a new parity. Via the match
+tactic, Coq looks at which constructors where used to build \coq{p } and
+\coq{q } and returns the value associated with that case. The pipe symbol $|$
+precedes a set of constructors for \coq{p } and \coq{q } and can be used to
+group cases together that have the same output. The underscore indicates that
+we are not interested in the specific value. Together, this means that the
+first case \coq{ | par_top, _ | _, par_top => par_top } matches any combination
+of values for \coq{p } and \coq{q } where either one of them is \coq{par_top }.
+
+\begin{minted}{coq}
+Lemma parity_plus_par_even : forall p,
+  parity_plus p par_even = p.
+Proof. intros. destruct p; reflexivity. Qed.
+\end{minted}
+
+The value of Coq comes from the ability to take those definitions and proof
+properties about them. We start a proof with the \coq{Lemma } command. In the
+above example, we define a lemma called \coq{parity_plus_par_even} which
+states that for all parities, adding a value of \coq{par_even } does not change
+the original value. Proofs are delimited by the \coq{Proof.} and \coq{Qed.} 
+commands. In between these commands come a series of \emph{tactics}. 
+
+\begin{minted}{coq}
+Class Galois (A A' : Type) {A'_preorder: PreorderedSet A'} : Type :=
+{
+  gamma : A' -> A -> Prop;
+  gamma_monotone : monotone gamma;
+}.
+\end{minted}
+
+In this thesis we utilize the typeclass mechanism of Coq. Typeclasses are a way
+to define methods and lemmas for types that implement that typeclass. In the
+above example, we define a Galois typeclass that takes two types, and a proof
+that the second type \coq{A'} forms a preordered set. It further states that
+implementation of this typeclass should define a function \coq{gamma} of type
+\coq{A' -> A -> Prop} and a proof that this function gamma is monotone.
+
+\begin{minted}{coq}
+Inductive gamma_par : parity → nat → Prop :=
+  | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
+  | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n
+  | gamma_par_top  : ∀ n, gamma_par par_top n.
+Hint Constructors gamma_par : soundness.
+
+Lemma gamma_par_monotone : monotone gamma_par.
+Proof. (* proof omitted *) Qed.
+
+Instance galois_parity_nat : Galois nat parity :=
+{
+  gamma := gamma_par;
+  gamma_monotone := gamma_par_monotone;
+}.
+\end{minted}
+
+To create an instance of a typeclass, we need to define the required functions
+and lemma's. Here, we have defined an inductive relation called \coq{gamma_par}
+and proven it to be monotone. We can then use those definition in creating an
+\coq{Instance} of the Galois typeclass.
 
