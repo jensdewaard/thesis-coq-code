@@ -45,20 +45,12 @@ Section joinable_functions.
     unfold fun_join. apply join_upper_bound_left.
   Qed.
 
-  Lemma fun_join_right : ∀ f g,
-    g ⊑ (fun_join f g).
-  Proof.
-    intros f g. unfold preorder; simpl. constructor. intros a.
-    unfold fun_join. apply join_upper_bound_right.
-  Qed.
-
   Global Instance functions_joinable : Joinable (A → B) :=
   {
     join_idem := fun_join_idem;
     join_assoc := fun_join_assoc;
     join_comm := fun_join_comm;
     join_upper_bound_left := fun_join_left;
-    join_upper_bound_right := fun_join_right;
   }.
 End joinable_functions.
 
@@ -87,12 +79,6 @@ Proof.
   intros. destruct_all parity; constructor.
 Qed.
 
-Lemma parity_join_upper_bound_right :
-  ∀ p1 p2, preorder p2 (parity_join p1 p2).
-Proof.
-  intros. destruct_all parity; constructor.
-Qed.
-
 Lemma parity_join_idem : ∀ p, parity_join p p = p.
 Proof.
   destruct p; reflexivity.
@@ -102,7 +88,6 @@ Instance parity_joinable : Joinable parity :=
 {
   join_idem := parity_join_idem;
   join_upper_bound_left := parity_join_upper_bound_left;
-  join_upper_bound_right := parity_join_upper_bound_right;
   join_assoc := parity_join_assoc;
   join_comm := parity_join_comm;
 }.
@@ -133,12 +118,6 @@ Proof.
   intros. destruct_all abstr_bool; constructor.
 Qed.
 
-Lemma abstract_bool_join_upper_bound_right : ∀ b1 b2,
-  preorder b2 (abstract_bool_join b1 b2).
-Proof.
-  intros. destruct_all abstr_bool; constructor.
-Qed.
-
 Lemma abstract_bool_join_comm : ∀ b1 b2,
   abstract_bool_join b1 b2 = abstract_bool_join b2 b1.
 Proof.
@@ -151,7 +130,6 @@ Instance abstr_bool_joinable : Joinable abstr_bool :=
   join_assoc := abstract_bool_join_assoc;
   join_comm := abstract_bool_join_comm;
   join_upper_bound_left := abstract_bool_join_upper_bound_left;
-  join_upper_bound_right := abstract_bool_join_upper_bound_right;
 }.
 
 Lemma nat_min_min_max_max : ∀ i j,
@@ -186,12 +164,6 @@ Proof.
   intros. unfold interval_join. simpl. constructor; simpl; lia.
 Qed.
 
-Lemma interval_join_upper_bound_right :
-  ∀ i1 i2, preorder i2 (interval_join i1 i2).
-Proof.
-  intros. unfold interval_join. constructor; simpl; lia.
-Qed.
-
 Lemma interval_join_comm : ∀ i j,
   interval_join i j = interval_join j i.
 Proof.
@@ -203,7 +175,6 @@ Instance interval_joinable : Joinable interval :=
   join_idem := interval_join_idem;
   join_assoc := interval_join_assoc;
   join_upper_bound_left := interval_join_upper_bound_left;
-  join_upper_bound_right := interval_join_upper_bound_right;
   join_comm := interval_join_comm;
 }.
 
@@ -243,12 +214,6 @@ Proof.
   intros. destruct a1, a2; eauto with soundness.
 Qed.
 
-Lemma avalue_join_upper_bound_right : ∀ a1 a2,
-  preorder a2 (avalue_join a1 a2).
-Proof. 
-  intros. destruct a1, a2; eauto with soundness.
-Qed.
-
 Lemma avalue_join_comm : ∀ a1 a2,
   avalue_join a1 a2 = avalue_join a2 a1.
 Proof.
@@ -261,7 +226,6 @@ Instance avalue_joinable : Joinable avalue :=
   join_idem := avalue_join_idem;
   join_assoc := avalue_join_assoc;
   join_upper_bound_left := avalue_join_upper_bound_left;
-  join_upper_bound_right := avalue_join_upper_bound_right;
   join_comm := avalue_join_comm;
 }.
 
@@ -290,10 +254,6 @@ Proof.
   eauto with soundness.
 Qed.
 
-Lemma abstract_store_join_upperbound_right : 
-  forall s s', preorder s' (abstract_store_join s s').
-Proof. eauto with soundness. Qed.
-
 Lemma abstract_store_join_comm : ∀ s s',
   abstract_store_join s s' = abstract_store_join s' s.
 Proof.
@@ -304,7 +264,6 @@ Qed.
 Global Instance abstract_store_joinable : Joinable abstract_store := {
   join_idem := abstract_store_join_idem;
   join_upper_bound_left := abstract_store_join_upperbound_left;
-  join_upper_bound_right := abstract_store_join_upperbound_right;
   join_assoc := abstract_store_join_assoc;
   join_comm := abstract_store_join_comm;
 }.
@@ -315,10 +274,6 @@ Hint Unfold unit_join : soundness.
 
 Lemma unit_join_upperbound_left : forall (u u' : unit),
   preorder u (unit_join u u').
-Proof. simple_solve. Qed.
-
-Lemma unit_join_upperbound_right : forall (u u' : unit),
-  preorder u' (unit_join u u').
 Proof. simple_solve. Qed.
 
 Lemma unit_join_assoc : ∀ x y z,
@@ -341,7 +296,6 @@ Global Instance unit_joinable : Joinable unit :=
 {
   join_idem := unit_join_idem;
   join_upper_bound_left := unit_join_upperbound_left;
-  join_upper_bound_right := unit_join_upperbound_right;
   join_assoc := unit_join_assoc;
   join_comm := unit_join_comm;
 }.
@@ -360,13 +314,6 @@ Section state_joinable.
     intros st st'. unfold state_join.
     simpl. constructor. intro x. destruct (st x). 
     constructor; eauto with soundness.
-  Qed.
-
-  Lemma state_join_upper_bound_right :
-    forall st st', preorder st' (state_join st st').
-  Proof. 
-    intros st st'. unfold state_join. constructor.
-    intro x. destruct (st' x). constructor; eauto with soundness.
   Qed.
 
   Lemma state_join_assoc : ∀ x y z,
@@ -394,7 +341,6 @@ Section state_joinable.
   Global Instance state_joinable : Joinable (State S A) := {
     join_idem := state_join_idem;
     join_upper_bound_left := state_join_upper_bound_left;
-    join_upper_bound_right := state_join_upper_bound_right;
     join_assoc := state_join_assoc;
     join_comm := state_join_comm;
   }.
@@ -411,11 +357,6 @@ Section identity_joinable.
   Lemma identity_join_left : ∀ i j, preorder i (identity_join i j).
   Proof.
     destruct i, j. simpl. apply join_upper_bound_left.
-  Qed.
-
-  Lemma identity_join_right : ∀ i j, preorder j (identity_join i j).
-  Proof.
-    destruct i, j; simpl. apply join_upper_bound_right.
   Qed.
 
   Lemma identity_join_assoc : ∀ x y z,
@@ -442,7 +383,6 @@ Section identity_joinable.
     join_idem := identity_join_idem;
     join_assoc := identity_join_assoc;
     join_upper_bound_left := identity_join_left;
-    join_upper_bound_right := identity_join_right;
     join_comm := identity_join_comm;
   }.
 End identity_joinable.
@@ -460,9 +400,6 @@ Section option_joinable.
   Proof.
     destruct m, n; simpl; auto with soundness. 
   Qed.
-
-  Lemma option_join_right : ∀ m n, preorder n (option_join m n).
-  Proof. destruct m, n; simpl; auto with soundness. Qed.
 
   Lemma option_join_assoc : ∀ x y z, 
     option_join x (option_join y z) = option_join (option_join x y) z.
@@ -485,7 +422,6 @@ Section option_joinable.
   {
     join_idem := option_join_idem;
     join_upper_bound_left := option_join_left;
-    join_upper_bound_right := option_join_right;
     join_assoc := option_join_assoc;
     join_comm := option_join_comm;
   }.
@@ -509,10 +445,6 @@ Section optionA_joinable.
 
 Lemma optionA_join_upperbound_left : forall st st',
   preorder st (optionA_join st st').
-Proof. simple_solve. Qed.
-
-Lemma optionA_join_upperbound_right : forall st st',
-  preorder st' (optionA_join st st').
 Proof. simple_solve. Qed.
 
 Lemma optionA_join_assoc : ∀ x y z : optionA A,
@@ -539,7 +471,6 @@ Global Instance optionA_joinable : Joinable (optionA A) :=
 {
   join_idem := optionA_join_idem;
   join_upper_bound_left := optionA_join_upperbound_left;
-  join_upper_bound_right := optionA_join_upperbound_right;
   join_assoc := optionA_join_assoc;
   join_comm := optionA_join_comm;
 }.
@@ -552,11 +483,6 @@ Section joinable_pairs.
     (join_op (fst p) (fst q), join_op (snd p) (snd q)).
 
   Lemma pair_join_left : ∀ p q, preorder p (pair_join p q).
-  Proof.
-    destruct p, q. eauto with soundness.
-  Qed.
-
-  Lemma pair_join_right : ∀ p q, preorder q (pair_join p q).
   Proof.
     destruct p, q. eauto with soundness.
   Qed.
@@ -585,7 +511,6 @@ Section joinable_pairs.
   {
     join_idem := pair_join_idem;
     join_upper_bound_left := pair_join_left;
-    join_upper_bound_right := pair_join_right;
     join_assoc := pair_join_assoc;
     join_comm := pair_join_comm;
   }.
@@ -603,7 +528,6 @@ Section joinable_optionT.
     join_op := join_op;
     join_idem := join_idem;
     join_upper_bound_left := join_upper_bound_left;
-    join_upper_bound_right := join_upper_bound_right;
     join_assoc := join_assoc;
     join_comm := join_comm;
   }.
@@ -621,7 +545,6 @@ Section joinable_optionAT.
     join_op := join_op;
     join_idem := join_idem;
     join_upper_bound_left := join_upper_bound_left;
-    join_upper_bound_right := join_upper_bound_right;
     join_assoc := join_assoc;
     join_comm := join_comm;
   }.
@@ -642,13 +565,6 @@ Section joinable_stateT.
   Proof.
     intros. unfold stateT_join. constructor. intros. 
     apply join_upper_bound_left.
-  Qed.
-
-  Lemma stateT_join_upper_bound_right : ∀ t t' : StateT S M A, 
-    preorder t' (stateT_join t t').
-  Proof.
-    intros. unfold stateT_join. constructor. intros.
-    apply join_upper_bound_right.
   Qed.
 
   Lemma stateT_join_assoc : ∀ x y z,
@@ -673,7 +589,6 @@ Section joinable_stateT.
   {
     join_idem := stateT_join_idem;
     join_upper_bound_left := stateT_join_upper_bound_left;
-    join_upper_bound_right := stateT_join_upper_bound_right;
     join_assoc := stateT_join_assoc;
     join_comm := stateT_join_comm;
   }.

@@ -528,13 +528,6 @@ Section joinable_abstract_state.
     apply join_upper_bound_left.
   Qed.
 
-  Lemma join_abstract_state_upper_bound_right : 
-    ∀ a a' : (AbstractState A), preorder a' (join_abstract_state a a').
-  Proof.
-    intros. unfold join_abstract_state. constructor. intros.
-    apply join_upper_bound_right.
-  Qed.
-
   Lemma join_abstract_state_assoc : ∀ a b c : (AbstractState A),
     join_abstract_state a (join_abstract_state b c) =
     join_abstract_state (join_abstract_state a b) c.
@@ -555,7 +548,6 @@ Section joinable_abstract_state.
   {
     join_idem := join_abstract_state_idem;  
     join_upper_bound_left := join_abstract_state_upper_bound_left;
-    join_upper_bound_right := join_abstract_state_upper_bound_right;
     join_assoc := join_abstract_state_assoc;
     join_comm := join_abstract_state_comm;
   }.
