@@ -29,7 +29,7 @@ Qed.
 
 Instance galois_parity_nat : Galois nat parity :=
 {
-  gamma := gamma_par;
+  γ := gamma_par;
   gamma_monotone := gamma_par_monotone;
 }.
 
@@ -46,7 +46,6 @@ Qed.
 
 Instance  galois_interval : Galois nat interval :=
 {
-  gamma := gamma_interval;
   gamma_monotone := gamma_interval_monotone;
 }.
 
@@ -63,7 +62,6 @@ Qed.
 
 Instance galois_boolean : Galois bool abstr_bool :=
 {
-  gamma := gamma_bool;
   gamma_monotone := gamma_bool_monotone;
 }.
 
@@ -73,7 +71,7 @@ Context {A A' B B' : Type}  `{A_galois : Galois A A', B_galois : Galois B B'}.
 Inductive gamma_fun : (A' → B') → (A → B) → Prop :=
   | gamma_fun_cons : ∀ (f : A' → B') (g : A → B), 
       (∀ (a : A) (a' : A'),
-      gamma a' a → gamma (f a') (g a)) → gamma_fun f g.
+      γ a' a → γ (f a') (g a)) → gamma_fun f g.
 
   Lemma gamma_fun_monotone :
     monotone gamma_fun.
@@ -89,7 +87,6 @@ Inductive gamma_fun : (A' → B') → (A → B) → Prop :=
   Global Instance GFun : 
   Galois (A → B) (A' → B') :=
   {
-    gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;
   }.
 End galois_functions.
@@ -97,11 +94,11 @@ Hint Constructors gamma_fun : soundness.
 
 Section galois_values.
   Inductive gamma_value : avalue → cvalue → Prop :=
-    | gamma_value_parity : ∀ p n, gamma p n → gamma_value (VParity p) (VNat n)
+    | gamma_value_parity : ∀ p n, γ p n → gamma_value (VParity p) (VNat n)
     | gamma_value_interval : ∀ i n, 
-        gamma i n → gamma_value (VInterval i) (VNat n)
+        γ i n → gamma_value (VInterval i) (VNat n)
     | gamma_value_bool : ∀ ab b,
-        gamma ab b → gamma_value (VAbstrBool ab) (VBool b)
+        γ ab b → gamma_value (VAbstrBool ab) (VBool b)
     | gamma_value_top : ∀ v, gamma_value VTop v.
   Hint Constructors gamma_value : soundness.
 
@@ -115,7 +112,6 @@ Section galois_values.
 
   Global Instance galois_values : Galois cvalue avalue := 
   {
-    gamma := gamma_value;
     gamma_monotone := gamma_value_monotone;
   }.
 End galois_values.
@@ -123,7 +119,7 @@ Hint Constructors gamma_value : soundness.
 
 Inductive gamma_store : abstract_store → store → Prop :=
   | gamma_store_cons : ∀ st' st, 
-      (∀ x, gamma (st' x) (st x)) → gamma_store st' st.
+      (∀ x, γ (st' x) (st x)) → gamma_store st' st.
 Hint Constructors gamma_store : soundness.
 
 Lemma gamma_store_monotone : monotone gamma_store.
@@ -134,7 +130,6 @@ Qed.
 
 Global Instance galois_store : Galois store abstract_store :=
 {
-  gamma := gamma_store;
   gamma_monotone := gamma_store_monotone;
 }.
 
@@ -143,7 +138,7 @@ Section galois_pairs.
 
   Inductive gamma_pairs : prod A' B' → prod A B → Prop :=
     | gamma_pairs_cons : ∀ (p : (A'*B')%type) (q : (A*B)%type), 
-        gamma (fst p) (fst q) → gamma (snd p) (snd q) → gamma_pairs p q.
+        γ (fst p) (fst q) → γ (snd p) (snd q) → gamma_pairs p q.
 
   Lemma gamma_pairs_monotone :
     monotone gamma_pairs.
@@ -158,7 +153,6 @@ Section galois_pairs.
   Global Instance galois_pairs :
   Galois (A*B) (A'*B') :=
   {
-    gamma := gamma_pairs;
     gamma_monotone := gamma_pairs_monotone;
   }.
 End galois_pairs.
@@ -170,7 +164,7 @@ Section galois_identity.
   Definition gamma_identity (ia' : Identity A') 
                             (ia : Identity A) : Prop :=
     match ia', ia with
-    | identity a', identity a => gamma a' a
+    | identity a', identity a => γ a' a
     end.
 
   Lemma gamma_identity_monotone : monotone gamma_identity. 
@@ -193,15 +187,15 @@ Section galois_option.
     | gamma_noneA : gamma_optionA NoneA None
     | gamma_SomeornoneA_none : ∀ a, 
         gamma_optionA (SomeOrNoneA a) None
-    | gamma_SomeA_Some : ∀ a' a, gamma a' a → gamma_optionA (SomeA a') (Some a)
+    | gamma_SomeA_Some : ∀ a' a, γ a' a → gamma_optionA (SomeA a') (Some a)
     | gamma_Someornone_Some : ∀ a' a, 
-        gamma a' a →
+        γ a' a →
         gamma_optionA (SomeOrNoneA a') (Some a).
   Hint Constructors gamma_optionA : soundness.
 
   Inductive gamma_option : option A' → option A → Prop :=
     | gamma_none : ∀ m, gamma_option None m
-    | gamma_Some_Some : ∀ a' a, gamma a' a → gamma_option (Some a') (Some a).
+    | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
   Hint Constructors gamma_option : soundness.
 
   Lemma gamma_optionA_monotone : monotone gamma_optionA.
@@ -218,13 +212,11 @@ Section galois_option.
 
   Global Instance galois_optionA : Galois (option A) (optionA A') :=
   {
-    gamma := gamma_optionA;
     gamma_monotone := gamma_optionA_monotone;
   }.
 
   Global Instance galois_option : Galois (option A) (option A') :=
   {
-    gamma := gamma_option;
     gamma_monotone := gamma_option_monotone;
   }.
 End galois_option.
@@ -238,7 +230,6 @@ Section galois_unit.
 
   Global Instance galois_unit : Galois unit unit := 
   {
-    gamma := gamma_unit;
     gamma_monotone := gamma_unit_monotone;
   }. 
 End galois_unit.
@@ -255,7 +246,6 @@ Section galois_optionT.
 
   Global Instance galois_optionT : Galois (optionT M A) (optionT M' A') :=
   {
-    gamma := gamma;
     gamma_monotone := gamma_monotone;
   }.
 End galois_optionT.
@@ -271,7 +261,6 @@ Section galois_optionAT.
 
   Global Instance galois_optionAT : Galois (optionT M A) (optionAT M' A') :=
   {
-    gamma := gamma (Galois:=M_galois (option A) (optionA A') _ _ _);
     gamma_monotone := gamma_monotone;
   }.
 End galois_optionAT.
@@ -287,7 +276,6 @@ Section galois_stateT.
 
   Global Instance galois_stateT : Galois (StateT S M A) (StateT S' M' A') :=
   {
-    gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;
   }.
 End galois_stateT.
@@ -295,6 +283,5 @@ End galois_stateT.
 Instance galois_state_monad (S S' : Type) `{S_galois : Galois S S'} 
   (A A' : Type) `{A_galois : Galois A A'} : Galois (State S A) (State S' A') :=
   {
-    gamma := gamma_fun;
     gamma_monotone := gamma_fun_monotone;
   }.

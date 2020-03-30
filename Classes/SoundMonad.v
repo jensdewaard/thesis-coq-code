@@ -13,9 +13,9 @@ Section sound_monad.
   Class SoundMonad : Type :=
   {
     return_sound : ∀ (A A' : Type) `{Galois A A'},
-      gamma (returnM (M:=M') (A:=A')) (returnM (M:=M) (A:=A));
+      γ (returnM (M:=M') (A:=A')) (returnM (M:=M) (A:=A));
     bind_sound : ∀ (A A' B B' : Type) `{Galois A A', Galois B B'},
-      gamma (bindM (M:=M') (A:=A') (B:=B')) (bindM (M:=M) (A:=A) (B:=B));
+      γ (bindM (M:=M') (A:=A') (B:=B')) (bindM (M:=M) (A:=A) (B:=B));
   }.
 End sound_monad.
 Hint Resolve return_sound bind_sound : soundness.

@@ -110,3 +110,4 @@ Inductive botlift (A:Type) : Type :=
   | NotBot (x:A).
 Notation "t +⊥" := (botlift t) (at level 39).
 
+Notation "℘ A" := (A → Prop) (at level 0).
