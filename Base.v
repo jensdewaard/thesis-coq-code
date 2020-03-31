@@ -114,4 +114,15 @@ Arguments Bot {A}.
 Arguments NotBot {A}.
 Notation "t +⊥" := (botlift t) (at level 39).
 
-Notation "℘ A" := (A → Prop) (at level 0).
+Notation "℘ A" := (A → Prop) (at level 0, only parsing).
+Definition union {U : Type} (A B : U → Prop) : U → Prop :=
+  λ u : U, A u ∨ B u.
+Infix "∪" := union (at level 40).
+
+Definition intersection {U : Type} (A B : U → Prop) : U → Prop :=
+  λ u : U, A u ∧ B u.
+Infix "∩" := intersection (at level 40).
+
+Definition subset {U : Type} (A B : U → Prop) : Prop :=
+  ∀ u : U, A u → B u.
+Infix "⊆" := subset (at level 40).
