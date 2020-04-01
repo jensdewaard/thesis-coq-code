@@ -14,6 +14,8 @@ Record interval := Interval {
   min_max : min <= max;
 }.
 
+Notation "[ x , y ]" := (@Interval x y _).
+
 Lemma nat_le_pi : ∀ x y (H1 H2 : x ≤ y), H1 = H2.
 Proof.
   assert (∀ x y (p : x ≤ y) y' (q : x ≤ y'),
