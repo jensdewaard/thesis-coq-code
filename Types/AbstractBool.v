@@ -1,37 +1,22 @@
-Require Import Coq.Bool.Bool.
+Require Export Base.
+Require Import Utf8 Coq.Bool.Bool Classes.IsBool Classes.PreorderedSet
+  Classes.Joinable Classes.Galois.
 
 (** * Definition *)
 
+Definition abstr_bool' : Type := bool+⊤.
+
 Inductive abstr_bool : Type :=
   | ab_true   : abstr_bool
-  | ab_false  : abstr_bool
-  | ab_top    : abstr_bool.
+  | ab_false  : abstr_bool.
 
 (** * Correspondence with bool *)
+Inductive gamma_bool : abstr_bool → bool → Prop :=
+  | gamma_bool_true : ∀ P, P = true → gamma_bool ab_true P
+  | gamma_bool_false : ∀ P, P = false → gamma_bool ab_false P.
+Hint Constructors gamma_bool : soundness.
 
-Inductive ab_le : abstr_bool -> abstr_bool -> Prop :=
-  | ab_le_top : forall ab, ab_le ab ab_top
-  | ab_le_refl : forall ab, ab_le ab ab.
-
-Lemma ab_le_trans :forall a b c,
-  ab_le a b -> ab_le b c -> ab_le a c.
-Proof. 
-  intros. destruct a, b, c; try constructor; try inversion H0; try inversion H.
-Qed.
-
-Definition gamma_bool (ab: abstr_bool) (b : bool) : Prop :=
-  match ab with
-  | ab_true   => Is_true b
-  | ab_false  => ~Is_true b
-  | ab_top    => True
-  end.
-
-Definition extract_bool (b: bool) : abstr_bool :=
-  match b with
-  | true => ab_true
-  | false => ab_false
-  end.
-
+Instance galois_boolean : Galois abstr_bool bool := gamma_bool.
 (** * Operations *)
 
 (** ** And *)
@@ -39,98 +24,78 @@ Definition extract_bool (b: bool) : abstr_bool :=
 Definition and_ab (b1 b2 : abstr_bool) : abstr_bool :=
   match b1 with
   | ab_true   => b2
-  | ab_top    => match b2 with
-                 | ab_false  => ab_false
-                 | _         => ab_top
-                 end
   | ab_false  => ab_false
   end.
-
-Example and_ab2 : and_ab ab_true ab_true = ab_true. reflexivity. Qed.
-Example and_ab3 : and_ab ab_true ab_false = ab_false. reflexivity. Qed.
-Example and_ab4 : and_ab ab_top  ab_true = ab_top. reflexivity. Qed.
-
-Lemma and_ab_comm : forall b1 b2, and_ab b1 b2 = and_ab b2 b1.
-Proof. destruct b1, b2; reflexivity. Qed.
-
-Lemma and_ab_assoc : forall b1 b2 b3, 
-  and_ab (and_ab b1 b2) b3 = and_ab b1 (and_ab b2 b3).
-Proof. destruct b1, b2, b3; reflexivity. Qed.
-
-Lemma and_ab_sound : forall ab1 ab2 b1 b2,
-  gamma_bool ab1 b1 ->
-  gamma_bool ab2 b2 ->
-  gamma_bool (and_ab ab1 ab2) (andb b1 b2).
-Proof. destruct ab1, b1, ab2, b2; simpl; tauto. Qed.
+Instance and_ab_op : and_op abstr_bool abstr_bool := and_ab.
+Instance and_ab_sound : and_op_sound abstr_bool bool.
+Proof.
+  intros ab1 ab2 b1 b2 H1 H2. destruct ab1, ab2, b1, b2; try constructor; 
+  auto; gamma_destruct; eauto with soundness.
+Qed.
 
 (** ** Or *)
 
 Definition or_ab (b1 b2 : abstr_bool) : abstr_bool :=
   match b1 with
   | ab_false  => b2
-  | ab_top    => match b2 with
-                 | ab_true   => ab_true
-                 | _         => ab_top
-                 end
   | ab_true   => ab_true
   end.
-
-Lemma or_ab_comm : forall b1 b2, or_ab b1 b2 = or_ab b2 b1.
-Proof. intros. destruct b1, b2; reflexivity. Qed.
-
-Lemma or_ab_assoc : forall b1 b2 b3,
-  or_ab (or_ab b1 b2) b3 = or_ab b1 (or_ab b2 b3).
-Proof. intros. destruct b1, b2, b3; reflexivity. Qed.
-
-Lemma or_ab_sound : forall ab1 ab2 b1 b2,
-  gamma_bool ab1 b1 ->
-  gamma_bool ab2 b2 ->
-  gamma_bool (or_ab ab1 ab2) (orb b1 b2).
-Proof. destruct ab1, b1, ab2, b2; simpl; tauto. Qed.
+Instance or_ab_op : or_op abstr_bool abstr_bool := or_ab.
+Instance or_ab_sound : or_op_sound abstr_bool bool.
+Proof.
+  intros ab1 ab2 b1 b2 H1 H2. destruct ab1, ab2, b1, b2; auto; gamma_destruct;
+  eauto with soundness.
+Qed.
 
 (** ** Negation *)
 Definition neg_ab (b : abstr_bool) : abstr_bool :=
   match b with
   | ab_false => ab_true
   | ab_true  => ab_false
-  | _ => b
   end.
-
-Lemma neg_ab_involutive : forall ab, neg_ab (neg_ab ab) = ab.
-Proof. destruct ab; reflexivity. Qed.
-
-Lemma neg_ab_injective : forall ab1 ab2, neg_ab ab1 = neg_ab ab2 -> ab1 = ab2.
-Proof. intros. destruct ab1, ab2; try reflexivity; try inversion H. Qed.
-
-Lemma neg_ab_sound : forall ab b,
-  gamma_bool ab b ->
-  gamma_bool (neg_ab ab) (negb b).
-Proof. destruct ab, b; simpl; tauto. Qed.
-
-(** ** Join *)
-Definition ab_join (ab1 ab2 : abstr_bool) : abstr_bool :=
-  match ab1, ab2 with
-  | ab_top, _ | _, ab_top => ab_top
-  | ab_true, ab_true => ab_true
-  | ab_false, ab_false => ab_false
-  | ab_true, ab_false | ab_false, ab_true => ab_top
-  end.
-
-Lemma ab_join_comm : forall (ab1 ab2 : abstr_bool),
-  ab_join ab1 ab2 = ab_join ab2 ab1.
-Proof. 
-  intros. destruct ab1, ab2; auto. 
+Instance neg_ab_op : neg_op abstr_bool abstr_bool := neg_ab.
+Instance neg_ab_sound : neg_op_sound abstr_bool bool.
+Proof.
+  intros ab b H; destruct ab, b; constructor; gamma_destruct; 
+  eauto with soundness.
 Qed.
 
-Lemma ab_join_assoc : forall (ab1 ab2 ab3 : abstr_bool),
-  ab_join ab1 (ab_join ab2 ab3) = ab_join (ab_join ab1 ab2) ab3.
-Proof. 
-  intros. destruct ab1, ab2, ab3; auto.
+(** ** If *)
+Instance if_ab_op {B} : if_op abstr_bool B := λ b : abstr_bool,
+  λ p1 : B, λ p2 : B,
+  match b with
+  | ab_true => p1
+  | ab_false => p2
+  end.
+
+
+Definition ab_le (a b : abstr_bool) : Prop := a = b.
+Hint Unfold ab_le : preorders.
+
+Instance preorder_ab : PreorderedSet abstr_bool.
+Proof. proof_preorder ab_le. Defined.
+
+Definition abstract_bool_join (b1 b2 : abstr_bool) : (abstr_bool+⊤) :=
+  match b1, b2 with
+  | ab_true, ab_true => NotTop ab_true
+  | ab_false, ab_false => NotTop ab_false
+  | _, _ => Top
+  end.
+
+Instance abstr_bool_joinable : Joinable abstr_bool (abstr_bool+⊤).
+Proof.
+  split with abstract_bool_join. destruct x, y; reflexivity.
+Defined.
+
+Instance preorder_boolean_sound : PreorderSound abstr_bool bool.
+Proof.
+  intros x y Hpre n Hgamma. destruct x, y; eauto with soundness; inversion
+  Hpre.
 Qed.
 
-Lemma ab_join_idem : forall ab,
-  ab_join ab ab = ab.
-Proof. 
-  intros. destruct ab; auto.
+Instance join_boolean_sound : JoinableSound abstr_bool (abstr_bool+⊤) bool.
+Proof.
+  intros x y. destruct x, y; cbv; intros b H; destruct H; try assumption; 
+  constructor.
 Qed.
 

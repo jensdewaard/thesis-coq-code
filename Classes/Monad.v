@@ -1,4 +1,5 @@
 Require Export Base.
+Require Import Classes.Galois.
 
 Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.
@@ -19,6 +20,18 @@ Arguments bindM : simpl never.
 Arguments returnM: simpl never.
 Hint Unfold bindM : soundness.
 Hint Rewrite @bind_id_left @bind_id_right @bind_assoc : soundness.
+
+Class bind_sound (M M' : Type → Type) `{Monad M, Monad M'} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} := 
+  bindM_sound : ∀ {A A' B B'} `{Galois A A', Galois B B'} 
+    (m : M A) (m' : M' A') (f : A → M B) (f' : A' → M' B'),
+    γ m m' → γ f f' → γ (bindM m f) (bindM m' f').
+
+Class return_sound (M M' : Type → Type) `{Monad M, Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  := 
+  returnM_sound : ∀ {A A'} `{Galois A A'} a a',
+    γ a a' → γ (returnM (M:=M) a) (returnM (M:=M') a').
 
 Definition join {M} `{Monad M} {A} 
   (mma : M (M A)) : M A :=
@@ -49,3 +62,118 @@ Section MonadTransformer.
 End MonadTransformer.
 Hint Unfold liftT : soundness.
 Hint Rewrite @lift_return @lift_bind : soundness.
+
+Section Identity_Monad.
+  Definition bind_id {A B} 
+    (m : Identity A) (f : A → Identity B) : Identity B := 
+      match m with
+      | identity a => f a
+      end.
+  
+  Lemma bind_id_id_left : ∀ (A B : Type) (f : A → Identity B) (a : A),
+    bind_id (identity a) f = f a.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma bind_id_id_right : ∀ (A : Type) (m : Identity A),
+    bind_id m identity = m.
+  Proof.
+    intros. destruct m. reflexivity.
+  Qed.
+
+  Lemma bind_id_assoc : ∀ (A B C : Type) (m : Identity A)
+    (f : A → Identity B) (g : B → Identity C),
+    bind_id (bind_id m f) g = bind_id m (λ a : A, bind_id (f a) g).
+  Proof.
+    intros. destruct m; simpl. reflexivity.
+  Qed.
+
+  Lemma identity_inj : ∀ A (x y : A),
+    identity x = identity y → x = y.
+  Proof.
+    intros A x y H. inversion H. reflexivity.
+  Qed.
+
+  Global Instance monad_identity : Monad Identity :=
+  {
+    bind_id_left := bind_id_id_left;
+    bind_id_right := bind_id_id_right;
+    bind_assoc := bind_id_assoc;
+  }.
+End Identity_Monad.
+
+Section option_monad.
+  Definition bind_option {A B} 
+    (m : option A) (f : A -> option B) : option B :=
+    match m with
+    | None => None
+    | Some a => f a
+    end.
+  Hint Unfold bind_option : soundness.
+
+  Lemma bind_option_id_left : ∀ {A B} (f : A → option B) (a : A), 
+    bind_option (Some a) f = f a.
+  Proof. simple_solve. Qed.
+  Arguments bind_option_id_left [A B] f a.
+
+  Lemma bind_option_id_right : ∀ {A} (m : option A), 
+    bind_option m Some = m.
+  Proof. simple_solve. Qed.
+  Arguments bind_option_id_right [A] m.
+
+  Lemma bind_option_assoc : ∀ {A B C} (m : option A) 
+    (f : A → option B) (g : B → option C),
+  bind_option (bind_option m f) g = bind_option m (λ a : A, bind_option (f a) g).
+  Proof. simple_solve. Qed.
+  Arguments bind_option_assoc [A B C] m f g.
+
+  Global Instance option_monad : Monad option :=
+  {
+    bind_id_left := bind_option_id_left;
+    bind_id_right := bind_option_id_right;
+    bind_assoc := bind_option_assoc;
+  }. 
+End option_monad.
+Hint Rewrite @bind_option_id_left @bind_option_id_right : soundness.
+
+Section optionA_monad.
+  Definition bind_optionA {A B : Type}
+    (m : optionA A) (f : A -> optionA B) : optionA B :=
+    match m with
+    | NoneA => NoneA
+    | SomeA a => f a
+    | SomeOrNoneA a => match (f a) with
+                       | NoneA => NoneA
+                       | SomeA b => SomeOrNoneA b
+                       | SomeOrNoneA b => SomeOrNoneA b
+                       end
+    end.
+  Arguments bind_optionA [_ _].
+  Hint Unfold bind_optionA : soundness.
+
+  Lemma bind_optionA_id_left : ∀ {A B} (f : A → optionA B) (a : A),
+  bind_optionA (SomeA a) f = f a.
+  Proof. simple_solve. Qed.
+  Arguments bind_optionA_id_left [A B] f a.
+
+  Lemma bind_optionA_id_right :  ∀ {A} (m : optionA A),
+    bind_optionA m SomeA = m.
+  Proof. solve_monad. Qed.
+  Arguments bind_optionA_id_right [A].
+
+  Lemma bind_optionA_assoc : ∀ {A B C} (m : optionA A) 
+    (f : A → optionA B) (g : B → optionA C),
+    bind_optionA (bind_optionA m f) g =
+    bind_optionA m (λ a : A, bind_optionA (f a) g).
+  Proof. solve_monad. Qed.
+  Arguments bind_optionA_assoc [A B C] m f g.
+
+  Global Instance optionA_monad : Monad optionA :=
+  {
+    bind_id_left := bind_optionA_id_left;
+    bind_id_right := bind_optionA_id_right;
+    bind_assoc := bind_optionA_assoc;
+  }. 
+End optionA_monad.
+Hint Rewrite @bind_optionA_id_left @bind_optionA_id_right : soundness.

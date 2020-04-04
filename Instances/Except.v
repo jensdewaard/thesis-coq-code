@@ -69,12 +69,12 @@ Section fail_optionA.
 End fail_optionA.
 
 Section except_optionA.
-  Context {A} `{A_joinable : Joinable A}.
+  Context {A} `{A_joinable : Joinable A A}.
   Definition catch_optionA (x y : optionA A) : optionA A :=
     match x with
     | NoneA => y
-    | SomeA a => x 
-    | SomeOrNoneA a => join_op x y
+    | SomeA a => x
+    | SomeOrNoneA a => x ⊔ y
     end.
 
   Lemma catch_optionA_throw_left : ∀ (x : optionA A),
@@ -84,7 +84,7 @@ Section except_optionA.
   Lemma catch_optionA_throw_right : ∀ (x : optionA A),
     catch_optionA x NoneA = x.
   Proof.
-    intros. destruct x; simpl; unfold join_op; simpl; reflexivity.
+    intros. destruct x; simpl; reflexivity. 
   Qed.
 
   Lemma catch_optionA_return : ∀ (x : optionA A) (a : A),

@@ -1,60 +1,37 @@
 Require Export Base.
-Require Import Classes.Monad.
-Require Import Classes.Monad.MonadState.
-Require Import Instances.Monad.
-Require Import Language.Statements.
-Require Import Types.Maps.
-Require Import Types.State.
-Require Import Types.Stores.
-Require Import Classes.Joinable.
+Require Import Classes.Monad Classes.Monad.MonadState Instances.Monad
+  Types.State.
 
-Section store_state.
-  Context {S : Type} `{!Inhabited S} `{Joinable S}.
-  Definition state_get := λ s : S, (s, s).
-  Definition state_put := λ s : S, λ _ : S, (tt, s).
+Implicit Type ST : Type.
+Implicit Type M : Type → Type.
+Generalizable Variables ST M.
 
-  Global Instance store_state : MonadState S (State S) :=
-  {
-    get := state_get;
-    put := state_put;
-  }.
-End store_state.
+Instance store_state : MonadState ST (State ST).
+Proof.
+  split.
+  exact (λ st : ST, (st, st)).
+  exact (λ st : ST, λ _ : ST, (tt, st)).
+Defined.
 
-Section store_stateT.
-  Context (M : Type -> Type) `{M_monad : Monad M}.
-  Context {S : Type} `{!Inhabited S} `{Joinable S}.
+Instance store_stateT `{MM : Monad M} :
+  MonadState ST (StateT ST M).
+Proof.
+  split.
+  exact (λ st : ST, returnM (st, st)).
+  exact (λ st : ST, λ _ : ST, returnM (tt, st)).
+Defined.
 
-  Definition stateT_get := fun s : S => returnM (s, s).
+Instance store_optionT `{MM : Monad M} `{MS : MonadState ST M} :
+  MonadState ST (optionT M).
+Proof. split.
+  exact (liftT get).
+  exact (λ st : ST, put st ;; returnM (Some tt)).
+Defined.
 
-  Definition stateT_put := fun s : S => fun _ : S => returnM (tt, s).
-
-  Global Instance store_stateT : 
-  MonadState S (StateT _ M) :=
-  {
-    get := stateT_get;
-    put := stateT_put;
-  }.
-End store_stateT.
-
-Section store_optionT.
-  Context {M : Type -> Type} `{M_monad : Monad M}.
-
-  Global Instance store_optionT (S : Type) `{MonadState S M} :
-  MonadState S (optionT M) :=
-  {
-    get := liftT get;
-    put := fun s => put s ;; returnM (Some tt);
-  }.
-End store_optionT.
-
-Section store_optionAT.
-  Context {M : Type -> Type} `{M_monad : Monad M}.
-
-  Global Instance store_optionAT (S : Type) `{MonadState S M} :
-  MonadState S (optionAT M) :=
-  {
-    get := liftT get;
-    put := fun s => put s ;; returnM (SomeA tt);
-  }.
-End store_optionAT.
+Instance store_optionAT `{MM : Monad M} `{MS : MonadState ST M} :
+  MonadState ST (optionAT M).
+Proof. split.
+  exact (liftT get).
+  exact (λ st : ST, put st ;; returnM (SomeA tt)).
+Defined.
 

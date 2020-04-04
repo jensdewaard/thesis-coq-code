@@ -20,12 +20,7 @@ Instances/Preorder.v
 Instances/Joinable.v
 Instances/Monad.v
 Instances/Store.v
-Instances/IsNat/Parity.v
-Instances/IsNat/Nat.v
-Instances/IsNat/Interval.v
 Instances/Except.v
-Instances/IsBool/Boolean.v
-Instances/IsBool/AbstractBoolean.v
 Instances/Galois.v
 SharedInterpreter.v
 Classes/SoundMonad.v

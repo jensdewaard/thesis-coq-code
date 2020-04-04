@@ -1,11 +1,7 @@
 Require Export Base.
-Require Import Arith.
-Require Import Coq.Arith.Le.
-Require Import Coq.Arith.Mult.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Arith.Plus.
-Require Import Psatz.
-Require Import Types.AbstractBool.
+Require Import Arith Coq.Arith.Le Coq.Arith.Mult Coq.Arith.PeanoNat
+  Coq.Arith.Plus Psatz Types.AbstractBool Classes.PreorderedSet
+  Classes.Joinable Classes.Galois.
 From Coq Require Export EqdepFacts.
 
 Record interval := Interval {
@@ -60,22 +56,22 @@ Definition imult (i1 i2 : interval) : interval :=
   Interval ((min i1) * (min i2)) ((max i1) * (max i2)) (mult_min_max i1 i2).
 Hint Unfold imult : soundness.
 
-Definition ieqb (i1 i2 : interval) : abstr_bool :=
+Definition ieqb (i1 i2 : interval) : (abstr_bool+⊤) :=
   if (Nat.ltb (max i1) (min i2)) then
-    ab_false
+    NotTop ab_false
   else if (andb (andb (Nat.eqb (min i1) (max i1)) 
                       (Nat.eqb (max i1) (min i2))) 
                 (Nat.eqb (min i2) (max i2))) then
-           ab_true
-  else ab_top.
+           NotTop ab_true
+  else Top.
 
-Definition ileqb (i1 i2 : interval) : abstr_bool :=
+Definition ileqb (i1 i2 : interval) : (abstr_bool+⊤) :=
   if (Nat.ltb (max i1) (min i2)) then
-    ab_true
+    NotTop ab_true
   else if (Nat.ltb (max i2) (min i1)) then
-    ab_false
+    NotTop ab_false
   else
-    ab_top.
+    Top.
 
 Lemma interval_min_mult : forall i j,
   min (imult i j) = min i * min j.
@@ -88,3 +84,58 @@ Lemma interval_max_mult : forall i j,
 Proof. 
   intros. unfold imult. simpl. reflexivity.
 Qed.
+
+Lemma nat_min_min_max_max : ∀ i j,
+  Nat.min (min i) (min j) ≤ Nat.max (max i) (max j).
+Proof.
+  intros. destruct i, j; simpl. lia.
+Qed.
+
+Inductive interval_le : interval → interval → Prop :=
+  | interva_le_cons : ∀ i j,
+      preorder (min j) (min i) → preorder (max i) (max j) →
+      interval_le i j.
+Hint Constructors interval_le : preorders.
+
+Global Instance preorder_interval : PreorderedSet interval.
+Proof. proof_preorder interval_le. Defined.
+
+Definition interval_join (i j : interval) : interval :=
+  Interval (Nat.min (min i) (min j)) 
+           (Nat.max (max i) (max j)) 
+           (nat_min_min_max_max i j).
+
+Instance interval_joinable : Joinable interval interval.
+Proof.
+  split with interval_join. intros. apply interval_eq; lia.
+Defined.
+
+Inductive gamma_interval : interval → nat → Prop :=
+  | gamma_interval_cons : ∀ i n, 
+      preorder (min i) n → preorder n (max i) → gamma_interval i n.
+Hint Constructors gamma_interval : soundness.
+
+Instance galois_interval : Galois interval nat := gamma_interval.
+
+Instance preorder_interval_sound : PreorderSound interval nat.
+Proof.
+  intros x y Hpre n Hgamma. destruct x, y; eauto with soundness. 
+  inversion Hpre; subst; clear Hpre. 
+  gamma_destruct. simpl in *. constructor; simpl; lia.
+Qed.
+
+Instance join_interval_nat_sound : JoinableSound interval interval nat.
+Proof.
+  split; destruct x as [Xmin Xmax], y as [Ymin Ymax]; simpl in *.
+  - destruct H. 
+    + inversion H; subst; simpl in *; clear H.
+      apply le_trans with Xmin. apply Nat.le_min_l. assumption.
+    + inversion H; subst; simpl in *; clear H.
+      apply le_trans with Ymin. apply Nat.le_min_r. assumption.
+  - destruct H.
+    + inversion H; subst; simpl in *; clear H.
+      apply le_trans with Xmax. assumption. apply Nat.le_max_l.
+    + inversion H; subst; simpl in *; clear H.
+      apply le_trans with Ymax. assumption. apply Nat.le_max_r.
+Qed.
+

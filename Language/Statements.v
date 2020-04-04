@@ -1,30 +1,19 @@
-Require Export Coq.Strings.String.
-Require Import Types.AbstractBool.
-Require Import Types.Interval.
-Require Import Types.Parity.
+Require Export 
+  Base Coq.Strings.String.
+Require Import 
+  Types.AbstractBool Types.Interval Types.Parity.
 
 Declare Scope com_scope.
 
-Inductive cvalue : Type := 
-  | VNat : nat → cvalue
-  | VBool : bool → cvalue.
-
-Inductive avalue : Type :=
-  | VParity : parity → avalue
-  | VAbstrBool : abstr_bool → avalue
-  | VInterval : interval → avalue
-  | VTop : avalue
-  | VBottom : avalue.
+Definition cvalue : Type := nat+bool.
 
 Inductive avalue_int : Type := 
-  | VInt : interval → avalue_int
-  | VAbool1 : abstr_bool → avalue_int
-  | VTop1 : avalue_int.
+  | VInt : (interval+⊤) → avalue_int
+  | VAbool1 : (abstr_bool+⊤) → avalue_int.
 
 Inductive avalue_par : Type := 
-  | VPar : parity → avalue_par
-  | VAbool2 : abstr_bool → avalue_par
-  | VTop2 : avalue_par.
+  | VPar : (parity+⊤) → avalue_par
+  | VAbool2 : (abstr_bool+⊤) → avalue_par.
 
 Inductive expr : Type :=
   | EVal : cvalue -> expr
