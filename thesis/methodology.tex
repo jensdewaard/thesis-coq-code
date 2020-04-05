@@ -92,6 +92,13 @@ states that for all parities, adding a value of \coq{par_even } does not change
 the original value. Proofs are delimited by the \coq{Proof.} and \coq{Qed.} 
 commands. In between these commands come a series of \emph{tactics}. 
 
+There are several other commands we can use to define a lemma. These keywords 
+Theory, Lemma, Corollary, Remark, Fact and Proposition are all equivalent. Any
+semantic difference is up to the developer. In our work, we will mostly use the
+Lemma keyword. We shall use the Theorem keyword for the final proof stating the
+soundness of the interpreters. On occassion, we will use the Corollary command
+to state a lemma that follows trivially from the preceding lemma.
+
 \begin{minted}{coq}
 Class Galois (A A' : Type) {A'_preorder: PreorderedSet A'} : Type :=
 {

@@ -63,7 +63,14 @@ function.
 %Section~\ref{sec:maybeAT_join}. Darais achieves this by redefining the domain
 %of the store to a powerset.
 
-\section{Shared intepreters}
+\section{Shared interpreters}
+As mentioned in the introduction, the idea for sharing a generic interpreter
+between the concrete and abstract interpreters comes from the work of Keidel et
+ala~\cite{keidel2020compositional}. In this paper, Keidel proposes a
+methodology for defining abstract and concrete interpreters in a way that
+allows the soundness proof to be decomposed along the lines of the shared
+interpreter.
+
 %Keidel et al.~\cite{keidel2018compositional} instead propose a way to split up
 %the concrete and abstract interpreters by defining a shared structure. By
 %implementing the concrete and abstract interpreters as instances of a shared
@@ -74,13 +81,60 @@ function.
 %presented in Coq instead of Haskell, we can mechanize these pen-and-paper
 %proofs, making abstract interpreters that are proven sound more accessible.
 
-One large difference between the paper by Keidel\cite{keidel2018compositional}
-and this thesis lies in that we use Monads instead of Arrows to represent 
+One large difference between their work and ours
+lies in that we use Monads instead of Arrows to represent 
 effects such as stores and exceptions. As
 arrows are generalizations of monads~\cite{hughes2000generalising}, we could
 rewrite our implementation to use arrows instead, but we have not seen the need
-to do so (yet).
+to do so (yet). 
+
+This difference means that we have to decompose our proof along the methods
+exposed by the monad typeclass instead of the operations on arrows. Fortunately
+we have analogues to the methods used by Keidel. The first is the arrow
+composition method $>>>$, which is like the bindM method of monads.  Second,
+Keidel uses the parallel composition method $***$, which takes two arrows $g$
+and $h$ and
+returns a composed arrow $g *** h$. The composed arrow takes a tuple $(x,y)$
+and returns $(g x, h y)$. There is no analogue to this method in the standard
+monad typeclass, but we can simulate the effects with repeated applications of
+the bindM method.
+
+Keidel's choice for arrows was influence by the fact that arrows and their
+operations are an algebra. This in turn means that, after defining the
+interpreters and the required lemmas, the soundness proof for the concrete and
+abstract interpreter is automatically derived. In contrast, use of monads would
+mean that the soundness of the interpreters would require another, manual
+proof. Fortunately our use of Coq and its automation capabilities means that
+providing this proof is trivial.
+
+One of the problems we ran into, as described in Chapter~\ref{sec:challenges},
+was the definition of the bind method on our optionAT monad. It required a join
+on the value wrapped inside the monad, but an instance of monad cannot impose
+contraints on the wrapped value. Keidel works around this by forgoing the use
+of arrow transformers in this paper and defining the entire type of the
+interpreter from the start. This allows for inlining the joining of the state
+and preserving soundness.
+
+In their follow-up paper~\cite{keidel2019sound} Keidel et al. describe a set of
+reusable components based on arrow transformers that preserve soundness.
+\todoin{insert sven's reply on how he solved join on inner arrow}
 
 \section{Mechanization of Abstract Analysis}
+% verasco
+A large previous work on the mechanization of abstract analysis in Coq was
+Verasco, a verified static analyzer for the C programming
+language~\cite{jourdan2016verasco}. Like in
+this thesis Verasco only implements the $\gamma$ function of Galois
+connections. We were inspired by Verasco's lifting of types to domains that
+included top and/or bottom. This allows for defining the relation between the
+top value of an abstract domain and concrete values once and for all. 
 
-\section{Mechanization of Monads}
+The intepreter used in Verasco does not use monad transformers; because Verasco
+deals with a specific language, there is no need for the flexibility provided
+by being able to change the monad stack.
+
+% compcert
+%Other related work was done on the CompCert project, which is a formally
+%verified C compiler~\cite{leroy2016compcert}. The project aims to
+%prevent miscompilation of C programs by proving the correctness of the compiler
+%in Coq.
