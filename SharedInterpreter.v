@@ -1,3 +1,4 @@
+Require Export Base. 
 Require Import Statements.
 Require Import Types.Maps.
 Require Import Classes.Monad.
@@ -6,9 +7,8 @@ Require Import Classes.IsBool.
 Require Import Classes.Monad.MonadState.
 Require Import Classes.Monad.MonadFail.
 Require Import Classes.Monad.MonadExcept.
+Require Import Classes.Galois.
 Require Import Types.Stores.
-
-Definition foo := (nat + bool)%type.
 
 Definition ensure_type (subType : Type)
   {M : Type → Type} `{MF : MonadFail M}
@@ -19,6 +19,29 @@ Definition ensure_type (subType : Type)
   | Some x =>  returnM (M:=M) x
   | None => fail
   end.
+
+Lemma ensure_type_sound {M M'} `{MM : Monad M, MM' : Monad M'}
+  `{MF : MonadFail M} `{MF' : MonadFail M'}
+  {subType subType' : Type} {valType valType' : Type} 
+  `{GV: Galois valType valType'}
+  `{GS : Galois subType subType'}
+  `{GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  `{ST : SubType subType valType} `{ST' : SubType subType' valType'}
+  {SS : SubType_sound valType valType'} 
+  {RS : return_sound M M'} :
+    ∀ (n : valType) (n' : valType'),
+  γ n n' → 
+  γ (ensure_type (M:=M) (valType:=valType) subType n) 
+    (ensure_type (M:=M') (valType:=valType') subType' n').
+Proof.
+  intros n n' Hgamma. unfold ensure_type. destruct SS. 
+  apply project_sound with (sub:=subType) (sub':=subType') (ST:=ST) (ST':=ST')
+  (GS:=GS) in Hgamma. destruct (project n), (project n').
+  - apply RS. inversion Hgamma; subst. assumption.
+  - inversion Hgamma.
+  - admit.
+  - admit.
+Admitted.
 
 Fixpoint shared_eval_expr 
     {valType boolType natType : Type} {M : Type → Type} `{MM : !Monad M}

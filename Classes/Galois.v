@@ -107,3 +107,12 @@ Section galois_option.
 End galois_option.
 Hint Constructors gamma_optionA gamma_option : soundness.
 
+Class SubType_sound (super super' : Type) `{GS : Galois super super'} : Type :=
+{
+  inject_sound : ∀ {sub sub' : Type} `{ST : SubType sub super}
+    `{ST' : SubType sub' super'} `{GS : Galois sub sub'} (s : sub) (s' : sub'),
+    γ s s' → γ (inject s) (inject s'); 
+  project_sound : ∀ {sub sub' : Type} `{ST : SubType sub super}
+    `{ST' : SubType sub' super'} `{GS : Galois sub sub'} (s : super) (s' : super'),
+    γ s s' → γ (project s) (project s');
+}.
