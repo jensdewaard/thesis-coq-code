@@ -81,31 +81,45 @@ Section galois_identity.
     gamma_identity.
 End galois_identity.
 
-Section galois_option.
-  Context {A A'} `{A_galois : Galois A A'}.
 
-  Inductive gamma_optionA : optionA A → option A' → Prop :=
-    | gamma_noneA : gamma_optionA NoneA None
-    | gamma_SomeornoneA_none : ∀ a, 
-        gamma_optionA (SomeOrNoneA a) None
-    | gamma_SomeA_Some : ∀ a' a, γ a' a → gamma_optionA (SomeA a') (Some a)
-    | gamma_Someornone_Some : ∀ a' a, 
-        γ a' a →
-        gamma_optionA (SomeOrNoneA a') (Some a).
-  Hint Constructors gamma_optionA : soundness.
+Inductive gamma_optionA {A A'} {GA : Galois A A'} : optionA A → option A' → Prop :=
+  | gamma_noneA : gamma_optionA NoneA None
+  | gamma_SomeornoneA_none : ∀ a, 
+      gamma_optionA (SomeOrNoneA a) None
+  | gamma_SomeA_Some : ∀ a' a, γ a' a → gamma_optionA (SomeA a') (Some a)
+  | gamma_Someornone_Some : ∀ a' a, 
+      γ a' a →
+      gamma_optionA (SomeOrNoneA a') (Some a).
+Hint Constructors gamma_optionA : soundness.
 
-  Inductive gamma_option : option A → option A' → Prop :=
-    | gamma_none : ∀ m, gamma_option None m
-    | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
-  Hint Constructors gamma_option : soundness.
+Inductive gamma_option {A A'} {GA : Galois A A'} : option A → option A' → Prop :=
+  | gamma_none : ∀ m, gamma_option None m
+  | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
+Hint Constructors gamma_option : soundness.
 
-  Global Instance galois_optionA : Galois (optionA A) (option A') :=
-    gamma_optionA.
+Instance galois_optionA : ∀ A A' {GA : Galois A A'}, 
+  Galois (optionA A) (option A') := @gamma_optionA.
 
-  Global Instance galois_option : Galois (option A) (option A') :=
-    gamma_option.
-End galois_option.
-Hint Constructors gamma_optionA gamma_option : soundness.
+Instance galois_option : ∀ A A' {GA : Galois A A'}, 
+  Galois (option A) (option A') := @gamma_option.
+
+(*Instance galois_optionT {M M' : Type → Type} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
+  ∀ (A A' : Type) {GA : Galois A A'}, 
+  Galois (optionT M A) (optionT M' A').
+Proof.
+  intros A A' GA. pose proof (@galois_option A A') as GO. apply GO in GA.
+  apply GM in GA. apply GA.
+Qed.
+
+Instance galois_optionAT {M M' : Type → Type} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
+    ∀ (A A' : Type) {GA : Galois A A'},
+    Galois (optionAT M A) (optionT M' A').
+Proof.
+  intros. pose proof (@galois_optionA A A') as GO. apply GO in GA.
+  apply GM in GA. apply GA.
+Qed.*)
 
 Class SubType_sound (super super' : Type) `{GS : Galois super super'} : Type :=
 {

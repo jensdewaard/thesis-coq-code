@@ -21,16 +21,16 @@ Arguments returnM: simpl never.
 Hint Unfold bindM : soundness.
 Hint Rewrite @bind_id_left @bind_id_right @bind_assoc : soundness.
 
-Class bind_sound (M M' : Type → Type) `{Monad M, Monad M'} 
+Class bind_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} := 
-  bindM_sound : ∀ {A A' B B'} `{Galois A A', Galois B B'} 
+  bindM_sound : ∀ {A A' B B'} {GA : Galois A A'} {GB : Galois B B'} 
     (m : M A) (m' : M' A') (f : A → M B) (f' : A' → M' B'),
     γ m m' → γ f f' → γ (bindM m f) (bindM m' f').
 
 Class return_sound (M M' : Type → Type) `{Monad M, Monad M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   := 
-  returnM_sound : ∀ {A A'} `{Galois A A'} a a',
+  returnM_sound : ∀ {A A'} {GA : Galois A A'} a a',
     γ a a' → γ (returnM (M:=M) a) (returnM (M:=M') a').
 
 Definition join {M} `{Monad M} {A} 

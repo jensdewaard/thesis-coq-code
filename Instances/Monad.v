@@ -1,9 +1,7 @@
 Require Export Base.
 Require Export Classes.Monad.
-Require Import Coq.Program.Basics.
 Require Import FunctionalExtensionality.
 Require Import Language.Statements.
-Require Import Types.Maps.
 Require Import Types.State.
 
 Implicit Type S A B C : Type.
