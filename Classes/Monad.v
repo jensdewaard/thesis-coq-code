@@ -1,5 +1,5 @@
 Require Export Base.
-Require Import Classes.Galois.
+Require Import Classes.Galois List.
 
 Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.
@@ -177,3 +177,51 @@ Section optionA_monad.
   }. 
 End optionA_monad.
 Hint Rewrite @bind_optionA_id_left @bind_optionA_id_right : soundness.
+
+Section list_monad.
+
+  Definition return_list {A} (a : A) : list A := cons a nil.
+
+  Definition bind_list {A B} (m : list A) (f : A → list B) := flat_map f m.
+
+  Lemma bind_list_id_left : ∀ {A B} (f : A → list B) (a : A),
+    bind_list (return_list a) f = f a.
+  Proof.
+    intros A B f a. unfold bind_list, return_list. unfold flat_map.
+    rewrite app_nil_r. reflexivity.
+  Qed.
+
+  Lemma bind_list_id_right : ∀ {A} (m : list A),
+    bind_list m return_list = m.
+  Proof.
+    intros. unfold bind_list, return_list. induction m.
+    - reflexivity.
+    - simpl. rewrite IHm. reflexivity.
+  Qed.
+
+  Lemma flat_map_distr {A B} : ∀ (l l': list A) (f : A → list B),
+    flat_map f (l ++ l') = flat_map f l ++ flat_map f l'.
+  Proof.
+    intros l l' f. generalize dependent l'. induction l.
+    - simpl. reflexivity.
+    - simpl. intro l'. rewrite <- app_assoc. rewrite IHl. reflexivity.
+  Qed.
+
+  Lemma bind_list_assoc : ∀ {A B C} (m : list A)
+    (f : A → list B) (g : B → list C),
+    bind_list (bind_list m f) g =
+    bind_list m (λ a : A, bind_list (f a) g).
+  Proof.
+    intros A B C m f g. induction m.
+    - reflexivity.
+    - simpl. rewrite <- IHm. unfold bind_list. rewrite flat_map_distr.
+      reflexivity.
+  Qed.
+
+  Global Instance list_monad : Monad list := {
+    bind_id_left := @bind_list_id_left;
+    bind_id_right := @bind_list_id_right;
+    bind_assoc := @bind_list_assoc;
+  }.
+End list_monad.
+
