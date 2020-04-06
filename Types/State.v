@@ -6,17 +6,10 @@ Definition StateT S M A : Type := S → M (A*S)%type.
 Section state_joinable.
   Context {S A} `{S_joinable : Joinable S S, A_joinable : Joinable A A}.
 
-  Definition state_join (st st' : State S A) : State S A :=
-    fun x => (((fst (st x)) ⊔ (fst (st' x)), 
+  Global Instance state_joinable : Joinable (State S A) (State S A) :=
+    λ st, λ st',  
+    λ x, (((fst (st x)) ⊔ (fst (st' x)), 
               ((snd (st x)) ⊔ (snd (st' x))))).
-  Hint Unfold state_join : soundness.
-
-  Global Instance state_joinable : Joinable (State S A) (State S A).
-  Proof.
-    split with state_join. intros st st'. unfold state_join; simpl.
-    ext. rewrite join_comm. rewrite (join_comm (snd (st x)) _).
-    reflexivity.
-  Defined.
 End state_joinable.
 
 Section State_Monad.

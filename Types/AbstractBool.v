@@ -75,17 +75,13 @@ Hint Unfold ab_le : preorders.
 Instance preorder_ab : PreorderedSet abstr_bool.
 Proof. proof_preorder ab_le. Defined.
 
-Definition abstract_bool_join (b1 b2 : abstr_bool) : (abstr_bool+⊤) :=
-  match b1, b2 with
-  | ab_true, ab_true => NotTop ab_true
-  | ab_false, ab_false => NotTop ab_false
-  | _, _ => Top
-  end.
-
-Instance abstr_bool_joinable : Joinable abstr_bool (abstr_bool+⊤).
-Proof.
-  split with abstract_bool_join. destruct x, y; reflexivity.
-Defined.
+Instance abstr_bool_joinable : Joinable abstr_bool (abstr_bool+⊤) :=
+  λ b1, λ b2, 
+    match b1, b2 with
+    | ab_true, ab_true => NotTop ab_true
+    | ab_false, ab_false => NotTop ab_false
+    | _, _ => Top
+    end.
 
 Instance preorder_boolean_sound : PreorderSound abstr_bool bool.
 Proof.

@@ -148,18 +148,14 @@ Hint Constructors parity_le : preorders.
 Global Instance proset_parity : PreorderedSet parity.
 Proof. proof_preorder parity_le. Defined.
 
-Definition parity_join (p1 p2 : parity) : (parity+⊤) :=
-  match p1, p2 with
-  | par_even, par_even => NotTop par_even
-  | par_odd, par_odd => NotTop par_odd
-  | _, _ => Top
-  end.
-
-Instance parity_joinable : Joinable parity (parity+⊤).
-Proof.
-  split with parity_join. destruct x, y; reflexivity.
-Defined.
-
+Instance parity_joinable : Joinable parity (parity+⊤) :=
+  λ p1, λ p2, 
+    match p1, p2 with
+    | par_even, par_even => NotTop par_even
+    | par_odd, par_odd => NotTop par_odd
+    | _, _ => Top
+    end.
+      
 Instance join_parity_nat_sound : JoinableSound parity (parity+⊤) nat.
 Proof.
   intros x y z H. destruct x, y; cbv in *; constructor.

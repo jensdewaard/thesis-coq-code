@@ -16,20 +16,14 @@ Definition gamma_store {A A' B B'} `{Galois A A', Galois B B'}
 Instance galois_store {A A'} `{Galois A A'} : Galois (store A) (store A') :=
   gamma_store.
 
-Definition store_join {A B} `{Joinable A B} (st1 st2 : store A) : store B :=
-  λ x, (st1 x) ⊔ (st2 x).
-
-Instance store_joinable {A B} `{Joinable A B} : Joinable (store A) (store B).
-Proof.
-  split with store_join. intros x y. unfold store_join. ext. rewrite join_comm.
-  reflexivity.
-Defined.
+Instance store_joinable {A B} `{Joinable A B} : Joinable (store A) (store B) :=
+  λ st1, λ st2, λ x, (st1 x) ⊔ (st2 x).
 
 Instance store_join_sound {A A' B} {JA : Joinable A B} {GA : Galois A A'}
   {GB :Galois B A'} {JS: JoinableSound A B A'} :
   JoinableSound (store A) (store B) (store A').
 Proof.
-  intros x y z Hgamma. unfold "⊔"; simpl. unfold store_join. intros s. 
+  intros x y z Hgamma. unfold "⊔"; simpl. unfold store_joinable. intros s. 
   apply JS. cbv in Hgamma. destruct Hgamma.
   - left; apply H.
   - right. apply H.

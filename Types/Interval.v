@@ -100,15 +100,10 @@ Hint Constructors interval_le : preorders.
 Global Instance preorder_interval : PreorderedSet interval.
 Proof. proof_preorder interval_le. Defined.
 
-Definition interval_join (i j : interval) : interval :=
-  Interval (Nat.min (min i) (min j)) 
+Instance interval_joinable : Joinable interval interval :=
+  λ i, λ j, Interval (Nat.min (min i) (min j)) 
            (Nat.max (max i) (max j)) 
            (nat_min_min_max_max i j).
-
-Instance interval_joinable : Joinable interval interval.
-Proof.
-  split with interval_join. intros. apply interval_eq; lia.
-Defined.
 
 Inductive gamma_interval : interval → nat → Prop :=
   | gamma_interval_cons : ∀ i n, 
