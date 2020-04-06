@@ -136,16 +136,16 @@ brevity.
 \begin{minted}{coq}
   Lemma bind_maybe_id_left : ∀ {A B} (f : A → Maybe B) (a : A), 
     bind_maybe (Just a) f = f a.
-  Admitted.
+  Proof. (* omitted *) Qed.
 
   Lemma bind_maybe_id_right : ∀ {A} (m : Maybe A), 
     bind_maybe m Just = m.
-  Admitted.
+  Proof. (* omitted *) Qed.
 
   Lemma bind_maybe_assoc : ∀ {A B C} (m : Maybe A) 
     (f : A → Maybe B) (g : B → Maybe C),
   bind_maybe (bind_maybe m f) g = bind_maybe m (λ a : A, bind_maybe (f a) g).
-  Admitted.
+  Proof. (* omitted *) Qed.
 
   Global Instance monad_maybe : Monad Maybe :=
   {
