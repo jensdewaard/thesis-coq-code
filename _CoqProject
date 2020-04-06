@@ -23,6 +23,5 @@ Instances/Store.v
 Instances/Except.v
 Instances/Galois.v
 SharedInterpreter.v
-Classes/SoundMonad.v
 Soundness.v
 
