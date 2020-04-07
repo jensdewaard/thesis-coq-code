@@ -5,7 +5,7 @@ Require Import Classes.Monad.MonadFail.
 Implicit Type M : Type → Type.
 Implicit Type A : Type.
 
-Class MonadExcept M `{M_fail : MonadFail M} A := {
+Class MonadExcept M {MM : Monad M} {MF : MonadFail M} A := {
   catch : M A -> M A -> M A;
   catch_left : ∀ (x : M A), catch fail x = x;
   catch_right : ∀ (x : M A), catch x fail = x;

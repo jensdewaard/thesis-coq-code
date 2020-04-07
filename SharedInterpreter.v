@@ -9,6 +9,9 @@ Require Import Classes.Monad.MonadFail.
 Require Import Classes.Monad.MonadExcept.
 Require Import Classes.Galois.
 Require Import Types.Stores.
+Require Import Types.Parity.
+Require Import Types.AbstractBool.
+Require Import Types.Subtype.
 
 Definition ensure_type (subType : Type)
   {M : Type → Type} `{MF : MonadFail M}
@@ -44,16 +47,16 @@ Proof.
 Admitted.
 
 Fixpoint shared_eval_expr 
-    {valType boolType natType : Type} {M : Type → Type} `{MM : !Monad M}
-    `{MF : !MonadFail M} `{MS : !MonadState (store valType) M}
-    `{SB : SubType boolType valType}
-    `{SN : SubType natType valType}
-    `{PO : plus_op natType natType}
-    `{MO : mult_op natType natType}
-    `{EO : eq_op natType boolType}
-    `{LO : leb_op natType boolType}
-    `{NO : neg_op boolType boolType}
-    `{AO : and_op boolType boolType}
+    {valType boolType natType : Type} {M : Type → Type} {MM : Monad M}
+    {MF : MonadFail M} {MS : MonadState (store valType) M}
+    {SB : SubType boolType valType}
+    {SN : SubType natType valType}
+    {PO : plus_op natType natType}
+    {MO : mult_op natType natType}
+    {EO : eq_op natType boolType}
+    {LO : leb_op natType boolType}
+    {NO : neg_op boolType boolType}
+    {AO : and_op boolType boolType}
     (e : expr) : M valType :=
   match e with
   | EVal v => fail
@@ -101,6 +104,89 @@ Fixpoint shared_eval_expr
       b <- returnM (M:=M) (b1 && b2) ;
       returnM (M:=M) (inject b)
   end.
+
+Definition avalue := ((parity+⊤)+(abstr_bool+⊤))%type.
+
+Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
+  {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {avalue cvalue} {GV : Galois avalue cvalue}
+  {natType natType' boolType boolType' : Type } 
+  {GN : Galois natType natType'}
+  {GB : Galois boolType boolType'}
+  {SB : SubType boolType (avalue+⊤)}
+  {SN : SubType natType (avalue+⊤)}
+  {SB' : SubType boolType' cvalue}
+  {SN' : SubType natType' cvalue}
+  {SS : SubType_sound (avalue+⊤) cvalue}
+  {MF : MonadFail M} {MF' : MonadFail M'} 
+  {MS : MonadState (store (avalue+⊤)) M} {MS' : MonadState (store cvalue) M'}
+  {ME : MonadExcept M unit} {ME' : MonadExcept M' unit} 
+  {PO : plus_op natType natType} {PO' : plus_op natType' natType'}
+  {MO : mult_op natType natType} {MO' : mult_op natType' natType'}
+  {EO : eq_op natType boolType}  {EO' : eq_op natType' boolType'}
+  {LO : leb_op natType boolType} {LO' : leb_op natType' boolType'}
+  {NO : neg_op boolType boolType} {NO' : neg_op boolType' boolType'}
+  {AO : and_op boolType boolType} {AO' : and_op boolType' boolType'}
+  :
+  get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M' →
+  bind_sound M M' → 
+  return_sound M M' → 
+  plus_op_sound natType natType' →
+  mult_op_sound natType natType' →
+  eq_op_sound natType natType' →
+  leb_op_sound natType natType' →
+  neg_op_sound boolType boolType' →
+  and_op_sound boolType boolType' → 
+  ∀ (e : expr), 
+  γ (shared_eval_expr (M:=M) (valType:=avalue+⊤) (natType:=natType) (boolType:=boolType) e) 
+    (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).
+Proof.
+  intros GS BS RS PS.
+  induction e.
+  - simpl. admit.
+  - simpl. apply bindM_sound; eauto with soundness.
+    intros f g Hf. auto.
+  - simpl. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply returnM_sound. apply plus_sound;
+    assumption.
+    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  - simpl. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply returnM_sound. apply mult_sound;
+    assumption.
+    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  - simpl. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply returnM_sound. apply eq_sound;
+    assumption.
+    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  - simpl. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply returnM_sound. apply leb_sound;
+    assumption.
+    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  - simpl. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply returnM_sound. apply neg_sound;
+    assumption.
+    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  - simpl. apply bindM_sound. assumption. 
+    intros ???. apply bindM_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply bindM_sound. apply returnM_sound. apply and_sound;
+    assumption.
+    intros ???. apply returnM_sound. apply inject_sound. assumption.
+Admitted.
 
 Open Scope com_scope.
 

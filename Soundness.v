@@ -60,30 +60,34 @@ Qed.
 
 Instance bind_optionA_sound : bind_sound optionA option.
 Proof.
-  unfold bind_sound; intros. unfold bindM; simpl. destruct m, m'; eauto with
-    soundness.
-  - simpl. gamma_destruct. apply H1 in H3. destruct (f a), (f' a0); eauto with
-    soundness.
+  unfold bind_sound. intros A A' B B' GA GB m m' f f' Hm Hf. 
+  unfold bindM; simpl. 
+  destruct m as [a | |], m' as [a' |]; eauto with soundness.
+  - simpl. 
+    inversion Hm as [ | | | a1' a1 Ha H1 H0  ]; subst.
+    apply Hf in Ha. destruct (f a), (f' a'); eauto with soundness.
   - simpl. destruct (f a); eauto with soundness.
 Qed.
 
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
 Proof.
-  unfold return_sound; unfold returnM; simpl; intros.
-  constructor. eauto with soundness.
+  unfold return_sound; unfold returnM; simpl; intros. unfold return_state.
+  constructor; simpl; eauto with soundness. 
 Qed.
 
 Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
   bind_sound (State S) (State S').
 Proof.
-  unfold bind_sound, bindM; simpl; intros.
-  constructor; intros. unfold bind_state. destruct H.
-  apply H in H1. destruct (f0 a), (g a'). eauto with soundness.
+  unfold bind_sound, bindM; simpl. 
+  intros A A' B b' GA GB m m' f f' Hm Hf. 
+  unfold bind_state. intros s s' Hs. apply Hm in Hs.
+  destruct (m s), (m' s'). inversion Hs; subst. simpl in *. eauto with
+    soundness.
 Qed.
 
 Section stateT.
-  Context {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}.
+  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
   Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
   Context {S S' : Type} {GS : Galois S S'}.
   Context {RS : return_sound M M'}.
@@ -92,20 +96,20 @@ Section stateT.
   Global Instance return_stateT_sound : 
     return_sound (StateT S M) (StateT S' M').
   Proof.
-    unfold return_sound, returnM; simpl. unfold return_stateT; intros. 
-    eauto with soundness.
+    unfold return_sound, returnM; simpl. unfold return_stateT. 
+    intros A A' GA a a' Ha s s' Hs. eauto with soundness.
   Qed.
 
   Global Instance bind_stateT_sound : bind_sound (StateT S M) (StateT S' M').
   Proof.
     unfold bind_sound, bindM; simpl; unfold bind_stateT; intros.
-    constructor; intros. apply bindM_sound. eauto with soundness.
-    constructor. intros p q Hpq. destruct p, q. eauto with soundness.
+    intros s s' Hs. apply bindM_sound; eauto with soundness.
+    intros p q Hpq. destruct p, q; eauto with soundness.
   Qed.
 End stateT.
 
 Section optionT.
-  Context {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}.
+  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
   Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
   Context {RS : return_sound M M'}.
   Context {BS : bind_sound M M'}.
@@ -118,68 +122,56 @@ Section optionT.
   Global Instance bind_optionT_sound : bind_sound (optionT M) (optionT M').
   Proof.
     unfold bind_sound, bindM; simpl; intros. 
-    unfold bind_optionT. eapply BS. assumption. constructor.
-    intros. destr; eauto with soundness. 
-    admit.
+    unfold bind_optionT. eapply BS. assumption. intros o o' Ho.
+    destr; eauto with soundness. subst.
   Admitted.
 End optionT.
 
 Section optionAT.
-  Context {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}.
-  Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
-  Context {RS : return_sound M M'}. 
-  Context {BS : bind_sound M M'}.
-
-  Global Instance someAT_sound : return_sound (optionAT M) (optionT M').
+  Global Instance someAT_sound : ∀ (M M' : Type → Type) {MM : Monad M} {MM' :
+    Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')},
+    return_sound M M' → return_sound (optionAT M) (optionT M').
   Proof.
     unfold return_sound, returnM; simpl.
     eauto with soundness.
   Qed.
 
-  Global Instance bind_optionAT : bind_sound (optionAT M) (optionT M').
+  Global Instance bind_optionAT_sound : ∀ (M M' : Type → Type) {MM : Monad M}
+  {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')},
+    return_sound M M' → 
+    bind_sound M M' → 
+    bind_sound (optionAT M) (optionT M').
   Proof.
+    intros M M' MM MM' GM RS BS.
     unfold bind_sound. unfold bindM; simpl.
-    intros. unfold bind_optionAT, bind_optionT, optionAT, optionT.
+    intros A A' B B' GA GB m m' f f' Hm Hf. 
+    unfold bind_optionAT, bind_optionT, optionAT, optionT.
     unfold bind_sound.
     apply bindM_sound; try assumption.
-    constructor; intros a a' Ha.
+    intros a a' Ha.
     inversion Ha; subst; eauto with soundness.
     - rewrite <- bind_id_right. admit.
     - rewrite <- bind_id_right. apply bindM_sound; eauto with soundness.
-      constructor. intros. destruct a, a'; eauto with soundness.
+      intros a' a Ha'. destruct a, a'; eauto with soundness.
   Admitted.
-
-  Lemma lift_optionAT_sound {A A'} `{Galois A A'} :
-    γ (lift_optionAT (M:=M) (A:=A)) (lift_optionT (A:=A')).
-  Proof.
-    unfold lift_optionAT, lift_optionT, optionAT, optionT.
-    repeat constructor. intros. apply bindM_sound; eauto with soundness.
-  Qed.
 End optionAT.
 
 (* Soundness of interpreters *)
 
 Definition avalue := ((parity+⊤)+(abstr_bool+⊤))%type.
 Definition ConcreteState := optionT (StateT (store cvalue) option).
+Definition ConcreteState' A := (string → nat + bool) → option (option A * (string
+  → nat + bool)).
 
 Definition AbstractState := optionAT (StateT (store (avalue+⊤)) option).
+Definition AbstractState' A := (string → (parity +⊤ + abstr_bool +⊤) +⊤)
+         → option (optionA A * (string → (parity +⊤ + abstr_bool +⊤) +⊤)).
 
-Theorem eval_expr_sound : forall a,
+Theorem eval_expr_sound : ∀ (e : expr), 
   γ 
-    (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤)
-    (boolType:=abstr_bool+⊤) (natType:=parity+⊤) a) 
-    (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) 
-    (boolType:=bool) (natType:=nat) a).
+    (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤) e)
+    (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
-  intros. induction a; repeat constructor; simpl; intros. 
-  - auto with soundness.
-  - auto with soundness. 
-  - auto with soundness.
-  - Set Printing Implicit. About γ.
-
-    apply gamma_fun_apply. 2: assumption.
-    admit.
-  - admit.
 Admitted.
 Hint Resolve eval_expr_sound : soundness.
 

@@ -9,78 +9,91 @@ Ltac gamma_destruct := repeat
   | x : γ _  _ |- _ => inv x
   end.
 
-Definition gamma_bot {A A'} `{Galois A A'} : (A+⊥) → A' → Prop :=
+Definition gamma_bot (A A' : Type) `{Galois A A'} : (A+⊥) → A' → Prop :=
   λ a : A+⊥, match a with
              | Bot => λ _, False
              | NotBot x => λ y, γ x y
              end.
 
-Instance galois_bot {A A'} `{Galois A A'} : Galois (A+⊥) A' := gamma_bot.
+Instance galois_bot : ∀ (A A' : Type),
+  Galois A A' → Galois (A+⊥) A' := gamma_bot.
 
-Definition gamma_top {A A'} `{Galois A A'} : (A+⊤) → ℘ A' :=
+Definition gamma_top (A A' : Type) `{Galois A A'} : (A+⊤) → ℘ A' :=
   λ a : A+⊤, match a with
              | Top => λ _, True
              | NotTop x => λ y, γ x y
              end.
-Instance galois_top {A A'} `{Galois A A'} : Galois (A+⊤) A' := gamma_top.
+Instance galois_top : ∀  (A A' : Type), Galois A A' → Galois (A+⊤) A' := 
+  gamma_top.
 
-Section galois_functions.
-  Context {A A' B B' : Type}  
-          `{A_galois : Galois A A', B_galois : Galois B B'}.
+Definition gamma_fun {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'} 
+  : (A → B) → (A' → B') → Prop := λ (f : A → B), λ (g : A' → B'),
+    ∀ (a : A) (a' : A'), γ a a' → γ (f a) (g a').
+Arguments gamma_fun A A' {B B'} {GA GB}.
 
-  Inductive gamma_fun : (A → B) → (A' → B') → Prop :=
-    | gamma_fun_cons : ∀ (f : A → B) (g : A' → B'), 
-        (∀ (a : A) (a' : A'),
-        γ a a' → γ (f a) (g a')) → gamma_fun f g.
+Instance galois_fun : ∀ (A A' : Type) {B B' : Type},
+  Galois A A' →
+  Galois B B' →
+  Galois (A → B) (A' → B') := gamma_fun.
 
-  Global Instance galois_fun : Galois (A → B) (A' → B') := gamma_fun.
-End galois_functions.
-Hint Constructors gamma_fun : soundness.
+Instance galois_unit : Galois unit unit := λ _, λ _, True.
 
-Section galois_unit.
-  Definition gamma_unit (u v : unit) : Prop := True.
-
-  Global Instance galois_unit : Galois unit unit := gamma_unit.
-End galois_unit.
-Hint Unfold gamma_unit : soundness.
-
-Section galois_pairs.
-  Context {A A' B B'} `{A_galois : Galois A A'} `{B_galois : Galois B B'}.
-
-  Inductive gamma_pairs : prod A B → prod A' B' → Prop :=
+Inductive gamma_pairs {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'} 
+: prod A B → prod A' B' → Prop :=
     | gamma_pairs_cons : ∀ p q,
         γ (fst p) (fst q) → γ (snd p) (snd q) → gamma_pairs p q.
-
-  Global Instance galois_pairs : Galois (A*B)%type (A'*B')%type := gamma_pairs.
-End galois_pairs.
+Arguments gamma_pairs A A' B B' {GA GB}.
 Hint Constructors gamma_pairs : soundness.
 
-Section galois_sums.
-  Context {A A' B B'} `{GA : Galois A A'} `{GB : Galois B B'}.
+Global Instance galois_pairs : ∀ A A' B B' : Type,
+Galois A A' →
+Galois B B' →
+Galois (A*B)%type (A'*B')%type := gamma_pairs.
 
-  Definition gamma_sum : (A+B) → ℘ (A'+B') := λ s, λ s',
+Lemma fst_sound : ∀ (A A' : Type) {GA : Galois A A'} {B B' : Type} {GB : Galois B B'} 
+  (p : A*B) (q : A'*B'),
+  γ p q → 
+  γ (fst p) (fst q).
+Proof.
+  intros. destruct p eqn:Hp, q eqn:Hq; simpl. inversion H. subst.
+  simpl in *. assumption.
+Qed.
+Hint Resolve fst_sound : soundness.
+
+Corollary snd_sound : ∀ (A A' : Type) {GA : Galois A A'} {B B' : Type} {GB : Galois B B'} 
+  (p : A*B) (q : A'*B'),
+  γ p q → 
+  γ (snd p) (snd q).
+Proof.
+  intros. destruct p, q; simpl. inversion H. subst. simpl in *. assumption.
+Qed.
+Hint Resolve snd_sound : soundness.
+
+Definition gamma_sum {A A' B B'} {GA : Galois A A'} {GB : Galois B B'} : 
+    (A+B) → ℘ (A'+B') := λ s, λ s',
       match s, s' with 
       | inl x, inl y => γ x y
       | inr x, inr y => γ x y
       | _, _ => False
       end.
+Arguments gamma_sum A A' B B' {GA GB}.
 
-  Global Instance galois_sum : Galois (A+B) (A'+B') := gamma_sum.
-End galois_sums.
+Instance galois_sum : ∀ (A A' B B' : Type),
+  Galois A A' →
+  Galois B B' →
+  Galois (A+B) (A'+B') := gamma_sum.
 
-Section galois_identity.
-  Context {A A'} `{A_galois : Galois A A'}.
-
-  Definition gamma_identity (ia' : Identity A) 
-                            (ia : Identity A') : Prop :=
-    match ia', ia with
-    | identity a', identity a => γ a' a
+Definition gamma_identity {A A'} {GA : Galois A A'} (ia : Identity A) 
+                            (ia' : Identity A') : Prop :=
+    match ia, ia' with
+    | identity a, identity a' => γ a a'
     end.
+Arguments gamma_identity A A' {GA} ia ia'.
 
-  Global Instance galois_identity : Galois (Identity A) (Identity A') :=
+Instance galois_identity : ∀ (A A' : Type),
+  Galois A A' →
+  Galois (Identity A) (Identity A') :=
     gamma_identity.
-End galois_identity.
-
 
 Inductive gamma_optionA {A A'} {GA : Galois A A'} : optionA A → option A' → Prop :=
   | gamma_noneA : gamma_optionA NoneA None
@@ -97,36 +110,9 @@ Inductive gamma_option {A A'} {GA : Galois A A'} : option A → option A' → Pr
   | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
 Hint Constructors gamma_option : soundness.
 
-Instance galois_optionA : ∀ A A' {GA : Galois A A'}, 
+Instance galois_optionA : ∀ A A' (GA : Galois A A'), 
   Galois (optionA A) (option A') := @gamma_optionA.
 
-Instance galois_option : ∀ A A' {GA : Galois A A'}, 
+Instance galois_option : ∀ A A' (GA : Galois A A'), 
   Galois (option A) (option A') := @gamma_option.
 
-(*Instance galois_optionT {M M' : Type → Type} 
-  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
-  ∀ (A A' : Type) {GA : Galois A A'}, 
-  Galois (optionT M A) (optionT M' A').
-Proof.
-  intros A A' GA. pose proof (@galois_option A A') as GO. apply GO in GA.
-  apply GM in GA. apply GA.
-Qed.
-
-Instance galois_optionAT {M M' : Type → Type} 
-  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
-    ∀ (A A' : Type) {GA : Galois A A'},
-    Galois (optionAT M A) (optionT M' A').
-Proof.
-  intros. pose proof (@galois_optionA A A') as GO. apply GO in GA.
-  apply GM in GA. apply GA.
-Qed.*)
-
-Class SubType_sound (super super' : Type) `{GS : Galois super super'} : Type :=
-{
-  inject_sound : ∀ {sub sub' : Type} `{ST : SubType sub super}
-    `{ST' : SubType sub' super'} `{GS : Galois sub sub'} (s : sub) (s' : sub'),
-    γ s s' → γ (inject s) (inject s'); 
-  project_sound : ∀ {sub sub' : Type} `{ST : SubType sub super}
-    `{ST' : SubType sub' super'} `{GS : Galois sub sub'} (s : super) (s' : super'),
-    γ s s' → γ (project s) (project s');
-}.
