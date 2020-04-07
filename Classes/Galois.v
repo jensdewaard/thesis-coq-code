@@ -116,3 +116,17 @@ Instance galois_optionA : ∀ A A' (GA : Galois A A'),
 Instance galois_option : ∀ A A' (GA : Galois A A'), 
   Galois (option A) (option A') := @gamma_option.
 
+Instance galois_optionAT {M M'} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
+    ∀ A A', 
+  Galois A A' → Galois (optionAT M A) (optionT M' A').
+Proof.
+  intros A A' GA. apply GM. apply galois_optionA. apply GA.
+Defined.
+
+Instance galois_optionT {M M'} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
+  ∀ A A', Galois A A' → Galois (optionT M A) (optionT M' A').
+Proof.
+  intros A A' GA. apply GM. apply galois_option. apply GA.
+Defined.

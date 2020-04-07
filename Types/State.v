@@ -1,7 +1,25 @@
-Require Import Utf8 Classes.Joinable Classes.Monad.
+Require Export Base.
+Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois.
 
 Definition State (S A : Type) := S -> (A * S).
 Definition StateT S M A : Type := S → M (A*S)%type.
+
+Definition gamma_state {S S'} {GS : Galois S S'} {A A'} {GA : Galois A A'} : 
+  State S A → State S' A' → Prop := λ s : State S A, λ s' : State S' A', 
+    ∀ st st', γ st st' → γ (s st) (s' st').
+Arguments gamma_state {S S' GS} A A' GA.
+
+Instance galois_state {S S'} {GS : Galois S S'} : 
+  ∀ A A', Galois A A' → Galois (State S A) (State S' A') := gamma_state.
+
+Instance galois_stateT {M M' : Type → Type} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {S S'} {GS : Galois S S'} : 
+  ∀ A A', Galois A A' → Galois (StateT S M A) (StateT S' M' A').
+Proof.
+  intros A A' GA. unfold StateT. apply galois_fun. apply GS.
+  apply GM. apply galois_pairs; assumption.
+Defined.
 
 Section state_joinable.
   Context {S A} `{S_joinable : Joinable S S, A_joinable : Joinable A A}.

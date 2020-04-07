@@ -146,12 +146,11 @@ Section optionAT.
     unfold bind_sound. unfold bindM; simpl.
     intros A A' B B' GA GB m m' f f' Hm Hf. 
     unfold bind_optionAT, bind_optionT, optionAT, optionT.
-    unfold bind_sound.
-    apply bindM_sound; try assumption.
+    unfold bind_sound in BS. eapply BS. assumption.
     intros a a' Ha.
     inversion Ha; subst; eauto with soundness.
     - rewrite <- bind_id_right. admit.
-    - rewrite <- bind_id_right. apply bindM_sound; eauto with soundness.
+    - rewrite <- bind_id_right. eapply BS; auto with soundness.
       intros a' a Ha'. destruct a, a'; eauto with soundness.
   Admitted.
 End optionAT.
@@ -172,6 +171,7 @@ Theorem eval_expr_sound : ∀ (e : expr),
     (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤) e)
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
+  eapply shared_eval_expr_sound; eauto with soundness.
 Admitted.
 Hint Resolve eval_expr_sound : soundness.
 
