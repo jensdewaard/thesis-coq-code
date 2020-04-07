@@ -43,7 +43,6 @@ Inductive gamma_pairs {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'}
     | gamma_pairs_cons : ∀ p q,
         γ (fst p) (fst q) → γ (snd p) (snd q) → gamma_pairs p q.
 Arguments gamma_pairs A A' B B' {GA GB}.
-Hint Constructors gamma_pairs : soundness.
 
 Global Instance galois_pairs : ∀ A A' B B' : Type,
 Galois A A' →
@@ -58,7 +57,6 @@ Proof.
   intros. destruct p eqn:Hp, q eqn:Hq; simpl. inversion H. subst.
   simpl in *. assumption.
 Qed.
-Hint Resolve fst_sound : soundness.
 
 Corollary snd_sound : ∀ (A A' : Type) {GA : Galois A A'} {B B' : Type} {GB : Galois B B'} 
   (p : A*B) (q : A'*B'),
@@ -67,7 +65,6 @@ Corollary snd_sound : ∀ (A A' : Type) {GA : Galois A A'} {B B' : Type} {GB : G
 Proof.
   intros. destruct p, q; simpl. inversion H. subst. simpl in *. assumption.
 Qed.
-Hint Resolve snd_sound : soundness.
 
 Definition gamma_sum {A A' B B'} {GA : Galois A A'} {GB : Galois B B'} : 
     (A+B) → ℘ (A'+B') := λ s, λ s',
@@ -103,12 +100,10 @@ Inductive gamma_optionA {A A'} {GA : Galois A A'} : optionA A → option A' → 
   | gamma_Someornone_Some : ∀ a' a, 
       γ a' a →
       gamma_optionA (SomeOrNoneA a') (Some a).
-Hint Constructors gamma_optionA : soundness.
 
 Inductive gamma_option {A A'} {GA : Galois A A'} : option A → option A' → Prop :=
   | gamma_none : ∀ m, gamma_option None m
   | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
-Hint Constructors gamma_option : soundness.
 
 Instance galois_optionA : ∀ A A' (GA : Galois A A'), 
   Galois (optionA A) (option A') := @gamma_optionA.

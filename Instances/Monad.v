@@ -18,7 +18,7 @@ Section optionT_Monad.
       | Some a => f a
       end).
   Arguments bind_optionT [A B] m f.
-  Hint Unfold bind_optionT : soundness.
+  Hint Unfold bind_optionT : monads.
 
   Lemma bind_optionT_id_left : ∀ {A B} (f : A → optionT M B) (a : A), 
     bind_optionT (returnM (M:=M) (Some a)) f = f a.
@@ -42,9 +42,9 @@ Section optionT_Monad.
     bind_optionT (bind_optionT m f) g =
     bind_optionT m (λ a : A, bind_optionT (f a) g).
   Proof. 
-    intros. unfold bind_optionT. autorewrite with soundness.
-    f_equal. ext. destruct x; eauto with soundness.
-    autorewrite with soundness. reflexivity.
+    intros. unfold bind_optionT. autorewrite with monads.
+    f_equal. ext. destruct x; eauto with monads.
+    autorewrite with monads. reflexivity.
   Qed.
   Arguments bind_optionT_assoc [A B C] m f g.
 
@@ -55,13 +55,13 @@ Section optionT_Monad.
     bind_assoc := bind_optionT_assoc;
   }. 
 End optionT_Monad.
-Hint Unfold bind_optionT : soundness.
-Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : soundness.
+Hint Unfold bind_optionT : monads.
+Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : monads.
 
 Section optionT_monadT.
   Definition lift_optionT {M : Type → Type} `{Monad M} {A} (m : M A) : optionT M A :=
     bindM (M:=M) m (λ a, returnM (Some a)).
-  Hint Unfold lift_optionT : soundness.
+  Hint Unfold lift_optionT : monads.
 
   Lemma lift_optionT_pure {M : Type → Type} `{Monad M} : ∀ {A : Type} (a : A),
     lift_optionT (returnM (M:=M) a) = returnM (M:=M) (Some a).
@@ -75,7 +75,7 @@ Section optionT_monadT.
   lift_optionT (m >>= f) = bind_optionT (lift_optionT m) (f ∘ (lift_optionT (A:=B))).
   Proof. 
     intros. unfold lift_optionT, bind_optionT.
-    autorewrite with soundness. f_equal; ext. autorewrite with soundness.
+    autorewrite with monads. f_equal; ext. autorewrite with monads.
     reflexivity.
   Qed.
 
@@ -104,7 +104,7 @@ Section optionAT_monad.
                        | SomeOrNoneA b => returnM (SomeOrNoneA b)
                        end))
     end).
-  Hint Unfold bind_optionAT : soundness.
+  Hint Unfold bind_optionAT : monads.
 
   Lemma bind_optionAT_id_left : ∀ {A B} (f : A → optionAT M B) (a : A), 
     bind_optionAT (returnM (M:=M) (SomeA a)) f = f a.
@@ -119,7 +119,7 @@ Section optionAT_monad.
   Proof. 
     unfold bind_optionAT.  intros. rewrite <- (bind_id_right (M:=M)).
     f_equal; extensionality x. 
-    destruct x; autorewrite with soundness; try reflexivity.
+    destruct x; autorewrite with monads; try reflexivity.
   Qed.
 
   Lemma bind_optionAT_assoc : ∀ {A B C} (m : optionAT M A) 
@@ -127,13 +127,13 @@ Section optionAT_monad.
     bind_optionAT (bind_optionAT m f) g =
     bind_optionAT m (λ a : A, bind_optionAT (f a) g).
   Proof. 
-    intros. unfold bind_optionAT. autorewrite with soundness.
+    intros. unfold bind_optionAT. autorewrite with monads.
     f_equal; ext. destruct x; simpl. 
-    1-2: autorewrite with soundness; reflexivity.
-    autorewrite with soundness. f_equal; ext.
-    destruct x; autorewrite with soundness. 
+    1-2: autorewrite with monads; reflexivity.
+    autorewrite with monads. f_equal; ext.
+    destruct x; autorewrite with monads. 
     f_equal. reflexivity. f_equal; ext.
-    destruct x; autorewrite with soundness; reflexivity.
+    destruct x; autorewrite with monads; reflexivity.
   Qed.
   Arguments bind_optionAT_assoc [A B C] m f g.
 
@@ -144,12 +144,12 @@ Section optionAT_monad.
     bind_assoc := bind_optionAT_assoc;
   }. 
 End optionAT_monad.
-Hint Unfold bind_optionAT : soundness.
+Hint Unfold bind_optionAT : monads.
 
 Section optionAT_MonadT.
   Definition lift_optionAT {M} `{Monad M} {A} (m : M A) : optionAT M A :=
     bindM (M:=M) m (λ a, returnM (M:=M) (SomeA a)).
-  Hint Unfold lift_optionAT : soundness.
+  Hint Unfold lift_optionAT : monads.
 
   Definition lift_optionAT_pure {M} `{Monad M} {A} : ∀ (a : A),
     lift_optionAT (returnM a) = returnM a.
@@ -159,7 +159,7 @@ Section optionAT_MonadT.
     lift_optionAT (m >>= f) = bind_optionAT (lift_optionAT m) (f ∘ lift_optionAT (A:=B)).
   Proof. 
     unfold lift_optionAT, bind_optionAT. intros.
-    autorewrite with soundness. f_equal; ext. autorewrite with soundness.
+    autorewrite with monads. f_equal; ext. autorewrite with monads.
     reflexivity.
   Qed.
 

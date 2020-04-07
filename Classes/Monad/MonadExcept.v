@@ -13,4 +13,4 @@ Class MonadExcept M {MM : Monad M} {MF : MonadFail M} A := {
     catch (returnM a) x = returnM a;
 }.
 Arguments catch : simpl never.
-Hint Rewrite @catch_left @catch_right @catch_return : soundness.
+Hint Rewrite @catch_left @catch_right @catch_return : monads.

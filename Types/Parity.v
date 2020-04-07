@@ -12,7 +12,6 @@ Inductive parity : Type :=
 Inductive gamma_par : parity → ℘ nat :=
   | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
   | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n.
-Hint Constructors gamma_par : soundness.
 
 Instance galois_parity_nat : Galois parity nat := gamma_par.
 
@@ -93,53 +92,6 @@ Proof.
   constructor.
 Qed.
 
-(* Some lemmas regarding Nat.Even and Nat.Odd that are missing but are included
- * for the deprecated even and odd. We define these lemmas here so we can use the  
- * newer definitions for when the older version are deleted. *)
-(*Lemma Even_add : forall n m, Nat.Even n -> Nat.Even m -> Nat.Even (n + m).
-Proof.
-  intros. rewrite <- Nat.even_spec in *. 
-  replace true with (Bool.eqb (Nat.even n) (Nat.even m)).
-  apply Nat.even_add. rewrite H, H0. reflexivity.
-Qed.
-
-Lemma Odd_Odd_add : forall n m, Nat.Odd n -> Nat.Odd m -> Nat.Even (n + m).
-Proof.
-  intros. rewrite <- even_equiv. 
-  rewrite <- odd_equiv in H, H0. apply odd_even_plus; assumption.
-Qed.
-
-Lemma Odd_Even_add : forall n m, Nat.Odd n -> Nat.Even m -> Nat.Odd (n + m).
-Proof.
-  intros. rewrite <- even_equiv in H0. rewrite <- odd_equiv in H.
-  rewrite <- odd_equiv. apply odd_plus_l; assumption.
-Qed.
-
-Lemma Even_Odd_add : forall n m, Nat.Even n -> Nat.Odd m -> Nat.Odd (n + m).
-Proof.
-  intros. rewrite <- even_equiv in H. rewrite <- odd_equiv in H0.
-  rewrite <- odd_equiv. apply odd_plus_r; assumption.
-Qed.
-
-Lemma Even_mult_l : forall n m, Nat.Even n -> Nat.Even (n * m).
-Proof.
-  intros. rewrite <- even_equiv in *. apply even_mult_l. assumption.
-Qed.
-
-Lemma Even_mult_r : forall n m, Nat.Even m -> Nat.Even (n * m).
-Proof.
-  intros. rewrite <- even_equiv in *. apply even_mult_r; assumption.
-Qed.
-
-Lemma Odd_mult : forall n m, Nat.Odd n -> Nat.Odd m -> Nat.Odd (n * m).
-Proof.
-  intros. rewrite <- odd_equiv in *. apply odd_mult; assumption.
-Qed.
-
-Hint Resolve Even_add Odd_Odd_add Odd_Even_add Even_Odd_add : soundness.
-Hint Resolve Even_mult_l Even_mult_r Odd_mult : soundness.
-Hint Resolve Nat.Even_Odd_False : soundness. 
-*)
 Inductive parity_le : parity → parity → Prop :=
   | par_le_even : parity_le par_even par_even
   | par_le_odd  : parity_le par_odd par_odd. 

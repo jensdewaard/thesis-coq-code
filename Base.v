@@ -62,12 +62,6 @@ Ltac destr :=
 Ltac simplify := simpl in *; intros; repeat ext; try destr; 
   destruct_all unit.
 
-Ltac simple_solve := autounfold with soundness; intros;
-  repeat (simplify; 
-    autorewrite with soundness in * + autounfold with soundness in *;
-    intros; subst
-  );
-  try (unfold compose, id, const; contradiction + discriminate + eauto with soundness).
 
 (* We have some recursive typeclasses instances, for example Monad M -> 
  * Monad (MaybeT M). As typeclass instances search by default is depth first 

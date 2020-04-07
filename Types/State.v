@@ -39,9 +39,8 @@ Section State_Monad.
   Definition bind_state {A B} 
     (m : State S A) (f : A -> State S B) : State S B :=
     λ st, let (x, st') := (m st) in f x st'.
-
   Arguments bind_state [A B] m f.
-  Hint Unfold bind_state : soundness.
+  Hint Unfold bind_state : monads.
 
   Lemma bind_state_id_left : ∀ (A B : Type) (f : A → State S B) (a : A),
     bind_state (return_state a) f = f a.
@@ -64,7 +63,6 @@ Section State_Monad.
     bind_assoc := bind_state_assoc;
   }. 
 End State_Monad.
-Hint Unfold bind_state : soundness.
 
 Section Monad_StateT.
   Context {M} `{M_monad : Monad M}.
@@ -72,18 +70,18 @@ Section Monad_StateT.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
-  Hint Unfold return_stateT : soundness.
+  Hint Unfold return_stateT : monads.
 
   Definition bind_stateT {A B} (m : StateT S M A) 
     (f : A -> StateT S M B) : StateT S M B :=
     λ st, m st >>= λ p : (A*S)%type, let (a,st') := p in f a st'.
   Arguments bind_stateT [A B] m f.
-  Hint Unfold bind_stateT : soundness.
+  Hint Unfold bind_stateT : monads.
 
   Lemma bind_stateT_id_left : ∀ (A B : Type) (f : A → StateT S M B) (a : A), 
     bind_stateT (return_stateT a) f = f a.
   Proof.
-    autounfold with soundness. intros. ext. 
+    autounfold with monads. intros. ext. 
     rewrite bind_id_left. reflexivity.
   Qed.
   Arguments bind_stateT_id_left [A B] f a.
@@ -91,7 +89,7 @@ Section Monad_StateT.
   Lemma bind_stateT_id_right : ∀ (A : Type) (m : StateT S M A), 
     bind_stateT m return_stateT = m.
   Proof.
-    intros. autounfold with soundness. ext.
+    intros. autounfold with monads. ext.
     rewrite <- bind_id_right. f_equal. ext. destruct x0.
     reflexivity.
   Qed.
@@ -102,8 +100,8 @@ Section Monad_StateT.
     bind_stateT (bind_stateT m f) g =
     bind_stateT m (λ a : A, bind_stateT (f a) g).
   Proof.
-    intros. autounfold with soundness. ext.
-    autorewrite with soundness. f_equal. extensionality p.
+    intros. autounfold with monads. ext.
+    autorewrite with monads. f_equal. repeat rewrite bind_assoc. extensionality p.
     destruct p. reflexivity.
   Qed.
   Arguments bind_stateT_assoc [A B C] m f g.
@@ -115,28 +113,27 @@ Section Monad_StateT.
     bind_assoc := bind_stateT_assoc;
   }. 
 End Monad_StateT.
-Hint Unfold bind_stateT : soundness.
 
 Section MonadT_StateT.
   Context {S : Type}.
 
   Definition lift_stateT {M} `{Monad M} {A} (m : M A) : StateT S M A :=
     λ st, m >>= λ a, returnM (a, st).
-  Hint Unfold lift_stateT : soundness.
+  Hint Unfold lift_stateT : monads.
   
   Lemma lift_stateT_pure {M} `{Monad M} {A} : ∀ (a : A), 
     lift_stateT (returnM a) = return_stateT a.
   Proof.
-    intros. autounfold with soundness. ext.
-    autorewrite with soundness. reflexivity.
+    intros. autounfold with monads. ext.
+    autorewrite with monads. reflexivity.
   Qed.
 
   Lemma lift_stateT_bind {M} `{Monad M} {A B} : ∀ (m : M A) (f : A → M B),
     lift_stateT (m >>= f) = bind_stateT (lift_stateT m) (f ∘ lift_stateT (A:=B)).
   Proof.
-    intros. simpl.
-    autounfold with soundness. ext. autorewrite with soundness.
-    f_equal. ext. autorewrite with soundness. reflexivity.
+    intros. simpl. autounfold with monads. unfold bind_stateT. ext. 
+    autorewrite with monads. f_equal. simpl. ext. 
+    autorewrite with monads. reflexivity.
   Qed.
 
   Global Instance monadT_stateT : MonadT (StateT S) :=

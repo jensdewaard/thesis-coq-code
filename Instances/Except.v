@@ -30,7 +30,7 @@ Section except_option.
     | None => y
     | _ => x
     end.
-  Hint Unfold catch_option : soundness.
+  Hint Unfold catch_option : monads.
 
   Lemma catch_option_throw_left : ∀ {A} (x : option A),
     catch_option None x = x.
@@ -109,7 +109,7 @@ Section fail_optionT.
   Lemma fail_optionT_left : ∀ (A B : Type) (m : A → optionT M B), 
     bind_optionT fail_optionT m = fail_optionT.
   Proof.
-    intros. unfold bind_optionT, fail_optionT. autorewrite with soundness.
+    intros. unfold bind_optionT, fail_optionT. autorewrite with monads.
     reflexivity.
   Qed.
 
@@ -129,13 +129,13 @@ Section except_optionT.
       | None => my
       | Some a => returnM (Some a)
       end).
-  Hint Unfold catch_optionT : soundness.
+  Hint Unfold catch_optionT : monads.
 
   Lemma catch_optionT_throw_left : ∀ {A : Type} (x : optionT M A), 
     catch_optionT fail_optionT x = x.
   Proof.
     intros. unfold catch_optionT, fail_optionT.
-    autorewrite with soundness. reflexivity.
+    autorewrite with monads. reflexivity.
   Qed.
 
   Lemma catch_optionT_throw_right : ∀ {A : Type} (x : optionT M A), 
@@ -171,7 +171,7 @@ Section fail_optionAT.
     bind_optionAT (A:=A) (B:=B) fail_optionAT m = fail_optionAT (A:=B).
   Proof. 
     unfold bind_optionAT, fail_optionAT; simpl. intros. 
-    autorewrite with soundness. reflexivity.
+    autorewrite with monads. reflexivity.
   Qed.
 
   Global Instance monad_fail_optionAT : MonadFail (optionAT M) :=
@@ -196,7 +196,7 @@ Section except_optionAT.
   Lemma catch_optionAT_throw_left : ∀ {A} (x : optionAT M A),
     catch_optionAT fail_optionAT x = x.
   Proof. 
-    intros. unfold catch_optionAT, fail_optionAT. autorewrite with soundness.
+    intros. unfold catch_optionAT, fail_optionAT. autorewrite with monads.
     reflexivity.
   Qed.
 
@@ -232,9 +232,9 @@ Section fail_stateT.
     fail_stateT (A:=A) >>= s = fail_stateT.
   Proof.
     intros. unfold fail_stateT, lift_stateT. ext. 
-    autorewrite with soundness. 
+    autorewrite with monads. 
     unfold bindM; simpl; unfold bind_stateT. 
-    autorewrite with soundness. reflexivity.
+    autorewrite with monads. reflexivity.
   Qed.
 
   Global Instance monad_fail_stateT : MonadFail (StateT S M) :=
@@ -251,20 +251,20 @@ Section except_stateT.
 
   Definition catch_stateT {A} (a b : StateT S M A) : StateT S M A := 
     fun s => catch (a s) (b s).
-  Hint Unfold fail_stateT catch_stateT : soundness.
+  Hint Unfold fail_stateT catch_stateT : monads.
 
   Lemma catch_stateT_throw_left : ∀ {A} (x : StateT S M A),
     catch_stateT fail_stateT x = x.
   Proof. 
     intros. unfold catch_stateT, fail_stateT, lift_stateT.
-    ext. autorewrite with soundness. reflexivity.
+    ext. autorewrite with monads. reflexivity.
   Qed.
 
   Lemma catch_stateT_throw_right : ∀ {A} (x : StateT S M A),
     catch_stateT x fail_stateT = x.
   Proof. 
     intros. unfold catch_stateT, fail_stateT, lift_stateT.
-    ext. autorewrite with soundness. reflexivity.
+    ext. autorewrite with monads. reflexivity.
   Qed.
 
   Lemma catch_stateT_return : ∀ {A} (x : StateT S M A) (a : A),

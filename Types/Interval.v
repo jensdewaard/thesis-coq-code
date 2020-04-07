@@ -43,7 +43,6 @@ Qed.
 
 Definition iplus (i1 i2 : interval) : interval := 
   Interval ((min i1) + (min i2)) ((max i1) + (max i2)) (plus_min_max i1 i2).
-Hint Unfold iplus : soundness.
 
 Lemma mult_min_max : ∀ i1 i2,
   min i1 * min i2 ≤ max i1 * max i2.
@@ -54,7 +53,6 @@ Qed.
 
 Definition imult (i1 i2 : interval) : interval :=
   Interval ((min i1) * (min i2)) ((max i1) * (max i2)) (mult_min_max i1 i2).
-Hint Unfold imult : soundness.
 
 Definition ieqb (i1 i2 : interval) : (abstr_bool+⊤) :=
   if (Nat.ltb (max i1) (min i2)) then
@@ -108,7 +106,6 @@ Instance interval_joinable : Joinable interval interval :=
 Inductive gamma_interval : interval → nat → Prop :=
   | gamma_interval_cons : ∀ i n, 
       preorder (min i) n → preorder n (max i) → gamma_interval i n.
-Hint Constructors gamma_interval : soundness.
 
 Instance galois_interval : Galois interval nat := gamma_interval.
 

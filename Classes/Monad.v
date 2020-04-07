@@ -5,6 +5,8 @@ Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.
 Implicit Type A B C D : Type.
 
+Create HintDb monads.
+
 Class Monad M : Type :=
 {
   returnM : ∀ {A}, A → M A;
@@ -18,24 +20,33 @@ Class Monad M : Type :=
 }.
 Arguments bindM : simpl never.
 Arguments returnM: simpl never.
-Hint Unfold bindM : soundness.
-Hint Rewrite @bind_id_left @bind_id_right @bind_assoc : soundness.
+Hint Unfold bindM : monads.
+Hint Rewrite @bind_id_left @bind_assoc : monads.
 
 Class bind_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop := 
   bindM_sound : ∀ {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'} 
     (m : M A) (m' : M' A') (f : A → M B) (f' : A' → M' B'),
     γ m m' → γ f f' → γ (bindM m f) (bindM m' f').
+Hint Resolve bindM_sound : soundness.
 
 Class return_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop :=
   returnM_sound : ∀ {A A' : Type} {GA : Galois A A'} (a : A) (a' : A'),
     γ (Galois:=GA) a a' → 
     γ (Galois:=GM _ _ _) (returnM (M:=M) a) (returnM (M:=M') a').
+Hint Resolve returnM_sound : soundness.
 
 Definition join {M} `{Monad M} {A} 
   (mma : M (M A)) : M A :=
   bindM mma id.
+
+Ltac simple_solve := autounfold with monads; intros;
+  repeat (simplify; 
+    autorewrite with monads in * + autounfold with monads in *;
+    intros; subst
+  );
+  try (unfold compose, id, const; contradiction + discriminate + eauto with monads).
 
 Ltac solve_monad := repeat (simplify; simple_solve;
   match goal with
@@ -60,8 +71,8 @@ Section MonadTransformer.
       liftT (x >>= f) = liftT x >>= (f ∘ liftT);
   }.
 End MonadTransformer.
-Hint Unfold liftT : soundness.
-Hint Rewrite @lift_return @lift_bind : soundness.
+Hint Unfold liftT : monads.
+Hint Rewrite @lift_return @lift_bind : monads.
 
 Section Identity_Monad.
   Definition bind_id {A B} 
@@ -110,7 +121,7 @@ Section option_monad.
     | None => None
     | Some a => f a
     end.
-  Hint Unfold bind_option : soundness.
+  Hint Unfold bind_option : monads.
 
   Lemma bind_option_id_left : ∀ {A B} (f : A → option B) (a : A), 
     bind_option (Some a) f = f a.
@@ -135,7 +146,6 @@ Section option_monad.
     bind_assoc := bind_option_assoc;
   }. 
 End option_monad.
-Hint Rewrite @bind_option_id_left @bind_option_id_right : soundness.
 
 Section optionA_monad.
   Definition bind_optionA {A B : Type}
@@ -150,7 +160,7 @@ Section optionA_monad.
                        end
     end.
   Arguments bind_optionA [_ _].
-  Hint Unfold bind_optionA : soundness.
+  Hint Unfold bind_optionA : monads.
 
   Lemma bind_optionA_id_left : ∀ {A B} (f : A → optionA B) (a : A),
   bind_optionA (SomeA a) f = f a.
@@ -159,7 +169,7 @@ Section optionA_monad.
 
   Lemma bind_optionA_id_right :  ∀ {A} (m : optionA A),
     bind_optionA m SomeA = m.
-  Proof. solve_monad. Qed.
+  Proof. simple_solve. Qed.
   Arguments bind_optionA_id_right [A].
 
   Lemma bind_optionA_assoc : ∀ {A B C} (m : optionA A) 
@@ -176,7 +186,6 @@ Section optionA_monad.
     bind_assoc := bind_optionA_assoc;
   }. 
 End optionA_monad.
-Hint Rewrite @bind_optionA_id_left @bind_optionA_id_right : soundness.
 
 Section list_monad.
 

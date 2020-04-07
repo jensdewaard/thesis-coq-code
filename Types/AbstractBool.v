@@ -14,7 +14,6 @@ Inductive abstr_bool : Type :=
 Inductive gamma_bool : abstr_bool → bool → Prop :=
   | gamma_bool_true : ∀ P, P = true → gamma_bool ab_true P
   | gamma_bool_false : ∀ P, P = false → gamma_bool ab_false P.
-Hint Constructors gamma_bool : soundness.
 
 Instance galois_boolean : Galois abstr_bool bool := gamma_bool.
 (** * Operations *)
@@ -44,7 +43,7 @@ Instance or_ab_op : or_op abstr_bool abstr_bool := or_ab.
 Instance or_ab_sound : or_op_sound abstr_bool bool.
 Proof.
   intros ab1 ab2 b1 b2 H1 H2. destruct ab1, ab2, b1, b2; auto; gamma_destruct;
-  eauto with soundness.
+  constructor; auto.
 Qed.
 
 (** ** Negation *)

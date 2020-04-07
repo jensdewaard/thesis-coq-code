@@ -57,7 +57,7 @@ Section preordered_functions.
   Global Instance preordered_function_spaces : PreorderedSet (A->A').
   Proof. proof_preorder pointwise_ordering. Defined.
 End preordered_functions.
-Hint Constructors pointwise_ordering : soundness.
+Hint Constructors pointwise_ordering : preorders.
 
 Section preordered_pairs.
   Context {A B : Type} 
@@ -79,7 +79,7 @@ Section preordered_pairs.
     intros. destruct p, q. exists a, b, a0, b0. reflexivity.
   Qed.
 End preordered_pairs.
-Hint Constructors preorder_pair_le : soundness.
+Hint Constructors preorder_pair_le : preorders.
 
 Definition unit_le (u v : unit) : Prop := True.
 Hint Unfold unit_le : preorders.
@@ -99,7 +99,7 @@ Section preordered_sets_le.
   Proof. proof_preorder preordered_set_le. Defined.
 
 End preordered_sets_le.
-Hint Constructors preordered_set_le : soundness.
+Hint Constructors preordered_set_le : preorders.
 
 Section identity_preorder.
   Context {A} `{A_preorder : PreorderedSet A}.
@@ -125,7 +125,7 @@ Section option_preorder.
   Global Instance option_preorder : PreorderedSet (option A).
   Proof. proof_preorder option_le. Defined.
 End option_preorder.
-Hint Constructors option_le : soundness.
+Hint Constructors option_le : preorders.
 
 Global Instance preorder_nat : PreorderedSet nat.
 Proof. proof_preorder le; eauto with arith. Defined.
@@ -146,4 +146,4 @@ Section optionA_preorder.
   Global Instance optionA_preorder : PreorderedSet (optionA A).
   Proof. proof_preorder optionA_le. Defined.
 End optionA_preorder.
-Hint Constructors optionA_le : soundness.
+Hint Constructors optionA_le : preorders.

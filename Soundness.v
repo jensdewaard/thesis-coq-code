@@ -26,6 +26,8 @@ Require Import Classes.IsBool.
 
 Hint Extern 0 (γ _ _) => progress gamma_destruct : soundness.
 
+Print HintDb soundness.
+
 (* Soundness of unit *)
 Lemma gamma_unit_sound :
   γ tt tt.
