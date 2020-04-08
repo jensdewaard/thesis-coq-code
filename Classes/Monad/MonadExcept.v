@@ -1,16 +1,18 @@
 Require Export Base.
-Require Import Classes.Monad.
-Require Import Classes.Monad.MonadFail.
+Require Import Classes.Monad Classes.Joinable.
 
 Implicit Type M : Type → Type.
 Implicit Type A : Type.
 
-Class MonadExcept M {MM : Monad M} {MF : MonadFail M} A := {
-  catch : M A -> M A -> M A;
-  catch_left : ∀ (x : M A), catch fail x = x;
-  catch_right : ∀ (x : M A), catch x fail = x;
-  catch_return : ∀ (x : M A) (a : A),
+Class MonadExcept M {MM : Monad M} := {
+  throw : ∀ {A}, M A;
+  throw_left: ∀ {A B} (f : A → M B), throw >>= f = throw;
+  catch : ∀ {A} {JA : Joinable A A}, M A -> M A -> M A;
+  catch_left : ∀ {A} {JA : Joinable A A} (x : M A), catch throw x = x;
+  catch_right : ∀ {A} {JA : Joinable A A} (x : M A), catch x throw = x;
+  catch_return : ∀ {A} {JA : Joinable A A} (x : M A) (a : A),
     catch (returnM a) x = returnM a;
 }.
+Arguments throw : simpl never.
 Arguments catch : simpl never.
-Hint Rewrite @catch_left @catch_right @catch_return : monads.
+Hint Rewrite @throw_left @catch_left @catch_right @catch_return : monads.

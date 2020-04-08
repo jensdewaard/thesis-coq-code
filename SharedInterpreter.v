@@ -120,7 +120,7 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   {SSN : SubType_sound SN SN'}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MS : MonadState (store (avalue+⊤)) M} {MS' : MonadState (store cvalue) M'}
-  {ME : MonadExcept M unit} {ME' : MonadExcept M' unit} 
+  {ME : MonadExcept M} {ME' : MonadExcept M'} 
   {PO : plus_op natType natType} {PO' : plus_op natType' natType'}
   {MO : mult_op natType natType} {MO' : mult_op natType' natType'}
   {EO : eq_op natType boolType}  {EO' : eq_op natType' boolType'}
@@ -196,7 +196,7 @@ Fixpoint shared_ceval
     `{MM : !Monad M}
     `{MF : !MonadFail M} 
     `{MS : !MonadState (store valType) M}
-    `{ME : !MonadExcept M unit} (c : com) 
+    `{ME : !MonadExcept M} (c : com) 
     `{SubType boolType valType}
     `{SubType natType valType}
     `{PO : plus_op natType natType}

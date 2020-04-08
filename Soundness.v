@@ -182,7 +182,8 @@ Theorem eval_expr_sound : ∀ (e : expr),
     (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤) e)
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
-  eapply shared_eval_expr_sound; eauto with soundness.
+  eapply shared_eval_expr_sound; eauto 10 with soundness.
+  apply except_optionAT.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 

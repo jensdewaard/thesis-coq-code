@@ -1,5 +1,6 @@
 Require Export Base.
-Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois.
+Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois
+  Classes.Monad.MonadJoin.
 
 Definition State (S A : Type) := S -> (A * S).
 Definition StateT S M A : Type := S → M (A*S)%type.
@@ -29,6 +30,7 @@ Section state_joinable.
     λ x, (((fst (st x)) ⊔ (fst (st' x)), 
               ((snd (st x)) ⊔ (snd (st' x))))).
 End state_joinable.
+
 
 Section State_Monad.
   Context {S : Type}.
@@ -142,3 +144,25 @@ Section MonadT_StateT.
     lift_bind := @lift_stateT_bind;
   }. 
 End MonadT_StateT.
+
+Section mjoin_stateT.
+  Context {S : Type} {JS: Joinable S S}. 
+  Context {M : Type → Type} {MM : Monad M} {JM : MonadJoin M}.
+
+  Definition mjoin_stateT {A : Type} {JA : Joinable A A} 
+    (m1 m2 : StateT S M A) : StateT S M A := λ s : S, (m1 s) <⊔> (m2 s).
+
+  Lemma mjoin_stateT_return : ∀ (A : Type) {JA : Joinable A A} (x y : A),
+    mjoin_stateT (return_stateT x) (return_stateT y) = 
+    return_stateT (x ⊔ y).
+  Proof.
+    intros A JA x y. unfold mjoin_stateT. unfold return_stateT. ext.
+    rewrite mjoin_return. 
+  Admitted.
+
+  Global Instance stateT_monadjoin : MonadJoin (StateT S M) :=
+  {
+    mjoin := @mjoin_stateT;
+    mjoin_return := mjoin_stateT_return;
+  }.
+End mjoin_stateT.
