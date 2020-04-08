@@ -112,6 +112,13 @@ Instance parity_joinable : Joinable parity (parity+⊤) :=
     | par_odd, par_odd => NotTop par_odd
     | _, _ => Top
     end.
+
+Instance parity_joinable_idem : 
+  JoinableIdem (top_joinable_l parity_joinable).
+Proof.
+  intro a. destruct a. constructor.
+  unfold join_op. unfold top_joinable_l. destruct p; reflexivity. 
+Qed.
       
 Instance join_parity_nat_sound : JoinableSound parity (parity+⊤) nat.
 Proof.

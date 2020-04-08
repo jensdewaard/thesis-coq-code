@@ -19,6 +19,13 @@ Instance galois_store {A A'} `{Galois A A'} : Galois (store A) (store A') :=
 Instance store_joinable {A B} `{Joinable A B} : Joinable (store A) (store B) :=
   λ st1, λ st2, λ x, (st1 x) ⊔ (st2 x).
 
+Instance store_joinable_idem {A} {JA : Joinable A A} :
+  JoinableIdem JA → JoinableIdem (@store_joinable A A JA).
+Proof.
+  intros JAI st. unfold join_op; simpl. unfold store_joinable. ext.
+  rewrite JAI. reflexivity.
+Qed.
+
 Instance store_join_sound {A A' B} {JA : Joinable A B} {GA : Galois A A'}
   {GB :Galois B A'} {JS: JoinableSound A B A'} :
   JoinableSound (store A) (store B) (store A').

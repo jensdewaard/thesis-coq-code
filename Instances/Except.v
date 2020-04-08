@@ -26,22 +26,26 @@ Section fail_option.
 End fail_option.
 
 Section except_option.
-  Definition catch_option {A} {JA : Joinable A A} (x y : option A) : option A :=
+  Definition catch_option {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
+    (x y : option A) : option A :=
     match x with
     | None => y
     | _ => x
     end.
   Hint Unfold catch_option : monads.
 
-  Lemma catch_option_throw_left : ∀ (A : Type) (JA : Joinable A A) (x : option A),
+  Lemma catch_option_throw_left : ∀ (A : Type) (JA : Joinable A A) 
+    {JAI : JoinableIdem JA} (x : option A),
     catch_option None x = x.
   Proof. simple_solve. Qed.
 
-  Lemma catch_option_throw_right : ∀ A (JA : Joinable A A) (x : option A),
+  Lemma catch_option_throw_right : ∀ A (JA : Joinable A A) 
+    {JAI : JoinableIdem JA} (x : option A),
     catch_option x None = x.
   Proof. simple_solve. Qed.
 
-  Lemma catch_option_return : ∀ A (JA : Joinable A A) (x : option A) (a : A),
+  Lemma catch_option_return : ∀ A (JA : Joinable A A) 
+    {JAI : JoinableIdem JA} (x : option A) (a : A),
     catch_option (returnM a) x = returnM a.
   Proof.
     reflexivity. 
@@ -71,24 +75,28 @@ Section fail_optionA.
 End fail_optionA.
 
 Section except_optionA.
-  Definition catch_optionA {A : Type} {JA : Joinable A A} (x y : optionA A) : optionA A :=
+  Definition catch_optionA {A : Type} {JA : Joinable A A} 
+    {JAI : JoinableIdem JA} (x y : optionA A) : optionA A :=
     match x with
     | NoneA => y
     | SomeA a => x
     | SomeOrNoneA a => x ⊔ y
     end.
 
-  Lemma catch_optionA_throw_left : ∀ A {JA : Joinable A A} (x : optionA A),
+  Lemma catch_optionA_throw_left : ∀ A {JA : Joinable A A} 
+    {JAI : JoinableIdem JA} (x : optionA A),
     catch_optionA NoneA x = x.
   Proof. reflexivity. Qed.
 
-  Lemma catch_optionA_throw_right : ∀ A {JA : Joinable A A} (x : optionA A),
+  Lemma catch_optionA_throw_right : ∀ A {JA : Joinable A A}
+  {JAI : JoinableIdem JA} (x : optionA A),
     catch_optionA x NoneA = x.
   Proof.
     intros. destruct x; simpl; reflexivity. 
   Qed.
 
-  Lemma catch_optionA_return : ∀ A {JA : Joinable A A} (x : optionA A) (a : A),
+  Lemma catch_optionA_return : ∀ A {JA : Joinable A A}
+  {JAI : JoinableIdem JA} (x : optionA A) (a : A),
     catch_optionA (returnM a) x = returnM a.
   Proof.
     reflexivity. 
@@ -125,7 +133,8 @@ End fail_optionT.
 Section except_optionT.
   Context M {MM : Monad M}.
 
-  Definition catch_optionT {A} {JA : Joinable A A} (mx my : optionT M A) : 
+  Definition catch_optionT {A} {JA : Joinable A A}
+  {JAI : JoinableIdem JA} (mx my : optionT M A) : 
     optionT M A :=
     bindM (M:=M) mx (fun x : option A =>
       match x with
@@ -135,7 +144,7 @@ Section except_optionT.
   Hint Unfold catch_optionT : monads.
 
   Lemma catch_optionT_throw_left : ∀ (A : Type) {JA : Joinable A A} 
-    (x : optionT M A), 
+  {JAI : JoinableIdem JA} (x : optionT M A), 
     catch_optionT fail_optionT x = x.
   Proof.
     intros. unfold catch_optionT, fail_optionT.
@@ -143,7 +152,7 @@ Section except_optionT.
   Qed.
 
   Lemma catch_optionT_throw_right : ∀ (A : Type) {JA : Joinable A A} 
-  (x : optionT M A), 
+  {JAI : JoinableIdem JA} (x : optionT M A), 
     catch_optionT x fail_optionT = x.
   Proof.
     unfold catch_optionT, fail_optionT. intros.
@@ -153,7 +162,7 @@ Section except_optionT.
   Qed.
 
   Lemma catch_optionT_return : ∀ (A : Type) {JA : Joinable A A} 
-  (x : optionT M A) (a : A),
+  {JAI : JoinableIdem JA} (x : optionT M A) (a : A),
     catch_optionT (returnM a) x = returnM a.
   Proof.
     unfold catch_optionT. intros. unfold returnM; simpl.
@@ -193,7 +202,7 @@ Section except_optionAT.
   Context {M : Type -> Type} {MM : Monad M}.
   Context {MJ : MonadJoin M}.
 
-  Definition catch_optionAT {A} {JA : Joinable A A}
+  Definition catch_optionAT {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
     (mx my : optionAT M A) : optionAT M A :=
     bindM (M:=M) mx (fun x : optionA A =>
       match x with
@@ -204,15 +213,15 @@ Section except_optionAT.
       end).
 
   Lemma catch_optionAT_throw_left : ∀ A {JA : Joinable A A} 
-    (x : optionAT M A),
+    {JAI : JoinableIdem JA} (x : optionAT M A),
     catch_optionAT fail_optionAT x = x.
   Proof. 
     intros. unfold catch_optionAT, fail_optionAT. autorewrite with monads.
     reflexivity.
   Qed.
 
-  Lemma catch_optionAT_throw_right : ∀ A {JA : Joinable A A}
-  (x : optionAT M A),
+  Lemma catch_optionAT_throw_right : ∀ A {JA : Joinable A A} 
+    {JAI : JoinableIdem JA} (x : optionAT M A),
     catch_optionAT x fail_optionAT = x.
   Proof. 
     intros. unfold catch_optionAT, fail_optionAT. rewrite <- (bind_id_right (M:=M)).
@@ -220,7 +229,8 @@ Section except_optionAT.
     rewrite mjoin_return. reflexivity.
   Qed.
 
-  Lemma catch_optionAT_return : ∀ A {JA : Joinable A A} (x : optionAT M A) (a : A),
+  Lemma catch_optionAT_return : ∀ A {JA : Joinable A A} 
+    {JAI : JoinableIdem JA} (x : optionAT M A) (a : A),
     catch_optionAT (returnM a) x = returnM a.
   Proof.
     unfold catch_optionAT. intros. unfold returnM; simpl.
@@ -261,7 +271,7 @@ End fail_stateT.
 
 Section except_stateT.
   Context {M : Type → Type} {MM : Monad M} {ME : MonadExcept M}.
-  Context {S : Type} {JS : Joinable S S}.
+  Context {S : Type} {JS : Joinable S S} {JSI : JoinableIdem JS}.
 
   Definition throw_stateT {A} : StateT S M A := lift_stateT throw.
 
@@ -273,25 +283,29 @@ Section except_stateT.
     reflexivity.
   Qed.
 
-  Definition catch_stateT {A} {JA : Joinable A A} (a b : StateT S M A) : 
+  Definition catch_stateT {A} {JA : Joinable A A} {JAI : JoinableIdem JA} 
+    (a b : StateT S M A) : 
       StateT S M A := 
     fun s => catch (a s) (b s).
   Hint Unfold throw_stateT catch_stateT lift_stateT : monads.
 
-  Lemma catch_stateT_throw_left : ∀ A {JA : Joinable A A} (x : StateT S M A),
+  Lemma catch_stateT_throw_left : ∀ A {JA : Joinable A A} 
+    {JAI : JoinableIdem JA} (x : StateT S M A),
     catch_stateT throw_stateT x = x.
   Proof. 
     intros. autounfold with monads. ext. autorewrite with monads. reflexivity.
   Qed.
 
-  Lemma catch_stateT_throw_right : ∀ A {JA : Joinable A A} (x : StateT S M A),
+  Lemma catch_stateT_throw_right : ∀ A {JA : Joinable A A}
+  {JAI : JoinableIdem JA} (x : StateT S M A),
     catch_stateT x throw_stateT = x.
   Proof. 
     intros. autounfold with monads.
     ext. autorewrite with monads. reflexivity.
   Qed.
 
-  Lemma catch_stateT_return : ∀ A {JA : Joinable A A} (x : StateT S M A) (a : A),
+  Lemma catch_stateT_return : ∀ A {JA : Joinable A A}
+  {JAI : JoinableIdem JA} (x : StateT S M A) (a : A),
     catch_stateT (returnM a) x = returnM a.
   Proof.
     intros. ext. autounfold with monads. unfold returnM; simpl. 

@@ -2,27 +2,58 @@ Require Export Base.
 Require Import Classes.Galois.
 
 Class Joinable (A B : Type) : Type := join_op : A → A → B.
+
 Arguments join_op : simpl never.
 Infix "⊔" := join_op (at level 40).
+
+Class JoinableIdem {A} (J : Joinable A A) : Prop :=
+  joinable_idem : ∀ a : A, a ⊔ a = a.
 
 Class JoinableSound (A B C : Type) 
   `{Joinable A B} `{Galois A C} `{Galois B C} : Prop :=
   join_sound : ∀ x y : A, γ x ∪ γ y ⊆ γ (x ⊔ y).
 
-Instance functions_joinable {A B} `{Joinable B B} : 
+Instance functions_joinable {A B} {JB : Joinable B B} : 
 Joinable (A → B) (A → B) := λ f, λ g, λ a : A, (f a) ⊔ (g a).
 
-Instance top_joinable_l {A} `{Joinable A (A+⊤)} : Joinable (A+⊤) (A+⊤) :=
+Instance functions_joinable_idem {A} {JA : Joinable A A} :
+  JoinableIdem JA → JoinableIdem (@functions_joinable A A JA).
+Proof.
+  intros JAI a. unfold join_op, functions_joinable. ext.
+  rewrite JAI. reflexivity.
+Qed.
+
+Instance top_joinable_r {A} (JA : Joinable A A) : Joinable A (A+⊤) :=
+  λ a : A, λ a' : A, NotTop (a ⊔ a').
+
+Instance top_joinable_l {A} (JA : Joinable A (A+⊤)) : Joinable (A+⊤) (A+⊤) :=
   λ a, λ a', 
     match a, a' with
     | NotTop x, NotTop y => x ⊔ y
     | _, _ => Top
     end.
 
-Instance top_joinable_r {A} `{Joinable A A} : Joinable A (A+⊤) :=
-  λ a : A, λ a' : A, NotTop (a ⊔ a').
+Instance top_joinable_r_idem {A} {JA : Joinable A A} :
+  JoinableIdem JA → JoinableIdem (@top_joinable_l A (@top_joinable_r A JA)).
+Proof.
+  intros JAI a. destruct a. constructor. unfold join_op. unfold top_joinable_l.
+  unfold join_op. unfold top_joinable_r. rewrite JAI. reflexivity.
+Qed.
+
+Instance top_joinable_l_idem {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
+  : JoinableIdem (top_joinable_l (top_joinable_r JA)).
+Proof.
+  intro a. destruct a. reflexivity. unfold join_op.  simpl.
+  unfold top_joinable_l. unfold join_op. unfold top_joinable_r. 
+  rewrite JAI. reflexivity.
+Qed.
 
 Instance unit_joinable : Joinable unit unit := λ _, λ _,  tt.
+
+Instance unit_joinable_idem : JoinableIdem unit_joinable.
+Proof.
+  intro. destruct a; reflexivity.
+Qed.
 
 Instance identity_joinable {A B} `{Joinable A B} : Joinable (Identity A) (Identity B) :=
   λ i, λ j,
@@ -30,12 +61,24 @@ Instance identity_joinable {A B} `{Joinable A B} : Joinable (Identity A) (Identi
     | identity a, identity a' => identity (a ⊔ a')
     end.
 
+Instance identity_joinable_idem {A} {JA : Joinable A A} :
+  JoinableIdem JA → JoinableIdem (@identity_joinable A A JA).
+Proof.
+  intros JAI a. destruct a. cbv. rewrite JAI. reflexivity.
+Qed.
+
 Instance option_joinable {A B} `{Joinable A B} : Joinable (option A) (option B) :=
   λ m, λ n,
     match m, n with
     | Some x, Some y => Some (x ⊔ y)
     | _, _ => None
     end.
+
+Instance option_joinable_idem {A} {JA : Joinable A A} :
+  JoinableIdem JA → JoinableIdem (@option_joinable A A JA).
+Proof.
+  intros JAI a. destruct a; cbv. rewrite JAI. all: reflexivity.
+Qed.
 
 Instance optionA_joinable {A} `{Joinable A A} : Joinable (optionA A) (optionA A) :=
   λ m, λ n,
@@ -49,9 +92,24 @@ Instance optionA_joinable {A} `{Joinable A A} : Joinable (optionA A) (optionA A)
     | SomeOrNoneA x, SomeOrNoneA y => SomeOrNoneA (x ⊔ y)
     end.
 
+Instance optionA_joinable_idem {A} {JA : Joinable A A} : 
+  JoinableIdem JA → JoinableIdem (@optionA_joinable A JA).
+Proof.
+  intros JAI.
+  intro. destruct a; cbv; try rewrite JAI; reflexivity.
+Qed.
+
 Instance pair_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
   Joinable (A*A')%type (B*B')%type :=
   λ p, λ q, ((fst p) ⊔ (fst q), (snd p) ⊔ (snd q)).
+
+Instance pair_joinable_idem {A A'} {JA : Joinable A A} {JA' : Joinable A' A'} :
+  JoinableIdem JA → 
+  JoinableIdem JA' → 
+  JoinableIdem (@pair_joinable A A A' A' JA JA').
+Proof.
+  intros JAI JAI' p. destruct p; cbv.  rewrite JAI, JAI'. reflexivity.
+Qed.
 
 Instance sum_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
   Joinable (A+A') ((B+B')+⊤) :=
@@ -61,3 +119,15 @@ Instance sum_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
     | inr x, inr y => NotTop (inr (x ⊔ y))
     | _, _ => Top
     end.
+
+Instance sum_joinable_idem {A A'} {JA : Joinable A A} {JA' : Joinable A' A'} :
+  JoinableIdem JA →
+  JoinableIdem JA' →
+  JoinableIdem (@top_joinable_l (A+A') (@sum_joinable A A A' A' JA JA')).
+Proof.
+  intros JAI JAI' a. destruct a.
+  - constructor.
+  - unfold join_op. unfold top_joinable_l. destruct s.
+    + unfold join_op. unfold sum_joinable. rewrite JAI. reflexivity.
+    + unfold join_op. unfold sum_joinable. rewrite JAI'. reflexivity.
+Qed.

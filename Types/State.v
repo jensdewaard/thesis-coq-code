@@ -146,19 +146,21 @@ Section MonadT_StateT.
 End MonadT_StateT.
 
 Section mjoin_stateT.
-  Context {S : Type} {JS: Joinable S S}. 
+  Context {S : Type} {JS: Joinable S S} {JSI : JoinableIdem JS}. 
   Context {M : Type → Type} {MM : Monad M} {JM : MonadJoin M}.
 
-  Definition mjoin_stateT {A : Type} {JA : Joinable A A} 
+  Definition mjoin_stateT {A : Type} {JA : Joinable A A} {JI : JoinableIdem JA}
     (m1 m2 : StateT S M A) : StateT S M A := λ s : S, (m1 s) <⊔> (m2 s).
 
-  Lemma mjoin_stateT_return : ∀ (A : Type) {JA : Joinable A A} (x y : A),
+  Lemma mjoin_stateT_return : ∀ (A : Type) {JA : Joinable A A} 
+    {JAI : JoinableIdem JA} (x y : A),
     mjoin_stateT (return_stateT x) (return_stateT y) = 
     return_stateT (x ⊔ y).
   Proof.
-    intros A JA x y. unfold mjoin_stateT. unfold return_stateT. ext.
-    rewrite mjoin_return. 
-  Admitted.
+    intros A JA JAI x y. unfold mjoin_stateT. unfold return_stateT. ext.
+    rewrite mjoin_return. unfold join_op. unfold pair_joinable; simpl.
+    rewrite JSI. reflexivity.
+  Qed.
 
   Global Instance stateT_monadjoin : MonadJoin (StateT S M) :=
   {

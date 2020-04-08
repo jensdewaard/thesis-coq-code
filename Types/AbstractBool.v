@@ -85,6 +85,12 @@ Instance abstr_bool_joinable : Joinable abstr_bool (abstr_bool+⊤) :=
     | _, _ => Top
     end.
 
+Instance abstr_bool_joinable_idem : 
+  JoinableIdem (top_joinable_l abstr_bool_joinable).
+Proof.
+  intro b. destruct b. constructor. destruct a; reflexivity.
+Qed.
+
 Instance preorder_boolean_sound : PreorderSound abstr_bool bool.
 Proof.
   intros x y Hpre n Hgamma. destruct x, y; eauto with soundness; inversion
