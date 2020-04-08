@@ -15,6 +15,7 @@ Classes/Monad.v
 Classes/Monad/MonadFail.v
 Classes/Monad/MonadExcept.v
 Classes/Monad/MonadState.v
+Classes/Monad/MonadJoin.v
 Classes/IsNat.v
 Classes/IsBool.v
 Instances/Preorder.v
