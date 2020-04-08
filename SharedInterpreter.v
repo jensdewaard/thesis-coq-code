@@ -30,7 +30,7 @@ Lemma ensure_type_sound {M M'} `{MM : Monad M, MM' : Monad M'}
   `{GS : Galois subType subType'}
   `{GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   `{ST : SubType subType valType} `{ST' : SubType subType' valType'}
-  {SS : SubType_sound valType valType'} 
+  {SS : SubType_sound ST ST'} 
   {RS : return_sound M M'} :
     ∀ (n : valType) (n' : valType'),
   γ n n' → 
@@ -38,8 +38,7 @@ Lemma ensure_type_sound {M M'} `{MM : Monad M, MM' : Monad M'}
     (ensure_type (M:=M') (valType:=valType') subType' n').
 Proof.
   intros n n' Hgamma. unfold ensure_type. destruct SS. 
-  apply project_sound with (sub:=subType) (sub':=subType') (ST:=ST) (ST':=ST')
-  (GS:=GS) in Hgamma. destruct (project n), (project n').
+  apply project_sound in Hgamma. destruct (project n), (project n').
   - apply RS. inversion Hgamma; subst. assumption.
   - inversion Hgamma.
   - admit.
@@ -117,7 +116,8 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   {SN : SubType natType (avalue+⊤)}
   {SB' : SubType boolType' cvalue}
   {SN' : SubType natType' cvalue}
-  {SS : SubType_sound (avalue+⊤) cvalue}
+  {SSB : SubType_sound SB SB'}
+  {SSN : SubType_sound SN SN'}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MS : MonadState (store (avalue+⊤)) M} {MS' : MonadState (store cvalue) M'}
   {ME : MonadExcept M unit} {ME' : MonadExcept M' unit} 
@@ -131,12 +131,12 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M' →
   bind_sound M M' → 
   return_sound M M' → 
-  plus_op_sound natType natType' →
-  mult_op_sound natType natType' →
-  eq_op_sound natType natType' →
-  leb_op_sound natType natType' →
-  neg_op_sound boolType boolType' →
-  and_op_sound boolType boolType' → 
+  plus_op_sound PO PO' →
+  mult_op_sound MO MO' →
+  eq_op_sound EO EO' →
+  leb_op_sound LO LO' →
+  neg_op_sound NO NO' →
+  and_op_sound AO AO' → 
   ∀ (e : expr), 
   γ (shared_eval_expr (M:=M) (valType:=avalue+⊤) (natType:=natType) (boolType:=boolType) e) 
     (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).

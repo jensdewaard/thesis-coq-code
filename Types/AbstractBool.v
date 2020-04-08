@@ -26,11 +26,12 @@ Definition and_ab (b1 b2 : abstr_bool) : abstr_bool :=
   | ab_false  => ab_false
   end.
 Instance and_ab_op : and_op abstr_bool abstr_bool := and_ab.
-Instance and_ab_sound : and_op_sound abstr_bool bool.
+Instance and_ab_sound : and_op_sound and_ab_op and_op_bool.
 Proof.
   intros ab1 ab2 b1 b2 H1 H2. destruct ab1, ab2, b1, b2; try constructor; 
   auto; gamma_destruct; eauto with soundness.
 Qed.
+Hint Resolve and_ab_sound : soundness.
 
 (** ** Or *)
 
@@ -45,6 +46,7 @@ Proof.
   intros ab1 ab2 b1 b2 H1 H2. destruct ab1, ab2, b1, b2; auto; gamma_destruct;
   constructor; auto.
 Qed.
+Hint Resolve or_ab_sound : soundness.
 
 (** ** Negation *)
 Definition neg_ab (b : abstr_bool) : abstr_bool :=
@@ -53,11 +55,12 @@ Definition neg_ab (b : abstr_bool) : abstr_bool :=
   | ab_true  => ab_false
   end.
 Instance neg_ab_op : neg_op abstr_bool abstr_bool := neg_ab.
-Instance neg_ab_sound : neg_op_sound abstr_bool bool.
+Instance neg_ab_sound : neg_op_sound neg_ab_op neg_op_bool.
 Proof.
   intros ab b H; destruct ab, b; constructor; gamma_destruct; 
   eauto with soundness.
 Qed.
+Hint Resolve neg_ab_sound : soundness.
 
 (** ** If *)
 Instance if_ab_op {B} : if_op abstr_bool B := λ b : abstr_bool,

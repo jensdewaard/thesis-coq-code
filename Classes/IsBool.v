@@ -4,20 +4,29 @@ Require Import Classes.Joinable Classes.Galois.
 Class and_op (A B : Type) : Type := and : A → A → B.
 Infix "&&" := and.
 
-Class and_op_sound (A A' : Type) {B B' : Type} `{Galois A A', Galois B B'}
-  `{and_op A B} `{and_op A' B'} : Prop :=
+Class and_op_sound {A A' B B' : Type} {GA : Galois A A'} {GB :Galois B B'}
+  (AO : and_op A B) (AO' : and_op A' B') : Prop :=
   and_sound : ∀ (a1 a2 : A) (a1' a2' : A'),
   γ a1 a1' →
   γ a2 a2' →
   γ (a1 && a2) (a1' && a2').
 
-Instance and_bool : and_op bool bool := andb.
+Instance and_op_bool : and_op bool bool := andb.
 
-Instance and_top {A B : Type} `{and_op A B} : and_op (A+⊤) (B+⊤) :=
+Instance and_top {A B : Type} (AO : and_op A B) : and_op (A+⊤) (B+⊤) :=
   λ a1, λ a2, match a1, a2 with
               | NotTop x, NotTop y => NotTop (x && y)
               | _,_ => Top
               end.
+
+Instance and_top_sound {A A' B B'} {GA : Galois A A'} {GB : Galois B B'}
+  (AO : and_op A B) (AO' : and_op A' B') :
+  and_op_sound AO AO' → and_op_sound (and_top AO) AO'.
+Proof.
+  intro AS. intros a1 a2 a1' a2' Ha Ha'. destruct a1, a2; eauto with soundness.
+  apply AS; assumption.
+Qed.
+Hint Resolve and_top_sound : soundness.
 
 Instance and_bot {A B : Type} `{and_op A B} : and_op (A+⊥) (B+⊥) :=
   λ a1, λ a2, match a1, a2 with
@@ -34,7 +43,7 @@ Class or_op_sound (A A' : Type) {B B' : Type} `{Galois A A', Galois B B'}
   γ a2 a2' →
   γ (a1 || a2) (a1' || a2').
 
-Instance or_bool : or_op bool bool := orb.
+Instance or_op_bool : or_op bool bool := orb.
 
 Instance or_top {A B : Type} `{or_op A B} : or_op (A+⊤) (B+⊤) :=
   λ a1, λ a2, match a1, a2 with
@@ -49,16 +58,26 @@ Instance or_bot {A B : Type} `{or_op A B} : or_op (A+⊥) (B+⊥) :=
               end.
 
 Class neg_op (A B : Type) : Type := neg : A → B.
-Class neg_op_sound (A A' : Type) {B B' : Type} `{Galois A A', Galois B B'}
-  `{neg_op A B} `{neg_op A' B'} : Prop :=
+Class neg_op_sound {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'}
+  (NO : neg_op A B) (NO' : neg_op A' B') : Prop :=
   neg_sound : ∀ (a : A) (a' : A'),
   γ a a' →
   γ (neg a) (neg a').
 
-Instance neg_bool : neg_op bool bool := negb.
+Instance neg_op_bool : neg_op bool bool := negb.
 
-Instance neg_top {A B : Type} `{neg_op A B} : neg_op (A+⊤) (B+⊤) :=
+Instance neg_top {A B : Type} (NO : neg_op A B) : neg_op (A+⊤) (B+⊤) :=
   λ a, match a with | NotTop x => NotTop (neg x) | Top => Top end.
+
+Instance neg_top_sound {A A' B B'} {GA : Galois A A'} {GB : Galois B B'}
+  (NO : neg_op A B) (NO' : neg_op A' B') :
+  neg_op_sound NO NO' → neg_op_sound (neg_top NO) NO'.
+Proof.
+  intro NS. intros a a' Ha. destruct a.
+  - constructor. 
+  - apply NS. apply Ha.
+Qed.
+Hint Resolve neg_top_sound : soundness.
 
 Instance neg_bot {A B : Type} `{neg_op A B} : neg_op (A+⊥) (B+⊥) :=
   λ a, match a with | NotBot x => NotBot (neg x) | Bot => Bot end.
@@ -72,7 +91,7 @@ Class if_op_sound (A A' : Type) {B B' : Type} `{Galois A A', Galois B B'}
     γ p2 p2' →
     γ (when g p1 p2) (when g' p1' p2').
 
-Instance if_bool {B : Type} : if_op bool B := 
+Instance if_op_bool {B : Type} : if_op bool B := 
   λ (b : bool),
   λ (p1 : B), λ (p2 : B),
   if b then p1 else p2.

@@ -1,37 +1,78 @@
 Require Export Base.
 Require Import Classes.Monad Classes.Monad.MonadState Instances.Monad
-  Types.State.
+  Types.State Classes.Galois.
 
 Implicit Type ST : Type.
 Implicit Type M : Type → Type.
 Generalizable Variables ST M.
 
-Instance store_state : MonadState ST (State ST).
-Proof.
-  split.
-  exact (λ st : ST, (st, st)).
-  exact (λ st : ST, λ _ : ST, (tt, st)).
-Defined.
+Instance store_state : MonadState ST (State ST) := {
+  get := λ st, (st, st);
+  put := λ st, λ _, (tt, st);
+}.
 
-Instance store_stateT `{MM : Monad M} :
-  MonadState ST (StateT ST M).
+Instance get_store_state_sound {ST ST' : Type} {GS : Galois ST ST'} : 
+  get_state_sound (State ST) (State ST').
 Proof.
-  split.
-  exact (λ st : ST, returnM (st, st)).
-  exact (λ st : ST, λ _ : ST, returnM (tt, st)).
-Defined.
+  unfold get_state_sound. constructor; assumption.
+Qed.
+Hint Resolve get_store_state_sound : soundness.
+
+Instance store_stateT `{MM : Monad M} : MonadState ST (StateT ST M) := {
+  get := λ st, returnM (st, st);
+  put := λ st, λ _, returnM (tt, st);
+}.
+
+Instance get_store_stateT_sound {ST ST' : Type} {GS : Galois ST ST'} 
+  {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
+  return_sound M M' →
+  get_state_sound (StateT ST M) (StateT ST' M').
+Proof.
+  intros RS. intros a a' Ha. apply returnM_sound. eauto with soundness.
+Qed.
+Hint Resolve get_store_stateT_sound : soundness.
 
 Instance store_optionT `{MM : Monad M} `{MS : MonadState ST M} :
-  MonadState ST (optionT M).
-Proof. split.
-  exact (liftT get).
-  exact (λ st : ST, put st ;; returnM (Some tt)).
-Defined.
+  MonadState ST (optionT M) := {
+  get := liftT get;
+  put := λ st, put st ;; returnM (Some tt);
+}.
+
+Instance get_store_optionT_sound {ST ST' : Type} {GST : Galois ST ST'}
+  {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MS : MonadState ST M} {MS' : MonadState ST' M'} :
+  bind_sound M M' →
+  return_sound M M' → 
+  get_state_sound M M' →
+  get_state_sound (optionT M) (optionT M').
+Proof.
+  intros BS RS GS.
+  unfold get_state_sound. unfold get; simpl. unfold lift_optionT. 
+  eapply BS; auto.
+  intros a a' Ha. eauto with soundness.
+Qed.
+Hint Resolve get_store_optionT_sound : soundness.
 
 Instance store_optionAT `{MM : Monad M} `{MS : MonadState ST M} :
-  MonadState ST (optionAT M).
-Proof. split.
-  exact (liftT get).
-  exact (λ st : ST, put st ;; returnM (SomeA tt)).
-Defined.
+  MonadState ST (optionAT M) := {
+  get := liftT get;
+  put := λ st, put st ;; returnM (SomeA tt);
+}.
+
+Instance get_store_optionAT_sound {ST ST' : Type} {GST : Galois ST ST'}
+  {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MS : MonadState ST M} {MS' : MonadState ST' M'} :
+  bind_sound M M' →
+  return_sound M M' →
+  get_state_sound M M' → 
+  get_state_sound (optionAT M) (optionT M').
+Proof.
+  intros BS RS GS.
+  unfold get_state_sound, get; simpl. unfold lift_optionAT, lift_optionT.
+  eapply BS. auto. intros a a' Ha. eauto with soundness.
+Qed.
+Hint Resolve get_store_optionAT_sound : soundness.
 

@@ -23,10 +23,10 @@ Require Import Types.Parity.
 Require Import Types.State.
 Require Import Types.Stores.
 Require Import Classes.IsBool.
+Require Import Types.Subtype.
+Require Import Classes.IsNat.
 
 Hint Extern 0 (γ _ _) => progress gamma_destruct : soundness.
-
-Print HintDb soundness.
 
 (* Soundness of unit *)
 Lemma gamma_unit_sound :
@@ -48,17 +48,20 @@ Instance some_sound : return_sound option option.
 Proof.
   unfold return_sound. eauto with soundness.
 Qed.
+Hint Resolve some_sound : soundness.
 
 Instance bind_option_sound : bind_sound option option.
 Proof.
   unfold bind_sound. unfold bindM; simpl. intros. destruct m, m'; 
   eauto with soundness.
 Qed.
+Hint Resolve bind_option_sound : soundness.
 
 Instance someA_sound : return_sound optionA option.
 Proof.
   unfold return_sound; eauto with soundness.
 Qed.
+Hint Resolve someA_sound : soundness.
 
 Instance bind_optionA_sound : bind_sound optionA option.
 Proof.
@@ -70,6 +73,7 @@ Proof.
     apply Hf in Ha. destruct (f a), (f' a'); eauto with soundness.
   - simpl. destruct (f a); eauto with soundness.
 Qed.
+Hint Resolve bind_optionA_sound : soundness.
 
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
@@ -77,6 +81,7 @@ Proof.
   unfold return_sound; unfold returnM; simpl; intros. unfold return_state.
   constructor; simpl; eauto with soundness. 
 Qed.
+Hint Resolve return_state_sound : soundness.
 
 Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
   bind_sound (State S) (State S').
@@ -87,6 +92,7 @@ Proof.
   destruct (m s), (m' s'). inversion Hs; subst. simpl in *. eauto with
     soundness.
 Qed.
+Hint Resolve bind_state_sound : soundness.
 
 Section stateT.
   Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
@@ -109,6 +115,7 @@ Section stateT.
     intros p q Hpq. destruct p, q; eauto with soundness.
   Qed.
 End stateT.
+Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
 Section optionT.
   Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
@@ -128,6 +135,7 @@ Section optionT.
     destr; eauto with soundness. subst.
   Admitted.
 End optionT.
+Hint Resolve someT_sound bind_optionT_sound : soundness.
 
 Section optionAT.
   Global Instance someAT_sound : ∀ (M M' : Type → Type) {MM : Monad M} {MM' :
@@ -156,6 +164,7 @@ Section optionAT.
       intros a' a Ha'. destruct a, a'; eauto with soundness.
   Admitted.
 End optionAT.
+Hint Resolve someAT_sound bind_optionAT_sound : soundness.
 
 (* Soundness of interpreters *)
 
@@ -174,7 +183,7 @@ Theorem eval_expr_sound : ∀ (e : expr),
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
   eapply shared_eval_expr_sound; eauto with soundness.
-Admitted.
+Qed.
 Hint Resolve eval_expr_sound : soundness.
 
 Theorem sound_interpreter: ∀ c, 

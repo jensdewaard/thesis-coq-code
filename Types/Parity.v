@@ -28,7 +28,7 @@ Definition parity_plus (p q : parity) : parity :=
   end.
 Instance parity_plus_op : plus_op parity parity  := parity_plus.
 
-Instance parity_plus_sound : plus_op_sound parity nat.
+Instance parity_plus_sound : plus_op_sound parity_plus_op nat_plus_op.
 Proof.
   intros p q n m Hpn Hqm. destruct p, q. 
   - cbn. inversion Hpn; subst. constructor. inversion Hqm; subst.
@@ -48,6 +48,7 @@ Proof.
     rewrite <- Nat.mul_add_distr_l. rewrite Nat.Even_succ_succ.
     econstructor. reflexivity. lia.
 Qed.
+Hint Resolve parity_plus_sound : soundness.
 
 Definition parity_mult (p q : parity) : parity :=
   match p with
@@ -56,7 +57,7 @@ Definition parity_mult (p q : parity) : parity :=
   end.
 Instance parity_mult_op : mult_op parity parity := parity_mult.
 
-Instance parity_mult_sound : mult_op_sound parity nat.
+Instance parity_mult_sound : mult_op_sound parity_mult_op nat_mult_op.
 Proof.
   intros p q n m Hpn Hqm. destruct p, q; cbn; constructor; inversion Hpn;
   inversion Hqm; destruct H, H0; clear Hpn; clear Hqm; subst; unfold mult,
@@ -68,6 +69,7 @@ Proof.
   - rewrite <- odd_equiv. apply odd_mult; rewrite odd_equiv; econstructor;
     reflexivity.
 Qed.
+Hint Resolve parity_mult_sound : soundness.
 
 (** Equality *)
 Definition parity_eq (p1 p2 : parity) : (abstr_bool+⊤) :=
@@ -78,19 +80,22 @@ Definition parity_eq (p1 p2 : parity) : (abstr_bool+⊤) :=
   end.
 Instance parity_eq_op : eq_op parity (abstr_bool+⊤) := parity_eq.
 
-Instance parity_eq_sound : eq_op_sound (B:=abstr_bool+⊤) parity nat.
+Instance parity_eq_sound : eq_op_sound (B:=abstr_bool+⊤) parity_eq_op nat_eq_op.
 Proof.
   intros p q n m Hpn Hqm. destruct p, q; constructor; gamma_destruct; unfold
   eq, nat_eq_op; rewrite Nat.eqb_neq; unfold not; intro Hnot; subst;
   apply (Nat.Even_Odd_False m); assumption.
 Qed.
+Hint Resolve parity_eq_sound : soundness.
 
 Instance parity_leb_op : leb_op parity (abstr_bool+⊤) := λ _, λ _, Top.
-Instance parity_leb_sound : leb_op_sound (B:=abstr_bool+⊤) parity nat.
+Instance parity_leb_sound : 
+  leb_op_sound (B:=abstr_bool+⊤) parity_leb_op nat_leb_op.
 Proof.
   intros p q n m Hpn Hqm. unfold leb, parity_leb_op, nat_leb_op.
   constructor.
 Qed.
+Hint Resolve parity_leb_sound : soundness.
 
 Inductive parity_le : parity → parity → Prop :=
   | par_le_even : parity_le par_even par_even

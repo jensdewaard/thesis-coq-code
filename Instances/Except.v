@@ -161,6 +161,7 @@ Section except_optionT.
     catch_return := catch_optionT_return;
   }. 
 End except_optionT.
+Hint Resolve except_optionT : soundness.
 
 Section fail_optionAT.
   Context {M : Type → Type} `{M_monad : Monad M}.
@@ -221,6 +222,7 @@ Section except_optionAT.
       catch_return := catch_optionAT_return;
     }. 
 End except_optionAT.
+Hint Resolve except_optionAT : soundness.
 
 Section fail_stateT.
   Context {M : Type -> Type} `{M_fail : MonadFail M}.
@@ -281,3 +283,4 @@ Section except_stateT.
     catch_return := catch_stateT_return;
   }. 
 End except_stateT.
+Hint Resolve except_stateT : soundness.
