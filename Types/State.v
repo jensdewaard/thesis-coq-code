@@ -168,3 +168,4 @@ Section mjoin_stateT.
     mjoin_return := mjoin_stateT_return;
   }.
 End mjoin_stateT.
+Hint Resolve stateT_monadjoin : soundness.

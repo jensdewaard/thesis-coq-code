@@ -177,13 +177,25 @@ Definition AbstractState := optionAT (StateT (store (avalue+⊤)) option).
 Definition AbstractState' A := (string → (parity +⊤ + abstr_bool +⊤) +⊤)
          → option (optionA A * (string → (parity +⊤ + abstr_bool +⊤) +⊤)).
 
+Lemma joinable_values_idem : @JoinableIdem (avalue +⊤)
+  (@top_joinable_l avalue
+     (@sum_joinable (parity +⊤) (parity +⊤) (abstr_bool +⊤) 
+        (abstr_bool +⊤) (@top_joinable_l parity parity_joinable)
+        (@top_joinable_l abstr_bool abstr_bool_joinable))).
+Proof.
+  intros a. destruct a. constructor. destruct a.
+  - destruct t. constructor. destruct p; constructor.
+  - destruct t. constructor. destruct a; constructor.
+Qed.
+Hint Resolve joinable_values_idem : soundness.
+(* TODO abstract the above *)
+
 Theorem eval_expr_sound : ∀ (e : expr), 
   γ 
     (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤) e)
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
   eapply shared_eval_expr_sound; eauto 10 with soundness.
-  apply except_optionAT.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 

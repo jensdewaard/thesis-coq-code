@@ -233,19 +233,20 @@ Qed.
 Hint Resolve monadfail_optionAT_sound : soundness.
 
 Section except_optionAT.
-  Context {M : Type -> Type} {MM : Monad M}.
-  Context {MJ : MonadJoin M}.
   
-  Definition throw_optionAT {A} : optionAT M A := returnM NoneA.
+  Definition throw_optionAT {M} {MM : Monad M} 
+    {MJ : MonadJoin M} {A} : optionAT M A := returnM NoneA.
 
-  Lemma throw_optionAT_left : ∀ (A B : Type) (m : A → optionAT M B), 
+  Lemma throw_optionAT_left {M} {MM : Monad M}
+    {MJ : MonadJoin M} : ∀ (A B : Type) (m : A → optionAT M B), 
     bind_optionAT (A:=A) (B:=B) throw_optionAT m = throw_optionAT (A:=B).
   Proof. 
     unfold bind_optionAT, throw_optionAT; simpl. intros. 
     autorewrite with monads. reflexivity.
   Qed.
 
-  Definition catch_optionAT {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
+  Definition catch_optionAT {M} {MM : Monad M}
+    {MJ : MonadJoin M} {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
     (mx my : optionAT M A) : optionAT M A :=
     bindM (M:=M) mx (fun x : optionA A =>
       match x with
@@ -255,16 +256,16 @@ Section except_optionAT.
       | NoneA => my
       end).
 
-  Lemma catch_optionAT_throw_left : ∀ A {JA : Joinable A A} 
-    {JAI : JoinableIdem JA} (x : optionAT M A),
+  Lemma catch_optionAT_throw_left {M} {MM : Monad M} {MJ : MonadJoin M} : 
+      ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} (x : optionAT M A),
     catch_optionAT throw_optionAT x = x.
   Proof. 
     intros. unfold catch_optionAT, throw_optionAT. autorewrite with monads.
     reflexivity.
   Qed.
 
-  Lemma catch_optionAT_throw_right : ∀ A {JA : Joinable A A} 
-    {JAI : JoinableIdem JA} (x : optionAT M A),
+  Lemma catch_optionAT_throw_right {M} {MM : Monad M} {MJ : MonadJoin M}: 
+    ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} (x : optionAT M A),
     catch_optionAT x throw_optionAT = x.
   Proof. 
     intros. unfold catch_optionAT, throw_optionAT. rewrite <- (bind_id_right (M:=M)).
@@ -272,15 +273,16 @@ Section except_optionAT.
     rewrite mjoin_return. reflexivity.
   Qed.
 
-  Lemma catch_optionAT_return : ∀ A {JA : Joinable A A} 
-    {JAI : JoinableIdem JA} (x : optionAT M A) (a : A),
+  Lemma catch_optionAT_return {M} {MM : Monad M} {MJ : MonadJoin M} : 
+    ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} (x : optionAT M A) (a : A),
     catch_optionAT (returnM a) x = returnM a.
   Proof.
     unfold catch_optionAT. intros. unfold returnM; simpl.
     rewrite bind_id_left. reflexivity.
   Qed.
 
-  Global Instance except_optionAT : MonadExcept (optionAT M) :=
+  Global Instance except_optionAT {M} {MM : Monad M} : 
+    MonadJoin M → MonadExcept (optionAT M) :=
     {
       throw_left := throw_optionAT_left;
       catch_left := catch_optionAT_throw_left;

@@ -25,6 +25,7 @@ Proof.
   intros JAI st. unfold join_op; simpl. unfold store_joinable. ext.
   rewrite JAI. reflexivity.
 Qed.
+Hint Resolve store_joinable_idem : soundness.
 
 Instance store_join_sound {A A' B} {JA : Joinable A B} {GA : Galois A A'}
   {GB :Galois B A'} {JS: JoinableSound A B A'} :

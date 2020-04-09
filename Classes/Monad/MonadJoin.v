@@ -22,3 +22,4 @@ Instance option_monadjoin : MonadJoin option.
 Proof.
   split with mjoin_option. reflexivity.
 Defined.
+Hint Resolve option_monadjoin : soundness.

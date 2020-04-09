@@ -33,21 +33,6 @@ Instance top_joinable_l {A} (JA : Joinable A (A+⊤)) : Joinable (A+⊤) (A+⊤)
     | _, _ => Top
     end.
 
-Instance top_joinable_r_idem {A} {JA : Joinable A A} :
-  JoinableIdem JA → JoinableIdem (@top_joinable_l A (@top_joinable_r A JA)).
-Proof.
-  intros JAI a. destruct a. constructor. unfold join_op. unfold top_joinable_l.
-  unfold join_op. unfold top_joinable_r. rewrite JAI. reflexivity.
-Qed.
-
-Instance top_joinable_l_idem {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
-  : JoinableIdem (top_joinable_l (top_joinable_r JA)).
-Proof.
-  intro a. destruct a. reflexivity. unfold join_op.  simpl.
-  unfold top_joinable_l. unfold join_op. unfold top_joinable_r. 
-  rewrite JAI. reflexivity.
-Qed.
-
 Instance unit_joinable : Joinable unit unit := λ _, λ _,  tt.
 
 Instance unit_joinable_idem : JoinableIdem unit_joinable.
@@ -79,6 +64,7 @@ Instance option_joinable_idem {A} {JA : Joinable A A} :
 Proof.
   intros JAI a. destruct a; cbv. rewrite JAI. all: reflexivity.
 Qed.
+Hint Resolve option_joinable_idem : soundness.
 
 Instance optionA_joinable {A} `{Joinable A A} : Joinable (optionA A) (optionA A) :=
   λ m, λ n,
