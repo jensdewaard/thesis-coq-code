@@ -129,21 +129,19 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   {LO : leb_op natType boolType} {LO' : leb_op natType' boolType'}
   {NO : neg_op boolType boolType} {NO' : neg_op boolType' boolType'}
   {AO : and_op boolType boolType} {AO' : and_op boolType' boolType'}
-  :
-  get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M' →
-  bind_sound M M' → 
-  return_sound M M' → 
-  plus_op_sound PO PO' →
-  mult_op_sound MO MO' →
-  eq_op_sound EO EO' →
-  leb_op_sound LO LO' →
-  neg_op_sound NO NO' →
-  and_op_sound AO AO' → 
-  ∀ (e : expr), 
+  {GS : get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M'}
+  {BS : bind_sound M M'}
+  {RS : return_sound M M'}
+  {POS : plus_op_sound PO PO'}
+  {MOS : mult_op_sound MO MO'}
+  {EOS : eq_op_sound EO EO'}
+  {LOS : leb_op_sound LO LO'}
+  {NOS : neg_op_sound NO NO'}
+  {AOS : and_op_sound AO AO'}
+  : ∀ (e : expr), 
   γ (shared_eval_expr (M:=M) (valType:=avalue+⊤) (natType:=natType) (boolType:=boolType) e) 
     (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).
 Proof.
-  intros GS BS RS PS.
   induction e.
   - simpl. apply fail_sound. 
   - simpl. apply bindM_sound; eauto with soundness.
