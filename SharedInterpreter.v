@@ -14,7 +14,7 @@ Require Import Types.AbstractBool.
 Require Import Types.Subtype.
 
 Definition ensure_type (subType : Type)
-  {M : Type → Type} `{MF : MonadFail M}
+  {M : Type → Type} {MM : Monad M} {MF : MonadFail M} 
   {valType : Type}
   `{SubType subType valType}
   (n : valType) : M subType :=
@@ -23,13 +23,14 @@ Definition ensure_type (subType : Type)
   | None => fail
   end.
 
-Lemma ensure_type_sound {M M'} `{MM : Monad M, MM' : Monad M'}
-  `{MF : MonadFail M} `{MF' : MonadFail M'}
+Lemma ensure_type_sound {M M'} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MF : MonadFail M} {MF' : MonadFail M'}
+  {MS : MonadFail_sound M M'}
   {subType subType' : Type} {valType valType' : Type} 
-  `{GV: Galois valType valType'}
-  `{GS : Galois subType subType'}
-  `{GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
-  `{ST : SubType subType valType} `{ST' : SubType subType' valType'}
+  {GV: Galois valType valType'}
+  {GS : Galois subType subType'}
+  {ST : SubType subType valType} `{ST' : SubType subType' valType'}
   {SS : SubType_sound ST ST'} 
   {RS : return_sound M M'} :
     ∀ (n : valType) (n' : valType'),
@@ -41,9 +42,9 @@ Proof.
   apply project_sound in Hgamma. destruct (project n), (project n').
   - apply RS. inversion Hgamma; subst. assumption.
   - inversion Hgamma.
-  - admit.
-  - admit.
-Admitted.
+  - apply fail_sound.
+  - apply fail_sound.
+Qed.
 
 Fixpoint shared_eval_expr 
     {valType boolType natType : Type} {M : Type → Type} {MM : Monad M}
@@ -108,6 +109,8 @@ Definition avalue := ((parity+⊤)+(abstr_bool+⊤))%type.
 
 Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MF : MonadFail M} {MF' : MonadFail M'} 
+  {MFS : MonadFail_sound M M'}
   {avalue cvalue} {GV : Galois avalue cvalue}
   {natType natType' boolType boolType' : Type } 
   {GN : Galois natType natType'}
@@ -118,7 +121,6 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   {SN' : SubType natType' cvalue}
   {SSB : SubType_sound SB SB'}
   {SSN : SubType_sound SN SN'}
-  {MF : MonadFail M} {MF' : MonadFail M'} 
   {MS : MonadState (store (avalue+⊤)) M} {MS' : MonadState (store cvalue) M'}
   {ME : MonadExcept M} {ME' : MonadExcept M'} 
   {PO : plus_op natType natType} {PO' : plus_op natType' natType'}
@@ -143,7 +145,7 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
 Proof.
   intros GS BS RS PS.
   induction e.
-  - simpl. admit.
+  - simpl. apply fail_sound. 
   - simpl. apply bindM_sound; eauto with soundness.
     intros f g Hf. auto.
   - simpl. apply bindM_sound. assumption.
@@ -186,7 +188,7 @@ Proof.
     intros ???. apply bindM_sound. apply returnM_sound. apply and_sound;
     assumption.
     intros ???. apply returnM_sound. apply inject_sound. assumption.
-Admitted.
+Qed.
 
 Open Scope com_scope.
 
