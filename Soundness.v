@@ -233,13 +233,8 @@ Theorem sound_interpreter: ∀ c,
     (shared_ceval (M:=ConcreteState) (valType:=cvalue)
     (boolType:=bool) (natType:=nat) c).
 Proof.
-  eapply shared_ceval_sound; eauto with soundness. 
-  eapply if_top_sound; eauto with soundness. Unshelve.
-  - apply functions_joinable_sound. apply option_joinable_sound. apply
-    pair_joinable_sound. 
-    + apply optionA_joinable_sound. apply unit_joinable_sound.
-    + eapply store_join_sound. 
-  - simple apply @if_ab_op_sound. 
-    apply optionAT_joinable.
+  eapply shared_ceval_sound; eauto 10 with soundness. 
+  apply if_top_sound. eauto 10 with soundness. 
+  apply if_ab_op_sound. 
 Qed.
 

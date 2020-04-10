@@ -115,6 +115,7 @@ Proof.
     + apply JBS. right. assumption.
   - (* NotTop *) apply IOS; assumption.
 Qed.
+Hint Resolve if_top_sound : soundness.
 
 Instance if_top_sound' {A B B'} {GA : Galois A bool} {GB : Galois B B'}
   {JB : Joinable B B} {JBS : JoinableSound JB}
