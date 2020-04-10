@@ -13,11 +13,11 @@ Class JoinableSound {A B A' : Type} {GA : Galois A A'} {GB : Galois B A'}
   (JA : Joinable A B)  : Prop :=
   join_sound : ∀ x y : A, γ x ∪ γ y ⊆ γ (x ⊔ y).
 
-Instance functions_joinable {A B} {JB : Joinable B B} : 
-Joinable (A → B) (A → B) := λ f, λ g, λ a : A, (f a) ⊔ (g a).
+Instance functions_joinable {A B C} {JB : Joinable B C} : 
+Joinable (A → B) (A → C) := λ f, λ g, λ a : A, (f a) ⊔ (g a).
 
 Instance functions_joinable_idem {A} {JA : Joinable A A} :
-  JoinableIdem JA → JoinableIdem (@functions_joinable A A JA).
+  JoinableIdem JA → JoinableIdem (functions_joinable (A:=A)).
 Proof.
   intros JAI a. unfold join_op, functions_joinable. ext.
   rewrite JAI. reflexivity.
