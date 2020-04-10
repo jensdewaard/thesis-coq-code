@@ -173,8 +173,8 @@ Proof.
 Qed. 
 Hint Resolve pair_joinable_sound : soundness.
 
-Instance sum_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
-  Joinable (A+A') ((B+B')+⊤) :=
+Instance sum_joinable {A B C D} (JA : Joinable A C) (JB : Joinable B D) :
+  Joinable (A+B) ((C+D)+⊤) :=
   λ s1, λ s2,
     match s1, s2 with
     | inl x, inl y => NotTop (inl (x ⊔ y))
@@ -185,11 +185,24 @@ Instance sum_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
 Instance sum_joinable_idem {A A'} {JA : Joinable A A} {JA' : Joinable A' A'} :
   JoinableIdem JA →
   JoinableIdem JA' →
-  JoinableIdem (@top_joinable_l (A+A') (A+A') (@sum_joinable A A A' A' JA JA')).
+  JoinableIdem (@top_joinable_l (A+A') (A+A') (sum_joinable JA JA')).
 Proof.
   intros JAI JAI' a. destruct a.
   - constructor.
   - unfold join_op. unfold top_joinable_l. destruct s.
     + unfold join_op. unfold sum_joinable. rewrite JAI. reflexivity.
     + unfold join_op. unfold sum_joinable. rewrite JAI'. reflexivity.
+Qed.
+
+Instance sum_joinable_sound {A A' B B' C D} 
+  {JA : Joinable A C} {JB : Joinable B D}
+  {GA : Galois A A'} {GB : Galois B B'}
+  {GC : Galois C A'} {GD : Galois D B'} :
+  JoinableSound JA →
+  JoinableSound JB →
+  JoinableSound (sum_joinable JA JB).
+Proof.
+  intros JAS JBS.
+  intros s1 s2 s' Hgamma. destruct s1, s2, s'; cbv in *; auto; inversion
+  Hgamma as [contra | contra]; inversion contra.
 Qed.

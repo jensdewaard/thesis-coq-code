@@ -180,7 +180,7 @@ Definition AbstractState' A := (string → (parity +⊤ + abstr_bool +⊤) +⊤)
 (*** Refactor these lemmas ***)
 Lemma joinable_values_idem : @JoinableIdem (avalue +⊤)
   (@top_joinable_l avalue avalue
-     (@sum_joinable (parity +⊤) (parity +⊤) (abstr_bool +⊤) 
+     (@sum_joinable (parity +⊤) (abstr_bool +⊤) (parity +⊤) 
         (abstr_bool +⊤) (@top_joinable_l parity parity parity_joinable)
         (@top_joinable_l abstr_bool abstr_bool abstr_bool_joinable))).
 Proof.
@@ -235,11 +235,11 @@ Theorem sound_interpreter: ∀ c,
 Proof.
   eapply shared_ceval_sound; eauto with soundness. 
   eapply if_top_sound; eauto with soundness. Unshelve.
-  - simple apply @if_ab_op_sound. 
-    apply optionAT_joinable.
   - apply functions_joinable_sound. apply option_joinable_sound. apply
     pair_joinable_sound. 
     + admit.
-    + admit.
+    + eapply store_join_sound. 
+  - simple apply @if_ab_op_sound. 
+    apply optionAT_joinable.
 Admitted.
 
