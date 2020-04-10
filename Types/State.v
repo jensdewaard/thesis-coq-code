@@ -169,3 +169,9 @@ Section mjoin_stateT.
   }.
 End mjoin_stateT.
 Hint Resolve stateT_monadjoin : soundness.
+
+Instance stateT_joinable {S} {JS : Joinable S S} {M} {MM : Monad M}
+  {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
+  {A B} {JA : Joinable A B} : Joinable (StateT S M A) (StateT S M B) :=
+    λ m1, λ m2, λ st, (m1 st) ⊔ (m2 st).
+Hint Resolve stateT_joinable : soundness.
