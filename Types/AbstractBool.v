@@ -70,6 +70,13 @@ Instance if_ab_op {B} : if_op abstr_bool B := λ b : abstr_bool,
   | ab_false => p2
   end.
 
+Instance if_ab_op_sound {B B' : Type} {JB : Joinable B B} {GB : Galois B B'} : 
+  if_op_sound if_ab_op if_op_bool.
+Proof.
+  intros ab b p1 p2 p1' p2' Hb Hp1 Hp2. destruct ab, b; inversion Hb; subst;
+  try discriminate; assumption.
+Qed.
+Hint Resolve if_ab_op_sound : soundness.
 
 Definition ab_le (a b : abstr_bool) : Prop := a = b.
 Hint Unfold ab_le : preorders.
