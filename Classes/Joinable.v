@@ -33,10 +33,10 @@ Proof.
 Qed.
 Hint Resolve functions_joinable_sound : soundness.
 
-Instance top_joinable_r {A} (JA : Joinable A A) : Joinable A (A+⊤) :=
+Instance top_joinable_r {A B} (JA : Joinable A B) : Joinable A (B+⊤) :=
   λ a : A, λ a' : A, NotTop (a ⊔ a').
 
-Instance top_joinable_l {A} (JA : Joinable A (A+⊤)) : Joinable (A+⊤) (A+⊤) :=
+Instance top_joinable_l {A B} (JA : Joinable A (B+⊤)) : Joinable (A+⊤) (B+⊤) :=
   λ a, λ a', 
     match a, a' with
     | NotTop x, NotTop y => x ⊔ y
@@ -166,7 +166,7 @@ Instance sum_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
 Instance sum_joinable_idem {A A'} {JA : Joinable A A} {JA' : Joinable A' A'} :
   JoinableIdem JA →
   JoinableIdem JA' →
-  JoinableIdem (@top_joinable_l (A+A') (@sum_joinable A A A' A' JA JA')).
+  JoinableIdem (@top_joinable_l (A+A') (A+A') (@sum_joinable A A A' A' JA JA')).
 Proof.
   intros JAI JAI' a. destruct a.
   - constructor.
