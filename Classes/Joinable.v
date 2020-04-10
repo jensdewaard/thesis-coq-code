@@ -36,12 +36,31 @@ Hint Resolve functions_joinable_sound : soundness.
 Instance top_joinable_r {A B} (JA : Joinable A B) : Joinable A (B+⊤) :=
   λ a : A, λ a' : A, NotTop (a ⊔ a').
 
+Instance top_joinable_r_sound {A A' B} {JA : Joinable A B} 
+  {GA : Galois A A'} {GB : Galois B A'}: 
+  JoinableSound JA → 
+  JoinableSound (top_joinable_r JA).
+Proof.
+  intros JS a1 a2 a' Hgamma. unfold γ, galois_top, gamma_top.
+  apply JS in Hgamma. unfold "⊔", top_joinable_r. 
+  assumption.
+Qed.
+
 Instance top_joinable_l {A B} (JA : Joinable A (B+⊤)) : Joinable (A+⊤) (B+⊤) :=
   λ a, λ a', 
     match a, a' with
     | NotTop x, NotTop y => x ⊔ y
     | _, _ => Top
     end.
+
+Instance top_joinable_l_sound {A A' B} {JA : Joinable A (B+⊤)} 
+  {GA : Galois A A'} {GB : Galois B A'} :
+  JoinableSound JA →
+  JoinableSound (top_joinable_l JA).
+Proof.
+  intros JS a1 a2 a' Hgamma. 
+  destruct a1, a2; try constructor. apply JS in Hgamma. apply Hgamma.
+Qed.
 
 Instance unit_joinable : Joinable unit unit := λ _, λ _,  tt.
 
