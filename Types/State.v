@@ -23,14 +23,14 @@ Proof.
 Defined.
 
 Section state_joinable.
-  Context {S A} `{S_joinable : Joinable S S, A_joinable : Joinable A A}.
+  Context {S} {JS : Joinable S S}.
+  Context {A B} {JA : Joinable A B}.
 
-  Global Instance state_joinable : Joinable (State S A) (State S A) :=
+  Global Instance state_joinable : Joinable (State S A) (State S B) :=
     λ st, λ st',  
     λ x, (((fst (st x)) ⊔ (fst (st' x)), 
               ((snd (st x)) ⊔ (snd (st' x))))).
 End state_joinable.
-
 
 Section State_Monad.
   Context {S : Type}.
