@@ -223,3 +223,44 @@ Fixpoint shared_ceval
       catch (shared_ceval c1) (shared_ceval c2)
   | CFail => fail
   end.
+
+Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
+  {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MF : MonadFail M} {MF' : MonadFail M'} 
+  {MFS : MonadFail_sound M M'}
+  {avalue cvalue} {GV : Galois avalue cvalue}
+  {natType natType' boolType boolType' : Type } 
+  {GN : Galois natType natType'}
+  {GB : Galois boolType boolType'}
+  {SB : SubType boolType (avalue+⊤)}
+  {SN : SubType natType (avalue+⊤)}
+  {SB' : SubType boolType' cvalue}
+  {SN' : SubType natType' cvalue}
+  {SSB : SubType_sound SB SB'}
+  {SSN : SubType_sound SN SN'}
+  {MS : MonadState (store (avalue+⊤)) M} {MS' : MonadState (store cvalue) M'}
+  {ME : MonadExcept M} {ME' : MonadExcept M'} 
+  {PO : plus_op natType natType} {PO' : plus_op natType' natType'}
+  {MO : mult_op natType natType} {MO' : mult_op natType' natType'}
+  {EO : eq_op natType boolType}  {EO' : eq_op natType' boolType'}
+  {LO : leb_op natType boolType} {LO' : leb_op natType' boolType'}
+  {NO : neg_op boolType boolType} {NO' : neg_op boolType' boolType'}
+  {AO : and_op boolType boolType} {AO' : and_op boolType' boolType'}
+  {IO : if_op boolType (M unit)} {IO' : if_op boolType' (M' unit)}
+  {GS : get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M'}
+  {BS : bind_sound M M'}
+  {RS : return_sound M M'}
+  {POS : plus_op_sound PO PO'}
+  {MOS : mult_op_sound MO MO'}
+  {EOS : eq_op_sound EO EO'}
+  {LOS : leb_op_sound LO LO'}
+  {NOS : neg_op_sound NO NO'}
+  {AOS : and_op_sound AO AO'}
+  {IOS : if_op_sound IO IO'}
+  : ∀ c : com,
+  γ 
+    (shared_ceval (M:=M) (valType:=(avalue+⊤)) (natType:=natType)
+    (boolType:=boolType) c)
+    (shared_ceval (M:=M') c).
+Proof.
+Admitted.

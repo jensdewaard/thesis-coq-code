@@ -28,13 +28,11 @@ Qed.
 Hint Resolve store_joinable_idem : soundness.
 
 Instance store_join_sound {A A' B} {JA : Joinable A B} {GA : Galois A A'}
-  {GB :Galois B A'} {JS: JoinableSound A B A'} :
-  JoinableSound (store A) (store B) (store A').
+  {GB :Galois B A'} {JS: JoinableSound JA} :
+  JoinableSound store_joinable.
 Proof.
   intros x y z Hgamma. unfold "⊔"; simpl. unfold store_joinable. intros s. 
-  apply JS. cbv in Hgamma. destruct Hgamma.
-  - left; apply H.
-  - right. apply H.
+  apply JS. cbv in Hgamma. destruct Hgamma; [left | right]; apply H.
 Qed.
 
 Lemma store_update_sound {A A'} `{Galois A A'} :

@@ -6,6 +6,17 @@ Class SubType (sub : Type) (super : Type) : Type := {
   project : super → option sub
 }.
 
+Instance galois_subtype_l : ∀ A B B',
+  Galois B B' → Galois (A+B) B'.
+Proof. 
+  intros A B B' GB. unfold Galois in *.
+  exact (λ v : (A+B), 
+    match v with
+    | inl a => λ _, False
+    | inr b => λ b', GB b b'
+    end).
+Defined.
+
 Class SubType_sound {super super' sub sub' : Type} {Gsuper : Galois super super'} 
   {Gsub : Galois sub sub'} 
   (ST : SubType sub super) (ST' : SubType sub' super') : Type :=
@@ -47,22 +58,27 @@ Proof. split; intros.
 Qed.
 Hint Resolve subtype_sound_r : soundness.
 
-Instance subtype_trans_r : ∀ A B C, 
+Instance subtype_trans_r : ∀ {A B} C, 
   SubType A B → SubType A (C + B) := {
   inject := inject ∘ inr;
   project := λ s, match s with | inr x => project x | _ => None end
 }.
 
-Instance subtype_sound_trans_r : ∀ {A A' B B' C C'}
-  {GA : Galois A A'} {GB : Galois B B'} {GC : Galois C C'}
+Instance subtype_sound_trans_r : ∀ {A A' B B' C}
+  {GA : Galois A A'} {GB : Galois B B'}
   (ST : SubType A B) (ST' : SubType A' B'),
   SubType_sound ST ST' →
-  SubType_sound (subtype_trans_r A B C ST) (subtype_trans_r A' B' C' ST').
-Proof. split; intros.
-  - unfold inject; simpl. unfold compose. unfold γ; simpl.
-    eauto with soundness.
-  - unfold project; simpl. repeat destr; eauto with soundness.
-    contradiction.
+  SubType_sound (subtype_trans_r C ST) (ST').
+Proof.
+  Set Printing Implicit.
+  intros A A' B B' C GA GB ST ST' SS. split; intros s s' Hs.
+  - unfold inject; simpl. unfold compose. unfold γ. 
+    simpl.
+    unfold galois_subtype_l.
+    simpl. apply SS. assumption.
+  - destruct s.
+    + constructor.
+    + simpl. apply SS. apply Hs.
 Qed.
 Hint Resolve subtype_sound_trans_r : soundness.
 

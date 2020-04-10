@@ -116,7 +116,7 @@ Proof.
   gamma_destruct. simpl in *. constructor; simpl; lia.
 Qed.
 
-Instance join_interval_nat_sound : JoinableSound interval interval nat.
+Instance join_interval_nat_sound : JoinableSound interval_joinable.
 Proof.
   split; destruct x as [Xmin Xmax], y as [Ymin Ymax]; simpl in *.
   - destruct H. 

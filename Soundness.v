@@ -177,6 +177,7 @@ Definition AbstractState := optionAT (StateT (store (avalue+⊤)) option).
 Definition AbstractState' A := (string → (parity +⊤ + abstr_bool +⊤) +⊤)
          → option (optionA A * (string → (parity +⊤ + abstr_bool +⊤) +⊤)).
 
+(*** Refactor these lemmas ***)
 Lemma joinable_values_idem : @JoinableIdem (avalue +⊤)
   (@top_joinable_l avalue
      (@sum_joinable (parity +⊤) (parity +⊤) (abstr_bool +⊤) 
@@ -188,6 +189,32 @@ Proof.
   - destruct t. constructor. destruct a; constructor.
 Qed.
 Hint Resolve joinable_values_idem : soundness.
+
+Lemma subtype_trans_r_sound' : SubType_sound 
+    (subtype_trans_r (parity +⊤) (subtype_top_r abstr_bool))
+  (subtype_r nat bool).
+Proof. split.
+  - intros s s' Hs. simpl. unfold compose. destruct s, s'.
+    + constructor. reflexivity.
+    + inversion Hs. inversion H.
+    + inversion Hs. inversion H.
+    + constructor. reflexivity.
+  - intros s s' Hs. destruct s, s'; try constructor; try inversion Hs.
+    + destruct t. constructor. constructor. apply Hs.
+Qed.
+Hint Resolve subtype_trans_r_sound' : soundness.
+
+Lemma subtype_trans_l_sound' : SubType_sound
+  (subtype_trans_l parity (parity +⊤) (abstr_bool +⊤) (subtype_top_r parity))
+  (subtype_l nat bool).
+Proof. split.
+  - intros s s' Hs. apply Hs.
+  - intros s s' Hs. destruct s, s'; try constructor.
+    + destruct t; constructor. apply Hs.
+    + inversion Hs.
+Qed.
+Hint Resolve subtype_trans_l_sound' : soundness.
+
 (* TODO abstract the above *)
 
 Theorem eval_expr_sound : ∀ (e : expr), 
@@ -199,18 +226,14 @@ Proof.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 
+Require Import Classes.IsBool.
 Theorem sound_interpreter: ∀ c, 
   γ (shared_ceval (M:=AbstractState) (valType:=avalue+⊤)
     (boolType:=(abstr_bool+⊤)) (natType:=(parity+⊤)) c) 
     (shared_ceval (M:=ConcreteState) (valType:=cvalue)
     (boolType:=bool) (natType:=nat) c).
 Proof.
-  induction c; simpl. 
-  - eauto with soundness.
-  - eauto with soundness. admit.
-  - eauto with soundness. admit.
-  - eauto with soundness. admit.
-  - eauto with soundness. admit.
-  - eauto with soundness.
+  eapply shared_ceval_sound; eauto with soundness. 
+  - admit. 
 Admitted.
 

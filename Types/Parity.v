@@ -120,7 +120,7 @@ Proof.
   unfold join_op. unfold top_joinable_l. destruct p; reflexivity. 
 Qed.
       
-Instance join_parity_nat_sound : JoinableSound parity (parity+⊤) nat.
+Instance join_parity_nat_sound : JoinableSound parity_joinable.
 Proof.
   intros x y z H. destruct x, y; cbv in *; constructor.
   - destruct H; inversion H; subst; assumption.

@@ -83,8 +83,8 @@ Instance neg_bot {A B : Type} `{neg_op A B} : neg_op (A+⊥) (B+⊥) :=
   λ a, match a with | NotBot x => NotBot (neg x) | Bot => Bot end.
 
 Class if_op  (A B : Type) : Type := when : A → B → B → B.
-Class if_op_sound (A A' : Type) {B B' : Type} `{Galois A A', Galois B B'}
-  `{if_op A B} `{if_op A' B'} : Prop :=
+Class if_op_sound {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'}
+  (IO : if_op A B) (IO' : if_op A' B') : Prop :=
   if_sound : ∀ (g : A) (g' : A') (p1 p2 : B) (p1' p2' : B'),
     γ g g' →
     γ p1 p1' → 
@@ -96,11 +96,37 @@ Instance if_op_bool {B : Type} : if_op bool B :=
   λ (p1 : B), λ (p2 : B),
   if b then p1 else p2.
 
-Instance if_top {A B : Type} `{if_op A B} `{Joinable B B} : if_op (A+⊤) B :=
+Instance if_top {A B : Type} {JB : Joinable B B} (IO : if_op A B) : if_op (A+⊤) B :=
   λ a, λ b1, λ b2, match a with
                    | Top => b1 ⊔ b2
                    | NotTop b => when b b1 b2
                    end.
+
+Instance if_top_sound {A B B'} {GA : Galois A bool} {GB : Galois B B'}
+  {JB : Joinable B B} {JBS : JoinableSound JB}
+  {IO : if_op A B} :
+  if_op_sound IO (if_op_bool (B:=B')) →
+  if_op_sound (if_top IO) (if_op_bool (B:=B')).
+Proof.
+  intros IOS. intros g g' p1 p2 p1' p2' Hg Hp1 Hp2.
+  destruct g.
+  - (* Top *) unfold when. simpl. destruct g'; simpl. 
+    + apply JBS. left. assumption.
+    + apply JBS. right. assumption.
+  - (* NotTop *) apply IOS; assumption.
+Qed.
+
+Instance if_top_sound' {A B B'} {GA : Galois A bool} {GB : Galois B B'}
+  {JB : Joinable B B} {JBS : JoinableSound JB}
+  {IO : if_op A B}  :
+  if_op_sound IO (if_op_bool (B:=B')) →
+  if_op_sound (if_top IO) (if_op_bool (B:=B')).
+Proof.
+  intros IOS. intros g g' p1 p2 p1' p2' Hg Hp1 Hp2.
+  destruct g. 
+  - destruct g'; cbn; apply JBS; [left | right]; assumption.
+  - apply IOS; assumption.
+Qed.
 
 (*Class IsBool (M : Type -> Type) (valType boolType : Type) : Type :=
 {

@@ -97,7 +97,7 @@ Proof.
   Hpre.
 Qed.
 
-Instance join_boolean_sound : JoinableSound abstr_bool (abstr_bool+⊤) bool.
+Instance join_boolean_sound : JoinableSound abstr_bool_joinable.
 Proof.
   intros x y. destruct x, y; cbv; intros b H; destruct H; try assumption; 
   constructor.

@@ -9,8 +9,8 @@ Infix "⊔" := join_op (at level 40).
 Class JoinableIdem {A} (J : Joinable A A) : Prop :=
   joinable_idem : ∀ a : A, a ⊔ a = a.
 
-Class JoinableSound (A B C : Type) 
-  `{Joinable A B} `{Galois A C} `{Galois B C} : Prop :=
+Class JoinableSound {A B A' : Type} {GA : Galois A A'} {GB : Galois B A'}
+  (JA : Joinable A B)  : Prop :=
   join_sound : ∀ x y : A, γ x ∪ γ y ⊆ γ (x ⊔ y).
 
 Instance functions_joinable {A B} {JB : Joinable B B} : 
@@ -52,12 +52,28 @@ Proof.
   intros JAI a. destruct a. cbv. rewrite JAI. reflexivity.
 Qed.
 
-Instance option_joinable {A B} `{Joinable A B} : Joinable (option A) (option B) :=
+Instance option_joinable {A B} {JA : Joinable A B} : Joinable (option A) (option B) :=
   λ m, λ n,
     match m, n with
     | Some x, Some y => Some (x ⊔ y)
     | _, _ => None
     end.
+
+Instance option_joinable_sound {A A' B} {GA : Galois A A'} {GB : Galois B A'}
+  {JA : Joinable A B} :
+  JoinableSound JA → 
+  JoinableSound option_joinable.
+Proof.
+  intros JAS.
+  intros a a'. unfold γ, galois_option. destruct a, a'; cbv; intros m H; 
+  try constructor. destruct H.
+  - destruct m. 
+     + constructor. inversion H; subst. apply join_sound. left. assumption.
+     + inversion H.
+  - destruct m.
+    + constructor. inversion H; subst. apply join_sound. right. assumption.
+    + inversion H.
+Qed.
 
 Instance option_joinable_idem {A} {JA : Joinable A A} :
   JoinableIdem JA → JoinableIdem (@option_joinable A A JA).
@@ -66,7 +82,15 @@ Proof.
 Qed.
 Hint Resolve option_joinable_idem : soundness.
 
-Instance optionA_joinable {A} `{Joinable A A} : Joinable (optionA A) (optionA A) :=
+Instance optionT_joinable {M : Type → Type} 
+  {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
+  {A B} {JA : Joinable A B} : Joinable (optionT M A) (optionT M B).
+Proof.
+  intros m m'. unfold optionT. pose proof option_joinable as JO. 
+  apply JM in JO. exact (JO m m').
+Defined.
+
+Instance optionA_joinable {A} (JA : Joinable A A) : Joinable (optionA A) (optionA A) :=
   λ m, λ n,
     match m, n with
     | NoneA, NoneA => NoneA
@@ -77,6 +101,14 @@ Instance optionA_joinable {A} `{Joinable A A} : Joinable (optionA A) (optionA A)
         SomeOrNoneA (x ⊔ y)
     | SomeOrNoneA x, SomeOrNoneA y => SomeOrNoneA (x ⊔ y)
     end.
+
+Instance optionAT_joinable {M : Type → Type}
+  {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
+  {A} {JA : Joinable A A} : Joinable (optionAT M A) (optionAT M A).
+Proof.
+  intros m m'. unfold optionT. pose proof (optionA_joinable JA) as JO.
+  apply JM in JO. exact (JO m m').
+Defined.
 
 Instance optionA_joinable_idem {A} {JA : Joinable A A} : 
   JoinableIdem JA → JoinableIdem (@optionA_joinable A JA).
