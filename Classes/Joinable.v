@@ -23,6 +23,14 @@ Proof.
   rewrite JAI. reflexivity.
 Qed.
 
+Instance functions_joinable_sound {A A' B C} {JB : Joinable B C}
+  {GA : Galois A A'} {GB : Galois B A'} {GC : Galois C A'} :
+  JoinableSound JB →
+  JoinableSound (functions_joinable (A:=A) (C:=C)).
+Proof.
+  intro JS. intros f g f' [Hf | Hf] a a' Ha; apply JS; [left | right]; auto.
+Qed.
+
 Instance top_joinable_r {A} (JA : Joinable A A) : Joinable A (A+⊤) :=
   λ a : A, λ a' : A, NotTop (a ⊔ a').
 
