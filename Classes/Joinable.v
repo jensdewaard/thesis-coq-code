@@ -132,6 +132,22 @@ Instance optionA_joinable {A} (JA : Joinable A A) : Joinable (optionA A) (option
     | SomeOrNoneA x, SomeOrNoneA y => SomeOrNoneA (x ⊔ y)
     end.
 
+Instance optionA_joinable_idem {A} {JA : Joinable A A} : 
+  JoinableIdem JA → JoinableIdem (@optionA_joinable A JA).
+Proof.
+  intros JAI.
+  intro. destruct a; cbv; try rewrite JAI; reflexivity.
+Qed.
+
+Instance optionA_joinable_sound {A A'} {JA : Joinable A A} 
+  {GA : Galois A A'} :
+  JoinableSound JA → JoinableSound (optionA_joinable JA).
+Proof.
+  intros JAS a1 a2 a' Hgamma. destruct a1, a2, a'; try constructor; cbn; 
+    try apply JAS; inversion Hgamma as [Hg|Hg]; inversion Hg; subst;
+        auto. 1,3,5,7: left; auto. all: right; auto.
+Qed.
+  
 Instance optionAT_joinable {M : Type → Type}
   {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
   {A} {JA : Joinable A A} : Joinable (optionAT M A) (optionAT M A).
@@ -140,12 +156,6 @@ Proof.
   apply JM in JO. exact (JO m m').
 Defined.
 
-Instance optionA_joinable_idem {A} {JA : Joinable A A} : 
-  JoinableIdem JA → JoinableIdem (@optionA_joinable A JA).
-Proof.
-  intros JAI.
-  intro. destruct a; cbv; try rewrite JAI; reflexivity.
-Qed.
 
 Instance pair_joinable {A B C D} {JA : Joinable A C} {JB : Joinable B D} :
   Joinable (A*B)%type (C*D)%type :=
