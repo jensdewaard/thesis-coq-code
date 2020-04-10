@@ -23,13 +23,15 @@ Proof.
   rewrite JAI. reflexivity.
 Qed.
 
-Instance functions_joinable_sound {A A' B C} {JB : Joinable B C}
-  {GA : Galois A A'} {GB : Galois B A'} {GC : Galois C A'} :
+Instance functions_joinable_sound {A A' B' B C} {JB : Joinable B C}
+  {GA : Galois A A'} {GB : Galois B B'} {GC : Galois C B'} :
   JoinableSound JB →
-  JoinableSound (functions_joinable (A:=A) (C:=C)).
+  JoinableSound (functions_joinable (A:=A) (B:=B) (C:=C)).
 Proof.
+  Set Printing Implicit.
   intro JS. intros f g f' [Hf | Hf] a a' Ha; apply JS; [left | right]; auto.
 Qed.
+Hint Resolve functions_joinable_sound : soundness.
 
 Instance top_joinable_r {A} (JA : Joinable A A) : Joinable A (A+⊤) :=
   λ a : A, λ a' : A, NotTop (a ⊔ a').
@@ -82,6 +84,7 @@ Proof.
     + constructor. inversion H; subst. apply join_sound. right. assumption.
     + inversion H.
 Qed.
+Hint Resolve option_joinable_sound : soundness.
 
 Instance option_joinable_idem {A} {JA : Joinable A A} :
   JoinableIdem JA → JoinableIdem (@option_joinable A A JA).
@@ -125,17 +128,31 @@ Proof.
   intro. destruct a; cbv; try rewrite JAI; reflexivity.
 Qed.
 
-Instance pair_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
-  Joinable (A*A')%type (B*B')%type :=
+Instance pair_joinable {A B C D} {JA : Joinable A C} {JB : Joinable B D} :
+  Joinable (A*B)%type (C*D)%type :=
   λ p, λ q, ((fst p) ⊔ (fst q), (snd p) ⊔ (snd q)).
 
 Instance pair_joinable_idem {A A'} {JA : Joinable A A} {JA' : Joinable A' A'} :
   JoinableIdem JA → 
   JoinableIdem JA' → 
-  JoinableIdem (@pair_joinable A A A' A' JA JA').
+  JoinableIdem (@pair_joinable A A' A A' JA JA').
 Proof.
   intros JAI JAI' p. destruct p; cbv.  rewrite JAI, JAI'. reflexivity.
 Qed.
+
+Instance pair_joinable_sound {A B C D A' B'} 
+  {JA : Joinable A C} {JB: Joinable B D}
+  {GA : Galois A A'} {GC : Galois C A'}
+  {GB : Galois B B'} {GD : Galois D B'} :
+  JoinableSound JA →
+  JoinableSound JB →
+  JoinableSound (@pair_joinable A B C D JA JB).
+Proof.
+  intros JAS JBS p q p' Hgamma. destruct p, q, p'; simpl.
+  constructor; simpl; [apply JAS | apply JBS].
+  all: inversion Hgamma; [left | right]; inversion H; subst; assumption.
+Qed. 
+Hint Resolve pair_joinable_sound : soundness.
 
 Instance sum_joinable {A B A' B'} `{Joinable A B, Joinable A' B'} :
   Joinable (A+A') ((B+B')+⊤) :=
