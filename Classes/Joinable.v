@@ -69,6 +69,11 @@ Proof.
   intro. destruct a; reflexivity.
 Qed.
 
+Instance unit_joinable_sound : JoinableSound unit_joinable.
+Proof.
+  constructor.
+Qed.
+
 Instance identity_joinable {A B} `{Joinable A B} : Joinable (Identity A) (Identity B) :=
   λ i, λ j,
     match i, j with
