@@ -237,9 +237,9 @@ Proof.
   eapply if_top_sound; eauto with soundness. Unshelve.
   - apply functions_joinable_sound. apply option_joinable_sound. apply
     pair_joinable_sound. 
-    + admit.
+    + apply optionA_joinable_sound. apply unit_joinable_sound.
     + eapply store_join_sound. 
   - simple apply @if_ab_op_sound. 
     apply optionAT_joinable.
-Admitted.
+Qed.
 
