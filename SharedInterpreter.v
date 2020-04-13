@@ -246,6 +246,8 @@ Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
   {SSN : SubType_sound SN SN'}
   {MS : MonadState (store (avalue+⊤)) M} {MS' : MonadState (store cvalue) M'}
   {ME : MonadExcept M} {ME' : MonadExcept M'} 
+  {MCS : catch_op_sound M M'}
+  {MTS : throw_op_sound M M'}
   {PO : plus_op natType natType} {PO' : plus_op natType' natType'}
   {MO : mult_op natType natType} {MO' : mult_op natType' natType'}
   {EO : eq_op natType boolType}  {EO' : eq_op natType' boolType'}
@@ -254,6 +256,7 @@ Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
   {AO : and_op boolType boolType} {AO' : and_op boolType' boolType'}
   {IO : if_op boolType (M unit)} {IO' : if_op boolType' (M' unit)}
   {GS : get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M'}
+  {PS : put_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M'}
   {BS : bind_sound M M'}
   {RS : return_sound M M'}
   {POS : plus_op_sound PO PO'}
@@ -268,5 +271,15 @@ Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
     (shared_ceval (M:=M) (valType:=(avalue+⊤)) (natType:=natType)
     (boolType:=boolType) c)
     (shared_ceval (M:=M') c).
-Proof.
-Admitted.
+Proof. induction c.
+  - eauto with soundness. 
+  - apply bindM_sound. assumption. intros ???. assumption.
+  - apply bindM_sound. eapply shared_eval_expr_sound; assumption.
+    intros ???. apply bindM_sound. assumption. intros ???. apply put_sound.
+    eauto with soundness. apply store_update_sound; assumption.
+  - apply bindM_sound. eapply shared_eval_expr_sound; assumption.
+    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
+    intros ???. apply if_sound; assumption. 
+  - simpl. apply catch_sound; assumption.
+  - simpl. apply throw_sound.
+Qed.
