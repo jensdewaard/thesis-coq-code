@@ -129,5 +129,38 @@ Defined.
 
 Class extract_op (A B : Type) : Type := extract : A → B.
 
+Class extract_op_sound {A B B' : Type} {GB : Galois B B'}
+  (EO : extract_op A B) (EO' : extract_op A B') : Prop :=
+  extract_sound :  ∀ a, γ (extract a) (extract a).
+
 Instance extract_nat : extract_op nat nat := id.
 Instance extract_bool : extract_op bool bool := id.
+
+Instance extract_sum {A B C D : Type} 
+  (EA : extract_op A C) (EB : extract_op B D) : extract_op (A+B) (C+D) :=
+    λ v, 
+      match v with
+      | inl x => inl (extract x)
+      | inr x => inr (extract x)
+      end.
+
+Instance extract_sum_sound {A B C C' D D'} 
+  {GC : Galois C C'} {GD : Galois D D'}
+  {EA : extract_op A C} {EA' : extract_op A C'}
+  {EB : extract_op B D} {EB' : extract_op B D'}
+  {EAS : extract_op_sound EA EA'} {EBS : extract_op_sound EB EB'} :
+  extract_op_sound (extract_sum EA EB) (extract_sum EA' EB').
+Proof.
+  intro p; destruct p; apply EAS + apply EBS.
+Qed.
+         
+Instance extract_top {A B : Type}
+  (EA : extract_op A B) : extract_op A (B+⊤) := λ a, NotTop (extract a).
+
+Instance extract_top_sound {A B B'} {GB : Galois B B'}
+  {EA : extract_op A B} {EA' : extract_op A B'} 
+  {EAS : extract_op_sound EA EA'} : 
+  extract_op_sound (extract_top EA) EA'.
+Proof. apply EAS. Qed.
+
+
