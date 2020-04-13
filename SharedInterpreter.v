@@ -1,16 +1,16 @@
 Require Export Base. 
-Require Import Statements.
-Require Import Types.Maps.
-Require Import Classes.Monad.
-Require Import Classes.IsNat.
-Require Import Classes.IsBool.
-Require Import Classes.Monad.MonadState.
-Require Import Classes.Monad.MonadFail.
-Require Import Classes.Monad.MonadExcept.
 Require Import Classes.Galois.
-Require Import Types.Stores.
-Require Import Types.Parity.
+Require Import Classes.IsBool.
+Require Import Classes.IsNat.
+Require Import Classes.Monad.
+Require Import Classes.Monad.MonadExcept.
+Require Import Classes.Monad.MonadFail.
+Require Import Classes.Monad.MonadState.
+Require Import Language.Statements.
 Require Import Types.AbstractBool.
+Require Import Types.Maps.
+Require Import Types.Parity.
+Require Import Types.Stores.
 Require Import Types.Subtype.
 
 Definition ensure_type (subType : Type)
@@ -49,6 +49,7 @@ Qed.
 Fixpoint shared_eval_expr 
     {valType boolType natType : Type} {M : Type → Type} {MM : Monad M}
     {MF : MonadFail M} {MS : MonadState (store valType) M}
+    {EC : extract_op cvalue valType}
     {SB : SubType boolType valType}
     {SN : SubType natType valType}
     {PO : plus_op natType natType}
@@ -59,7 +60,7 @@ Fixpoint shared_eval_expr
     {AO : and_op boolType boolType}
     (e : expr) : M valType :=
   match e with
-  | EVal v => fail
+  | EVal v => returnM (extract v)
   | EVar x =>
       s <- get;
       returnM (M:=M) (s x)
@@ -111,8 +112,10 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
   {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MFS : MonadFail_sound M M'}
-  {avalue cvalue} {GV : Galois avalue cvalue}
+  {avalue } {GV : Galois avalue cvalue}
   {natType natType' boolType boolType' : Type } 
+  {EC : extract_op cvalue avalue}
+  {ECS : extract_op_sound EC (extract_sum extract_nat extract_bool)}
   {GN : Galois natType natType'}
   {GB : Galois boolType boolType'}
   {SB : SubType boolType (avalue+⊤)}
@@ -143,7 +146,7 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
     (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).
 Proof.
   induction e.
-  - simpl. apply fail_sound. 
+  - simpl. apply returnM_sound. apply extract_top_sound. apply ECS.
   - simpl. apply bindM_sound; eauto with soundness.
     intros f g Hf. auto.
   - simpl. apply bindM_sound. assumption.
@@ -193,19 +196,20 @@ Open Scope com_scope.
 Fixpoint shared_ceval 
     {valType boolType natType : Type} 
     {M : Type → Type} 
-    `{MM : !Monad M}
-    `{MF : !MonadFail M} 
-    `{MS : !MonadState (store valType) M}
-    `{ME : !MonadExcept M} (c : com) 
-    `{SubType boolType valType}
-    `{SubType natType valType}
-    `{PO : plus_op natType natType}
-    `{MO : mult_op natType natType}
-    `{EO : eq_op natType boolType}
-    `{LO : leb_op natType boolType}
-    `{NO : neg_op boolType boolType}
-    `{AO : and_op boolType boolType}
-    `{IO : if_op boolType (M unit)}
+    {MM : Monad M}
+    {MF : MonadFail M} 
+    {MS : MonadState (store valType) M}
+    {ME : MonadExcept M} (c : com) 
+    {EC : extract_op cvalue valType}
+    {SB : SubType boolType valType}
+    {SN : SubType natType valType}
+    {PO : plus_op natType natType}
+    {MO : mult_op natType natType}
+    {EO : eq_op natType boolType}
+    {LO : leb_op natType boolType}
+    {NO : neg_op boolType boolType}
+    {AO : and_op boolType boolType}
+    {IO : if_op boolType (M unit)}
     : M unit :=
   match c with
   | CSkip => returnM (M:=M) tt
@@ -228,7 +232,9 @@ Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
   {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MFS : MonadFail_sound M M'}
-  {avalue cvalue} {GV : Galois avalue cvalue}
+  {avalue : Type} {GV : Galois avalue cvalue}
+  {EX : extract_op cvalue avalue}
+  {EXS : extract_op_sound EX (extract_sum extract_nat extract_bool)}
   {natType natType' boolType boolType' : Type } 
   {GN : Galois natType natType'}
   {GB : Galois boolType boolType'}

@@ -8,12 +8,6 @@ Inductive abstr_bool : Type :=
   | ab_true   : abstr_bool
   | ab_false  : abstr_bool.
 
-Instance extract_ab : extract_op bool abstr_bool := λ b,
-  match b with
-  | true => ab_true
-  | _ => ab_false
-  end.
-
 (** * Correspondence with bool *)
 Inductive gamma_bool : abstr_bool → bool → Prop :=
   | gamma_bool_true : ∀ P, P = true → gamma_bool ab_true P
@@ -22,6 +16,18 @@ Inductive gamma_bool : abstr_bool → bool → Prop :=
 Instance galois_boolean : Galois abstr_bool bool := gamma_bool.
 (** * Operations *)
 
+(** extract *)
+Instance extract_ab : extract_op bool abstr_bool := λ b,
+  match b with
+  | true => ab_true
+  | _ => ab_false
+  end.
+
+Instance extract_ab_sound : extract_op_sound extract_ab extract_bool.
+Proof.
+  intro b. destruct b; constructor; reflexivity.
+Qed.
+Hint Resolve extract_ab_sound : soundness.
 (** ** And *)
 
 Definition and_ab (b1 b2 : abstr_bool) : abstr_bool :=

@@ -9,9 +9,6 @@ Inductive parity : Type :=
   | par_even : parity
   | par_odd : parity.
 
-Instance extract_parity : extract_op nat parity := λ n,
-  if Nat.even n then par_even else par_odd.
-
 Inductive gamma_par : parity → ℘ nat :=
   | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
   | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n.
@@ -19,6 +16,18 @@ Inductive gamma_par : parity → ℘ nat :=
 Instance galois_parity_nat : Galois parity nat := gamma_par.
 
 (** ** Operations *)
+Instance extract_parity : extract_op nat parity := λ n,
+  if Nat.even n then par_even else par_odd.
+
+Instance extract_parity_sound : extract_op_sound extract_parity extract_nat.
+Proof.
+  intro n. unfold extract, extract_parity, extract_nat. rewrite id_refl.
+  destruct (Nat.even n) eqn:H. constructor. rewrite Nat.even_spec in H.
+  assumption. rewrite <- Bool.negb_true_iff in H. 
+  rewrite Nat.negb_even in H. rewrite Nat.odd_spec in H. constructor.
+  assumption.
+Qed.
+Hint Resolve extract_parity_sound : soundness.
 
 (** *** Plus *)
 Definition parity_plus (p q : parity) : parity :=

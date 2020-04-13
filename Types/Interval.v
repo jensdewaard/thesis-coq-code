@@ -10,14 +10,6 @@ Record interval := Interval {
   min_max : min <= max;
 }.
 
-Lemma n_eq_interval : ∀ n, n <= n.
-Proof.
-  intro. auto.
-Qed.
-
-Instance extract_interval : extract_op nat interval := λ n, 
-  Interval n n (n_eq_interval n).
-
 Notation "[ x , y ]" := (@Interval x y _).
 
 Lemma nat_le_pi : ∀ x y (H1 H2 : x ≤ y), H1 = H2.
@@ -116,6 +108,20 @@ Inductive gamma_interval : interval → nat → Prop :=
       preorder (min i) n → preorder n (max i) → gamma_interval i n.
 
 Instance galois_interval : Galois interval nat := gamma_interval.
+
+Lemma n_eq_interval : ∀ n, n <= n.
+Proof. auto. Qed.
+
+Instance extract_interval : extract_op nat interval := λ n, 
+  Interval n n (n_eq_interval n).
+
+Instance extract_interval_sound : 
+  extract_op_sound extract_interval extract_nat.
+Proof.
+  intro n. unfold extract, extract_nat, extract_interval. rewrite id_refl.
+  constructor; constructor.
+Qed.
+Hint Resolve extract_interval_sound : soundness.
 
 Instance preorder_interval_sound : PreorderSound interval nat.
 Proof.

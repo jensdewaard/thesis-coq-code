@@ -147,20 +147,22 @@ Instance extract_sum {A B C D : Type}
 Instance extract_sum_sound {A B C C' D D'} 
   {GC : Galois C C'} {GD : Galois D D'}
   {EA : extract_op A C} {EA' : extract_op A C'}
-  {EB : extract_op B D} {EB' : extract_op B D'}
-  {EAS : extract_op_sound EA EA'} {EBS : extract_op_sound EB EB'} :
+  {EB : extract_op B D} {EB' : extract_op B D'} :
+  extract_op_sound EA EA' → extract_op_sound EB EB' →
   extract_op_sound (extract_sum EA EB) (extract_sum EA' EB').
 Proof.
+  intros EAS EBS.
   intro p; destruct p; apply EAS + apply EBS.
 Qed.
+Hint Resolve extract_sum_sound : soundness.
          
 Instance extract_top {A B : Type}
   (EA : extract_op A B) : extract_op A (B+⊤) := λ a, NotTop (extract a).
 
 Instance extract_top_sound {A B B'} {GB : Galois B B'}
-  {EA : extract_op A B} {EA' : extract_op A B'} 
-  {EAS : extract_op_sound EA EA'} : 
+  {EA : extract_op A B} {EA' : extract_op A B'} :
+  extract_op_sound EA EA' →
   extract_op_sound (extract_top EA) EA'.
-Proof. apply EAS. Qed.
-
+Proof. intro EAS; apply EAS. Qed.
+Hint Resolve extract_top_sound : soundness.
 
