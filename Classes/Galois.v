@@ -15,6 +15,7 @@ Definition gamma_bot (A A' : Type) `{Galois A A'} : (A+⊥) → A' → Prop :=
              | NotBot x => λ y, γ x y
              end.
 
+
 Instance galois_bot : ∀ (A A' : Type),
   Galois A A' → Galois (A+⊥) A' := gamma_bot.
 
@@ -125,3 +126,8 @@ Instance galois_optionT {M M'}
 Proof.
   intros A A' GA. apply GM. apply galois_option. apply GA.
 Defined.
+
+Class extract_op (A B : Type) : Type := extract : A → B.
+
+Instance extract_nat : extract_op nat nat := id.
+Instance extract_bool : extract_op bool bool := id.

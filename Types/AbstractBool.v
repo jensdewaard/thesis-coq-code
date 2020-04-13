@@ -4,11 +4,15 @@ Require Import Utf8 Coq.Bool.Bool Classes.IsBool Classes.PreorderedSet
 
 (** * Definition *)
 
-Definition abstr_bool' : Type := bool+⊤.
-
 Inductive abstr_bool : Type :=
   | ab_true   : abstr_bool
   | ab_false  : abstr_bool.
+
+Instance extract_ab : extract_op bool abstr_bool := λ b,
+  match b with
+  | true => ab_true
+  | _ => ab_false
+  end.
 
 (** * Correspondence with bool *)
 Inductive gamma_bool : abstr_bool → bool → Prop :=

@@ -10,6 +10,14 @@ Record interval := Interval {
   min_max : min <= max;
 }.
 
+Lemma n_eq_interval : ∀ n, n <= n.
+Proof.
+  intro. auto.
+Qed.
+
+Instance extract_interval : extract_op nat interval := λ n, 
+  Interval n n (n_eq_interval n).
+
 Notation "[ x , y ]" := (@Interval x y _).
 
 Lemma nat_le_pi : ∀ x y (H1 H2 : x ≤ y), H1 = H2.

@@ -9,6 +9,9 @@ Inductive parity : Type :=
   | par_even : parity
   | par_odd : parity.
 
+Instance extract_parity : extract_op nat parity := λ n,
+  if Nat.even n then par_even else par_odd.
+
 Inductive gamma_par : parity → ℘ nat :=
   | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
   | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n.
