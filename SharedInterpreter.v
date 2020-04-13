@@ -225,7 +225,7 @@ Fixpoint shared_ceval
       when b' (shared_ceval c1) (shared_ceval c2)
   | TRY c1 CATCH c2 => 
       catch (shared_ceval c1) (shared_ceval c2)
-  | CFail => fail
+  | CFail => throw
   end.
 
 Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
