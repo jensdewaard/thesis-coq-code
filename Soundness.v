@@ -10,7 +10,6 @@ Require Import Coq.Arith.Even.
 Require Import Coq.Arith.PeanoNat.
 Require Import Instances.Except.
 Require Import Instances.Joinable.
-Require Import Instances.Monad.
 Require Import Instances.Preorder.
 Require Import Instances.Store.
 Require Import Language.Statements.

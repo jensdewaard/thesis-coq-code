@@ -21,7 +21,6 @@ Classes/IsNat.v
 Classes/IsBool.v
 Instances/Preorder.v
 Instances/Joinable.v
-Instances/Monad.v
 Instances/Store.v
 Instances/Except.v
 Instances/Galois.v

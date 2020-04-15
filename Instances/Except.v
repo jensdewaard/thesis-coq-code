@@ -6,7 +6,6 @@ Require Import Classes.Galois.
 Require Import Classes.Monad.
 Require Import Classes.PreorderedSet.
 Require Import Instances.Joinable.
-Require Import Instances.Monad.
 Require Import Types.Stores.
 Require Import Types.State.
 Require Import Types.Option.
