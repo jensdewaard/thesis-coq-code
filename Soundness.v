@@ -117,26 +117,6 @@ Section stateT.
 End stateT.
 Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
-Section optionT.
-  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
-  Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
-  Context {RS : return_sound M M'}.
-  Context {BS : bind_sound M M'}.
-
-  Global Instance someT_sound : return_sound (optionT M) (optionT M').
-  Proof.
-    unfold return_sound, returnM; simpl. intros. eauto with soundness.
-  Qed.
-
-  Global Instance bind_optionT_sound : bind_sound (optionT M) (optionT M').
-  Proof.
-    unfold bind_sound, bindM; simpl; intros. 
-    unfold bind_optionT. eapply BS. assumption. intros o o' Ho.
-    destr; eauto with soundness. subst.
-  Admitted.
-End optionT.
-Hint Resolve someT_sound bind_optionT_sound : soundness.
-
 Section optionAT.
   Global Instance someAT_sound : ∀ (M M' : Type → Type) {MM : Monad M} {MM' :
     Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')},
