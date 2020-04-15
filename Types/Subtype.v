@@ -1,5 +1,6 @@
 Require Export Base.
 Require Import Classes.Galois.
+Require Import Types.Option.
 
 Class SubType (sub : Type) (super : Type) : Type := {
   inject : sub → super;

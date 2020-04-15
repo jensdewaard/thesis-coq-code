@@ -1,6 +1,6 @@
 Require Export Base.
 Require Import Classes.Monad Classes.Monad.MonadState Instances.Monad
-  Types.State Classes.Galois.
+  Types.State Classes.Galois Types.Option.
 
 Implicit Type ST : Type.
 Implicit Type M : Type → Type.

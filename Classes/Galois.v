@@ -93,40 +93,6 @@ Instance galois_identity : ∀ (A A' : Type),
   Galois (Identity A) (Identity A') :=
     gamma_identity.
 
-Inductive gamma_optionA {A A'} {GA : Galois A A'} : optionA A → option A' → Prop :=
-  | gamma_noneA : gamma_optionA NoneA None
-  | gamma_SomeornoneA_none : ∀ a, 
-      gamma_optionA (SomeOrNoneA a) None
-  | gamma_SomeA_Some : ∀ a' a, γ a' a → gamma_optionA (SomeA a') (Some a)
-  | gamma_Someornone_Some : ∀ a' a, 
-      γ a' a →
-      gamma_optionA (SomeOrNoneA a') (Some a).
-
-Inductive gamma_option {A A'} {GA : Galois A A'} : option A → option A' → Prop :=
-  | gamma_none : ∀ m, gamma_option None m
-  | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
-
-Instance galois_optionA : ∀ A A' (GA : Galois A A'), 
-  Galois (optionA A) (option A') := @gamma_optionA.
-
-Instance galois_option : ∀ A A' (GA : Galois A A'), 
-  Galois (option A) (option A') := @gamma_option.
-
-Instance galois_optionAT {M M'} 
-  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
-    ∀ A A', 
-  Galois A A' → Galois (optionAT M A) (optionT M' A').
-Proof.
-  intros A A' GA. apply GM. apply galois_optionA. apply GA.
-Defined.
-
-Instance galois_optionT {M M'} 
-  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
-  ∀ A A', Galois A A' → Galois (optionT M A) (optionT M' A').
-Proof.
-  intros A A' GA. apply GM. apply galois_option. apply GA.
-Defined.
-
 Class extract_op (A B : Type) : Type := extract : A → B.
 
 Class extract_op_sound {A B B' : Type} {GB : Galois B B'}

@@ -9,6 +9,7 @@ Require Import Instances.Joinable.
 Require Import Instances.Monad.
 Require Import Types.Stores.
 Require Import Types.State.
+Require Import Types.Option.
 
 Implicit Type A : Type.
 Implicit Type M : Type → Type.

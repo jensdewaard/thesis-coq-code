@@ -26,22 +26,6 @@ Proof. reflexivity. Qed.
 
 Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 
-Inductive maybe (A : Type) : Type :=
-  | Just : A → maybe A
-  | Nothing : maybe A.
-Arguments Just {A} a.
-Arguments Nothing {A}.
-
-Inductive optionA (A : Type) : Type :=
-  | SomeA : A → optionA A
-  | NoneA : optionA A
-  | SomeOrNoneA : A → optionA A.
-Arguments SomeA {A} a.
-Arguments NoneA {A}.
-Arguments SomeOrNoneA {A} a.
-Definition optionT (M : Type → Type) (A : Type) : Type := M (option A).
-Definition optionAT (M : Type → Type) (A : Type) : Type := M (optionA A).
-
 Definition flip {A B C : Type} (f : A → B → C) (x : B) (y : A) : C :=
   f y x.
 

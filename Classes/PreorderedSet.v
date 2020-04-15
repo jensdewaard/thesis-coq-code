@@ -114,36 +114,7 @@ Section identity_preorder.
   Proof. proof_preorder identity_le. Defined.
 End identity_preorder.
 
-Section option_preorder.
-  Context {A} `{A_preorder : PreorderedSet A}.
-
-  Inductive option_le : option A → option A → Prop :=
-    | option_le_none : ∀ m, option_le m None
-    | option_le_just : ∀ x y, preorder x y → option_le (Some x) (Some y).
-  Hint Constructors option_le : preorders.
-
-  Global Instance option_preorder : PreorderedSet (option A).
-  Proof. proof_preorder option_le. Defined.
-End option_preorder.
-Hint Constructors option_le : preorders.
 
 Global Instance preorder_nat : PreorderedSet nat.
 Proof. proof_preorder le; eauto with arith. Defined.
 
-Section optionA_preorder.
-  Context {A : Type} `{A_preorder : PreorderedSet A}.
-
-  Inductive optionA_le : optionA A → optionA A → Prop :=
-    | optionA_le_none : optionA_le NoneA NoneA
-    | optionA_le_none_justornone : ∀ y, optionA_le NoneA (SomeOrNoneA y)
-    | optionA_le_just : ∀ x y, preorder x y → optionA_le (SomeA x) (SomeA y)
-    | optionA_le_justornone_r : ∀ x y, preorder x y →
-        optionA_le (SomeA x) (SomeOrNoneA y)
-    | optionA_le_justornone : ∀ x y, preorder x y →
-        optionA_le (SomeOrNoneA x) (SomeOrNoneA y).
-  Hint Constructors optionA_le : preorders.
-
-  Global Instance optionA_preorder : PreorderedSet (optionA A).
-  Proof. proof_preorder optionA_le. Defined.
-End optionA_preorder.
-Hint Constructors optionA_le : preorders.

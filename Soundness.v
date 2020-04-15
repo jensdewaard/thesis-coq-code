@@ -25,6 +25,7 @@ Require Import Types.Stores.
 Require Import Classes.IsBool.
 Require Import Types.Subtype.
 Require Import Classes.IsNat.
+Require Import Types.Option.
 
 Hint Extern 0 (γ _ _) => progress gamma_destruct : soundness.
 

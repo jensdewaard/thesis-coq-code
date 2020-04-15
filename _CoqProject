@@ -10,6 +10,7 @@ Types/Stores.v
 Classes/PreorderedSet.v
 Classes/Joinable.v
 Classes/Galois.v
+Types/Option.v
 Types/Subtype.v
 Classes/Monad.v
 Classes/Monad/MonadFail.v
