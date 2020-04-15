@@ -13,10 +13,10 @@ Class Monad M : Type :=
   bindM : ∀ {A B}, M A  → (A → M B) → M B;
   bind_id_left : ∀ {A B} (f : A → M B) (a : A), 
     bindM (returnM a) f = f a;
-  bind_id_right : ∀ {A} (MA : M A),
-    bindM MA returnM = MA;
-  bind_assoc : ∀ {A B C} (MA : M A) (f : A → M B) (g : B → M C),
-    bindM (bindM MA f) g = bindM MA (λ a, bindM (f a) g);
+  bind_id_right : ∀ {A} (m : M A),
+    bindM m returnM = m;
+  bind_assoc : ∀ {A B C} (m : M A) (f : A → M B) (g : B → M C),
+    bindM (bindM m f) g = bindM m (λ a, bindM (f a) g);
 }.
 Arguments bindM : simpl never.
 Arguments returnM: simpl never.
@@ -113,6 +113,23 @@ Section Identity_Monad.
     bind_assoc := bind_id_assoc;
   }.
 End Identity_Monad.
+
+Section maybe_monad.
+  Definition bind_maybe A B
+    (m : maybe A) (f : A → maybe B) : maybe B :=
+    match m with
+    | Just a => f a
+    | _ => Nothing
+    end.
+
+  Definition return_maybe A
+    (a : A) : maybe A := Just a.
+
+  Global Instance monad_maybe : Monad maybe.
+  Proof. 
+    split with return_maybe bind_maybe; try destruct m; reflexivity.
+  Defined.
+End maybe_monad.
 
 Section option_monad.
   Definition bind_option {A B} 

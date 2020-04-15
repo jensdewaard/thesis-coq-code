@@ -26,6 +26,12 @@ Proof. reflexivity. Qed.
 
 Hint Rewrite @id_refl @id_compose_left @id_compose_right : soundness.
 
+Inductive maybe (A : Type) : Type :=
+  | Just : A → maybe A
+  | Nothing : maybe A.
+Arguments Just {A} a.
+Arguments Nothing {A}.
+
 Inductive optionA (A : Type) : Type :=
   | SomeA : A → optionA A
   | NoneA : optionA A

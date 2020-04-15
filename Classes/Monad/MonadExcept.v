@@ -27,6 +27,7 @@ Class catch_op_sound (M M' : Type → Type)
   catch_sound : ∀ {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
     {A'} {JA' : Joinable A' A'} {JAI' : JoinableIdem JA'}
     {GA : Galois A A'} 
+    {JAS : JoinableSound JA}
     (p1 p2 : M A) (p1' p2' : M' A'),
     γ p1 p1' →
     γ p2 p2' → 

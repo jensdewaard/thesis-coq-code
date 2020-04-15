@@ -33,6 +33,17 @@ Proof.
 Qed.
 Hint Resolve get_store_stateT_sound : soundness.
 
+Instance put_store_stateT_sound {ST ST' : Type} {GS : Galois ST ST'}
+  {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
+  return_sound M M' →
+  put_state_sound (StateT ST M) (StateT ST' M').
+Proof.
+  intros RS s s' Hs. cbn. intros ???. apply RS. constructor; cbn.
+  constructor. assumption.
+Qed.
+Hint Resolve put_store_stateT_sound : soundness.
+
 Instance store_optionT `{MM : Monad M} `{MS : MonadState ST M} :
   MonadState ST (optionT M) := {
   get := liftT get;
@@ -76,3 +87,16 @@ Proof.
 Qed.
 Hint Resolve get_store_optionAT_sound : soundness.
 
+Instance put_store_optionAT_sound {ST ST' : Type} {GST : Galois ST ST'}
+  {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MS : MonadState ST M} {MS' : MonadState ST' M'} :
+  return_sound M M' →
+  bind_sound M M' →
+  put_state_sound M M' →
+  put_state_sound (optionAT M) (optionT M').
+Proof.
+  intros RS BS PS s s' Hs. cbn. eapply BS.  apply PS. assumption.
+  intros ???. apply RS. constructor. constructor.
+Qed.
+Hint Resolve put_store_optionAT_sound : soundness.

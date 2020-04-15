@@ -65,6 +65,11 @@ Section except_option.
     catch_right := catch_option_throw_right;
     catch_return := catch_option_return;
   }.
+
+  Global Instance throw_option_sound : throw_op_sound option option.
+  Proof.
+    intro. intros. constructor.
+  Qed.
 End except_option.
 
 Section except_optionA.
@@ -110,6 +115,25 @@ Section except_optionA.
     catch_right := catch_optionA_throw_right;
     catch_return := catch_optionA_return;
   }.
+
+  Global Instance catch_optionA_sound : catch_op_sound optionA option.
+  Proof.
+    intros A JA JAI A' JA' JAI' GA JAS p1 p2 p1' p2' Hp1 Hp2. destruct p1, p1'; cbv. 
+    - constructor. inversion Hp1; subst. assumption.
+    - inversion Hp1.
+    - inversion Hp1.
+    - assumption.
+    - destruct p2; constructor; try apply JAS; inversion Hp1; subst.
+      + left. assumption.
+      + assumption.
+      + left. assumption.
+    - destruct p2, p2'; constructor; try apply JAS; inversion Hp2; subst.
+      + right; assumption.
+      + right; assumption.
+  Qed.
+
+  Global Instance throw_optionA_sound : throw_op_sound optionA option.
+  Proof. constructor. Qed.
 End except_optionA.
 
 Section fail_optionT.
@@ -233,7 +257,6 @@ Qed.
 Hint Resolve monadfail_optionAT_sound : soundness.
 
 Section except_optionAT.
-  
   Definition throw_optionAT {M} {MM : Monad M} 
     {MJ : MonadJoin M} {A} : optionAT M A := returnM NoneA.
 
@@ -289,7 +312,37 @@ Section except_optionAT.
       catch_right := catch_optionAT_throw_right;
       catch_return := catch_optionAT_return;
     }. 
+
+  Global Instance throw_optionAT_sound {M M'} {MM : Monad M} {MM' : Monad M'}
+    {MJ : MonadJoin M}
+    {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
+    return_sound M M' → 
+    throw_op_sound (optionAT M) (optionT M').
+  Proof.
+    intros RS A A' GA. unfold throw; simpl. 
+    unfold throw_optionT, throw_optionAT. apply RS. constructor.
+  Qed.
+
+  Global Instance catch_optionAT_sound {M M'} {MM : Monad M} {MM' : Monad M'}
+    {MJ : MonadJoin M} 
+    {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
+    return_sound M M' →
+    bind_sound M M' →
+    MonadJoinSound M M' →
+    catch_op_sound (optionAT M) (optionT M').
+  Proof.
+    intros RS BS MS A JA JAI A' JA' JAI' GA JAS p1 p2 p1' p2' Hp1 Hp2.
+    unfold catch; simpl. unfold catch_optionAT, catch_optionT.
+    eapply BS. apply Hp1. intros ???. destruct a, a'.
+    - apply RS; assumption.
+    - inversion H.
+    - inversion H.
+    - assumption.
+    - apply mjoin_sound_left. apply RS. assumption.
+    - apply mjoin_sound_right. assumption.
+  Qed.
 End except_optionAT.
+Hint Resolve catch_optionAT_sound throw_optionAT_sound : soundness.
 Hint Resolve except_optionAT : soundness.
 
 Section fail_stateT.

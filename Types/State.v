@@ -170,6 +170,18 @@ Section mjoin_stateT.
 End mjoin_stateT.
 Hint Resolve stateT_monadjoin : soundness.
 
+Instance stateT_monadjoin_sound {S S'} {JS : Joinable S S} {GS : Galois S S'}
+  {JSS : JoinableSound JS}
+  {JSI : JoinableIdem JS} {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {JM : MonadJoin M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  {MS : MonadJoinSound M M'} :
+  MonadJoinSound (StateT S M) (StateT S' M').
+Proof. split; intros. 
+  - intros ???. eapply mjoin_sound_left. apply H. assumption.
+  - intros ???. apply mjoin_sound_right. apply H. assumption.
+Qed.
+Hint Resolve stateT_monadjoin_sound : soundness.
+
 Instance stateT_joinable {S} {JS : Joinable S S} {M} {MM : Monad M}
   {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
   {A B} {JA : Joinable A B} : Joinable (StateT S M A) (StateT S M B) :=
