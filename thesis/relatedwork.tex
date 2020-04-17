@@ -21,33 +21,34 @@ configuration pairs of values and stores. This prevented the interpreter from
 entering an infinite loop.
 
 \section{Constructive Galois connections}
-Sergey et al.\cite{sergey2013monadic} have described a method to create a
-monadic abstract interpreter
-from concrete semantics in Haskell. Like in this thesis, they extract elements
-such as access to a store in a monadic typeclass that is then instantiated in a
-concrete and abstract manner. Because their work is in Haskell as opposed to
-Coq, they do not have to deal with the limitations of the calculus of inductive
-constructions. Mostly, they are able to define both alpha and gamma in their
-work. 
-
 When we defined our Galois connections, we were only able to define the gamma
 functions. Normally, Galois connections are made from two functions, the
 other being alpha. The alpha function would be responsible for transforming
 the concrete values into the abstract values that best encompass those concrete
 values. However, defining the alpha function in Coq requires the use of
-non-constructive axioms~\cite{Monniaux3}.
+non-constructive axioms~\cite{Monniaux3}. The \coq{α } function is not
+strictly necessary for static analysis. However, there still has been work to
+circumvent this restriction.
 
-Darais et al~\cite{darais2019constructive}, describe a method to define
+Sergey et al.\cite{sergey2013monadic} have described a method to create a
+monadic abstract interpreter
+from concrete semantics in Haskell. Like in this thesis, they extract access to a store in a monadic typeclass that is then instantiated in a
+concrete and abstract manner. They claim that by binding the addressable range
+of their store, the \coq{α } function becomes computable. 
+
+Darais et al~\cite{darais2019constructive} describe a method to define
 constructive Galois connections.
-connections. Instead of defining the functions \coq{γ : A → C } 
-and \coq{α : C → A }, they define an extraction function 
-\coq{η : ℕ → ℙ } and
-an interpretation function \coq{μ : ℙ →  ℘ ℕ }. 
+Instead of defining the functions \coq{γ : A → ℘ A' } 
+and \coq{α : ℘ A' → A }, they define an extraction function 
+\coq{η : A' → A } and
+an interpretation function \coq{μ : A →  ℘ A' }. 
 When defining Galois connections in terms of \coq{η } and \coq{μ }, they
 are able to derive an abstract interpreter via the calculational approach, a
 method to calculate the abstract interpreter from the concrete interpreter.
+This allows them to not only use mechanization to proof existing theorems, but
+also mechanize existing proofs. 
 Our work, in contrast, requires explicitly constructed concrete and abstract
-interpreters.
+interpreters and the calculational approach offers no benefits there.
 
 The extraction function \coq{η }is comparable to the extract functions in the
 IsNat and IsBool typeclasses that we've implemented. If we moved those to the
@@ -66,20 +67,10 @@ function.
 \section{Shared interpreters}
 As mentioned in the introduction, the idea for sharing a generic interpreter
 between the concrete and abstract interpreters comes from the work of Keidel et
-ala~\cite{keidel2020compositional}. In this paper, Keidel proposes a
+al~\cite{keidel2020compositional}. In this paper, Keidel proposes a
 methodology for defining abstract and concrete interpreters in a way that
 allows the soundness proof to be decomposed along the lines of the shared
 interpreter.
-
-%Keidel et al.~\cite{keidel2018compositional} instead propose a way to split up
-%the concrete and abstract interpreters by defining a shared structure. By
-%implementing the concrete and abstract interpreters as instances of a shared
-%intrepreter, the soundness proof of the abstract interpreter can be decomposed
-%into smaller lemmas, each focusing on how the two instances differ from the
-%shared part. It is this paper that serves as the basis for this thesis. However,
-%the proofs in Keidels work are pen-and-paper proofs. By implenting the ideas
-%presented in Coq instead of Haskell, we can mechanize these pen-and-paper
-%proofs, making abstract interpreters that are proven sound more accessible.
 
 One large difference between their work and ours
 lies in that we use Monads instead of Arrows to represent 
@@ -101,12 +92,12 @@ monad typeclass, but we can simulate the effects with repeated applications of
 the bindM method.
 
 Keidel's choice for arrows was influence by the fact that arrows and their
-operations are an algebra. This in turn means that, after defining the
+operations form an algebra. This in turn means that, after defining the
 interpreters and the required lemmas, the soundness proof for the concrete and
 abstract interpreter is automatically derived. In contrast, use of monads would
 mean that the soundness of the interpreters would require another, manual
 proof. Fortunately our use of Coq and its automation capabilities means that
-providing this proof is trivial.
+providing this proof is trivial. 
 
 One of the problems we ran into, as described in Chapter~\ref{sec:challenges},
 was the definition of the bind method on our optionAT monad. It required a join
@@ -117,8 +108,11 @@ interpreter from the start. This allows for inlining the joining of the state
 and preserving soundness.
 
 In their follow-up paper~\cite{keidel2019sound} Keidel et al. describe a set of
-reusable components based on arrow transformers that preserve soundness.
-\todoin{insert sven's reply on how he solved join on inner arrow}
+reusable components based on arrow transformers that preserve soundness. In
+this work, they use a work around they call \coq{joinsecond : (y → y → y) →  
+(x →  y)  →  c x y → c x y }, that joins the monad while taking a function that
+describes how to join the carried values. In this way, they circumvent the
+requirement of a joinable wrapped value.
 
 \section{Mechanization of Abstract Analysis}
 % verasco
