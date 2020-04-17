@@ -116,35 +116,6 @@ Section Monad_StateT.
   }. 
 End Monad_StateT.
 
-Section MonadT_StateT.
-  Context {S : Type}.
-
-  Definition lift_stateT {M} `{Monad M} {A} (m : M A) : StateT S M A :=
-    λ st, m >>= λ a, returnM (a, st).
-  Hint Unfold lift_stateT : monads.
-  
-  Lemma lift_stateT_pure {M} `{Monad M} {A} : ∀ (a : A), 
-    lift_stateT (returnM a) = return_stateT a.
-  Proof.
-    intros. autounfold with monads. ext.
-    autorewrite with monads. reflexivity.
-  Qed.
-
-  Lemma lift_stateT_bind {M} `{Monad M} {A B} : ∀ (m : M A) (f : A → M B),
-    lift_stateT (m >>= f) = bind_stateT (lift_stateT m) (f ∘ lift_stateT (A:=B)).
-  Proof.
-    intros. simpl. autounfold with monads. unfold bind_stateT. ext. 
-    autorewrite with monads. f_equal. simpl. ext. 
-    autorewrite with monads. reflexivity.
-  Qed.
-
-  Global Instance monadT_stateT : MonadT (StateT S) :=
-  {
-    lift_return := @lift_stateT_pure;
-    lift_bind := @lift_stateT_bind;
-  }. 
-End MonadT_StateT.
-
 Section mjoin_stateT.
   Context {S : Type} {JS: Joinable S S} {JSI : JoinableIdem JS}. 
   Context {M : Type → Type} {MM : Monad M} {JM : MonadJoin M}.

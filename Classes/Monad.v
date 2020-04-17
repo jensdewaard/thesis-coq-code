@@ -61,19 +61,6 @@ Notation "x '<-' y ; z" := (bindM y (λ x, z))
 Notation "x ;; z" := (bindM x (λ _, z))
     (at level 100, z at level 200, only parsing, right associativity).
 
-Section MonadTransformer.
-
-  Class MonadT T {TM : ∀ (M : Type → Type) {MM : Monad M}, Monad (T M)} : Type :=
-  {
-    liftT {M} {MM : Monad M} {A} : M A → T M A;
-    lift_return {M} {MM : Monad M} {A} : ∀ (x : A), liftT (returnM x) = returnM x;
-    lift_bind {M} {MM : Monad M} {A B} : ∀ (x : M A) (f : A → M B),
-      liftT (x >>= f) = liftT x >>= (f ∘ liftT);
-  }.
-End MonadTransformer.
-Hint Unfold liftT : monads.
-Hint Rewrite @lift_return @lift_bind : monads.
-
 Section Identity_Monad.
   Definition bind_id {A B} 
     (m : Identity A) (f : A → Identity B) : Identity B := 

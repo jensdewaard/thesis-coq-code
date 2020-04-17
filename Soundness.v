@@ -117,31 +117,66 @@ Section stateT.
 End stateT.
 Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
-Section optionAT.
-  Global Instance someAT_sound : ∀ (M M' : Type → Type) {MM : Monad M} {MM' :
-    Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')},
-    return_sound M M' → return_sound (optionAT M) (optionT M').
+Class joinsecondable_sound M {MM : Monad M} {JS : joinsecondable M} 
+  M' {MM : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop :=
+  joinsecond_sound : ∀ {A A'} {GA : Galois A A'} 
+  (f : A → A) (m : M A) (m' : M' A'),
+  γ m m' → 
+  (∀ a a', γ a a' → γ (f a) a') → 
+  γ (joinsecond (M:=M) f m) m'.
+
+Section joinsecond_state.
+  Context {ST : Type} {JST : Joinable ST ST} {JI : JoinableIdem JST}.
+    
+  Definition joinsecond_state {A} (f : A → A) (m : State ST A) 
+    : State ST A := λ s : ST, 
+      let (a,s') := (m s) in (f a, s ⊔ s').
+
+  Lemma joinsecond_state_return : ∀ (A : Type) (f : A → A) (a : A),
+  joinsecond_state f (return_state a) = return_state (f a).
   Proof.
-    unfold return_sound, returnM; simpl.
-    eauto with soundness.
+    intros. unfold joinsecond_state. ext. simpl. unfold return_state.
+    rewrite JI. reflexivity.
   Qed.
 
-  Global Instance bind_optionAT_sound : ∀ (M M' : Type → Type) {MM : Monad M}
-  {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')},
+  Lemma joinsecond_state_bind : ∀ (A B : Type) (f : A → A) (g : B → B)
+    (m : State ST A) (k : A → State ST B),
+  joinsecond_state f m >>= k = joinsecond_state g (m >>= k).
+  Proof. 
+    intros. unfold joinsecond_state. extensionality s. 
+    cbn.
+  Admitted.
+
+End joinsecond_state.
+
+Section optionAT.
+  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
+    {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+    {JM : joinsecondable M} {JS : joinsecondable_sound M M'}.
+
+  Global Instance someAT_sound :  
+    return_sound M M' → return_sound (optionAT M) (optionT M').
+  Proof.
+    unfold return_sound, returnM; simpl. eauto with soundness.
+  Qed.
+
+  Global Instance bind_optionAT_sound :
     return_sound M M' → 
     bind_sound M M' → 
     bind_sound (optionAT M) (optionT M').
   Proof.
-    intros M M' MM MM' GM RS BS.
+    intros RS BS.
     unfold bind_sound. unfold bindM; simpl.
     intros A A' B B' GA GB m m' f f' Hm Hf. 
     unfold bind_optionAT, bind_optionT, optionAT, optionT.
     unfold bind_sound in BS. eapply BS. assumption.
     intros a a' Ha.
-    inversion Ha; subst; eauto with soundness.
-    - rewrite <- bind_id_right. admit.
-    - rewrite <- bind_id_right. eapply BS; auto with soundness.
-      intros a' a Ha'. destruct a, a'; eauto with soundness.
+    inversion Ha; subst; eauto with soundness. 
+    - admit.
+    - assert (∀ (f : optionA B → optionA B) (m : optionAT M B) (m' : optionT M' B') , 
+        γ m m' → γ (joinsecond (M:=M) f m) m').
+      { intros. admit. }
+      eapply H0. eauto.
   Admitted.
 End optionAT.
 Hint Resolve someAT_sound bind_optionAT_sound : soundness.

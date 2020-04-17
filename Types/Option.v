@@ -276,36 +276,14 @@ End optionT_Monad.
 Hint Unfold bind_optionT : monads.
 Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : monads.
 
-Section optionT_monadT.
-  Definition lift_optionT {M : Type → Type} `{Monad M} {A} (m : M A) : optionT M A :=
-    bindM (M:=M) m (λ a, returnM (Some a)).
-  Hint Unfold lift_optionT : monads.
-
-  Lemma lift_optionT_pure {M : Type → Type} `{Monad M} : ∀ {A : Type} (a : A),
-    lift_optionT (returnM (M:=M) a) = returnM (M:=M) (Some a).
-  Proof. 
-    intros. unfold lift_optionT. 
-    rewrite bind_id_left. reflexivity.
-  Qed.
-
-  Lemma lift_optionT_bind {M : Type → Type} `{Monad M} : 
-    ∀ (A B : Type) (m : M A) (f : A → M B),
-  lift_optionT (m >>= f) = bind_optionT (lift_optionT m) (f ∘ (lift_optionT (A:=B))).
-  Proof. 
-    intros. unfold lift_optionT, bind_optionT.
-    autorewrite with monads. f_equal; ext. autorewrite with monads.
-    reflexivity.
-  Qed.
-
-  Global Instance monadT_optionT : MonadT (optionT) :=
-  {
-    lift_return := @lift_optionT_pure;
-    lift_bind := @lift_optionT_bind;
-  }. 
-End optionT_monadT.
-
 Section optionAT_monad.
-  Context {M} `{M_monad : Monad M}.
+  Context {M} {MM : Monad M} {JM : joinsecondable M}.
+
+  Definition lub {A} (y : optionA A) : optionA A := 
+    match y with
+    | NoneA => NoneA
+    | SomeA a | SomeOrNoneA a => SomeOrNoneA a
+    end.
 
   Definition bind_optionAT {A B} 
     (Mma : optionAT M A)
@@ -314,13 +292,7 @@ Section optionAT_monad.
     match ma with
     | NoneA => returnM NoneA
     | SomeA a => f a
-    | SomeOrNoneA a => (
-        bindM (M:=M) (f a) (fun mfa =>
-                       match mfa with
-                       | NoneA => returnM NoneA
-                       | SomeA b => returnM (SomeOrNoneA b)
-                       | SomeOrNoneA b => returnM (SomeOrNoneA b)
-                       end))
+    | SomeOrNoneA a => joinsecond lub (f a)
     end).
   Hint Unfold bind_optionAT : monads.
 
@@ -337,7 +309,8 @@ Section optionAT_monad.
   Proof. 
     unfold bind_optionAT.  intros. rewrite <- (bind_id_right (M:=M)).
     f_equal; extensionality x. 
-    destruct x; autorewrite with monads; try reflexivity.
+    destruct x; autorewrite with monads; try reflexivity. 
+    rewrite joinsecond_return. reflexivity.
   Qed.
 
   Lemma bind_optionAT_assoc : ∀ {A B C} (m : optionAT M A) 
@@ -348,11 +321,13 @@ Section optionAT_monad.
     intros. unfold bind_optionAT. autorewrite with monads.
     f_equal; ext. destruct x; simpl. 
     1-2: autorewrite with monads; reflexivity.
-    autorewrite with monads. f_equal; ext.
-    destruct x; autorewrite with monads. 
-    f_equal. reflexivity. f_equal; ext.
-    destruct x; autorewrite with monads; reflexivity.
-  Qed.
+    rewrite joinsecond_bind_i.
+    rewrite joinsecond_bind_o. rewrite bind_assoc. f_equal. ext.
+    destruct x; simpl.
+    - admit.
+    - admit.
+    - admit.
+  Admitted.
   Arguments bind_optionAT_assoc [A B C] m f g.
 
   Global Instance monad_optionAT : Monad (optionAT M) :=
@@ -360,33 +335,9 @@ Section optionAT_monad.
     bind_id_left := bind_optionAT_id_left;
     bind_id_right := bind_optionAT_id_right;
     bind_assoc := bind_optionAT_assoc;
-  }. 
+  }.
 End optionAT_monad.
 Hint Unfold bind_optionAT : monads.
-
-Section optionAT_MonadT.
-  Definition lift_optionAT {M} `{Monad M} {A} (m : M A) : optionAT M A :=
-    bindM (M:=M) m (λ a, returnM (M:=M) (SomeA a)).
-  Hint Unfold lift_optionAT : monads.
-
-  Definition lift_optionAT_pure {M} `{Monad M} {A} : ∀ (a : A),
-    lift_optionAT (returnM a) = returnM a.
-  Proof. solve_monad. Qed.
-
-  Definition lift_optionAT_bind {M} `{Monad M} {A B}: ∀ (m : M A) (f : A → M B),
-    lift_optionAT (m >>= f) = bind_optionAT (lift_optionAT m) (f ∘ lift_optionAT (A:=B)).
-  Proof. 
-    unfold lift_optionAT, bind_optionAT. intros.
-    autorewrite with monads. f_equal; ext. autorewrite with monads.
-    reflexivity.
-  Qed.
-
-  Global Instance monadT_optionAT : MonadT optionAT :=
-  {
-    lift_return := @lift_optionAT_pure;
-    lift_bind := @lift_optionAT_bind;
-  }. 
-End optionAT_MonadT.
 
 
 Definition mjoin_option A {JA : Joinable A A} {JI : JoinableIdem JA} : 

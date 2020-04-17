@@ -1,3 +1,4 @@
+Require Import Classes.Joinable.
 Require Export Base.
 Require Import Classes.Monad Classes.Monad.MonadState 
   Types.State Classes.Galois Types.Option.
@@ -44,9 +45,9 @@ Proof.
 Qed.
 Hint Resolve put_store_stateT_sound : soundness.
 
-Instance store_optionT `{MM : Monad M} `{MS : MonadState ST M} :
+Instance store_optionT {ST} {M} {MM : Monad M} {MS : MonadState ST M} :
   MonadState ST (optionT M) := {
-  get := liftT get;
+  get := get >>= λ a, returnM (Some a);
   put := λ st, put st ;; returnM (Some tt);
 }.
 
@@ -60,20 +61,23 @@ Instance get_store_optionT_sound {ST ST' : Type} {GST : Galois ST ST'}
   get_state_sound (optionT M) (optionT M').
 Proof.
   intros BS RS GS.
-  unfold get_state_sound. unfold get; simpl. unfold lift_optionT. 
+  unfold get_state_sound. unfold get; simpl. 
   eapply BS; auto.
   intros a a' Ha. eauto with soundness.
 Qed.
 Hint Resolve get_store_optionT_sound : soundness.
 
-Instance store_optionAT `{MM : Monad M} `{MS : MonadState ST M} :
+
+Instance store_optionAT {ST M} {MM : Monad M} {MS : MonadState ST M} 
+  {JS : joinsecondable M} :
   MonadState ST (optionAT M) := {
-  get := liftT get;
+  get := get >>= λ a, returnM (SomeA a);
   put := λ st, put st ;; returnM (SomeA tt);
 }.
 
 Instance get_store_optionAT_sound {ST ST' : Type} {GST : Galois ST ST'}
   {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {JS : joinsecondable M}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MS : MonadState ST M} {MS' : MonadState ST' M'} :
   bind_sound M M' →
@@ -82,13 +86,14 @@ Instance get_store_optionAT_sound {ST ST' : Type} {GST : Galois ST ST'}
   get_state_sound (optionAT M) (optionT M').
 Proof.
   intros BS RS GS.
-  unfold get_state_sound, get; simpl. unfold lift_optionAT, lift_optionT.
+  unfold get_state_sound, get; simpl. 
   eapply BS. auto. intros a a' Ha. eauto with soundness.
 Qed.
 Hint Resolve get_store_optionAT_sound : soundness.
 
 Instance put_store_optionAT_sound {ST ST' : Type} {GST : Galois ST ST'}
   {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {JS : joinsecondable M} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MS : MonadState ST M} {MS' : MonadState ST' M'} :
   return_sound M M' →
