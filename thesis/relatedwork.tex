@@ -39,17 +39,17 @@ non-constructive axioms~\cite{Monniaux3}.
 
 Darais et al~\cite{darais2019constructive}, describe a method to define
 constructive Galois connections.
-connections. Instead of defining the functions $\gamma : A \rightarrow C$ 
-and $\alpha : C \rightarrow A$, they define an extraction function 
-$\eta : \mathbb N \rightarrow \mathbb P $ and
-an interpretation function $\mu : \mathbb P \rightarrow \mathbb N \rightarrow
-Prop$. When defining Galois connections in terms of $\eta$ and $\mu$, they
+connections. Instead of defining the functions \coq{γ : A → C } 
+and \coq{α : C → A }, they define an extraction function 
+\coq{η : ℕ → ℙ } and
+an interpretation function \coq{μ : ℙ →  ℘ ℕ }. 
+When defining Galois connections in terms of \coq{η } and \coq{μ }, they
 are able to derive an abstract interpreter via the calculational approach, a
 method to calculate the abstract interpreter from the concrete interpreter.
 Our work, in contrast, requires explicitly constructed concrete and abstract
 interpreters.
 
-The extraction function $\eta$ is comparable to the extract functions in the
+The extraction function \coq{η }is comparable to the extract functions in the
 IsNat and IsBool typeclasses that we've implemented. If we moved those to the
 Galois typeclass, we would have obtained something similar to the constructive
 Galois connections. Because we work with explicit concrete and abstract
@@ -91,11 +91,12 @@ to do so (yet).
 This difference means that we have to decompose our proof along the methods
 exposed by the monad typeclass instead of the operations on arrows. Fortunately
 we have analogues to the methods used by Keidel. The first is the arrow
-composition method $>>>$, which is like the bindM method of monads.  Second,
-Keidel uses the parallel composition method $***$, which takes two arrows $g$
-and $h$ and
-returns a composed arrow $g *** h$. The composed arrow takes a tuple $(x,y)$
-and returns $(g x, h y)$. There is no analogue to this method in the standard
+composition method \coq{>>> }, which is like the bindM method of monads.  Second,
+Keidel uses the parallel composition method \coq{*** }, which takes two arrows 
+\coq{g } and \coq{h } and
+returns a composed arrow \coq{g *** h }. The composed arrow takes a tuple 
+\coq{(x,y) }
+and returns \coq{(g x, h y) }. There is no analogue to this method in the standard
 monad typeclass, but we can simulate the effects with repeated applications of
 the bindM method.
 
@@ -124,7 +125,7 @@ reusable components based on arrow transformers that preserve soundness.
 A large previous work on the mechanization of abstract analysis in Coq was
 Verasco, a verified static analyzer for the C programming
 language~\cite{jourdan2016verasco}. Like in
-this thesis Verasco only implements the $\gamma$ function of Galois
+this thesis Verasco only implements the \coq{γ } function of Galois
 connections. We were inspired by Verasco's lifting of types to domains that
 included top and/or bottom. This allows for defining the relation between the
 top value of an abstract domain and concrete values once and for all. 

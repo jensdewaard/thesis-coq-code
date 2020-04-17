@@ -65,7 +65,7 @@ written in the original paper
 \end{align*}
 
 In English, these mean that binding \coq{returnM } to a function f is
-equivalent to just applying $f$ to the value wrapped by \coq{returnM }. The
+equivalent to just applying \coq{f } to the value wrapped by \coq{returnM }. The
 second law states that binding to \coq{returnM } is effectively a no-op, and
 the last law requires \coq{bindM } to be associative. In Coq, we can add the
 following lemmas to the Monad typeclass to ensure that all typeclass instances
@@ -102,7 +102,7 @@ Inductive Monad A : Type :=
 
 The first monad we implemented was the Maybe monad. Values of the type
 \mintinline{coq}{Maybe A } can be of either the form 
-\mintinline{coq}{Just a }, where $a$ is a value of type $A$ or 
+\mintinline{coq}{Just a }, where \coq{a } is a value of type \coq{A } or 
 \mintinline{coq}{Nothing }. Here, \coq{None } represent a failed
 computation. For example, a monadic version of division \coq{nat →
 nat → Maybe nat } could return \coq{None } when dividing by zero,
@@ -164,7 +164,7 @@ brevity.
 When we evaluate a program, we will require a way to keep track of a global
 state. This state can be as simple as an integer that keeps a count of the
 number of operations performed. In our case, we will use a map of strings to
-values $V$,  modelling the use of variables in our program. The specific type 
+values \coq{V },  modelling the use of variables in our program. The specific type 
 of V will be described in a later section.
 
 The State monad allows us to add the ability for tracking state to a pure
@@ -198,7 +198,7 @@ Listing~\ref{lst:bind_state} shows us how the bind method is implemented. The
 result of binding a State value to a function is a new function (as all values
 of State need to be) in which the provided state variable is applied to the
 State value. The result of this computation, including the new updated state,
-is then passed to the continuation function $k$.
+is then passed to the continuation function \coq{f }.
 
 The State and Maybe monads show us how we would implement the desired
 properties of our Toy language in a pure manner. But right now, we will have to
@@ -250,7 +250,7 @@ Definition StateT S M A : Type := S → M (A*S)%type.
 \end{listing}
 
 When providing instances for the Monad typeclass for these types, we require
-the use of the bind and return methods of the wrapping monad $M$.
+the use of the bind and return methods of the wrapping monad \coq{M }.
 For example, in listing~\ref{lst:bind_maybeT}, we see that the implementation 
 of  bind for \coq{MaybeT }
 unwraps the monad M, exposing the underlying Maybe value. We perform a case
@@ -270,7 +270,7 @@ threaded through chained bind calls.
       end
     ).
 \end{minted}
-\caption{Implementation of $>>=$ for MaybeT}
+\caption{Implementation of \coq{>>= } for MaybeT}
 \label{lst:bind_maybeT}
 \end{listing}
 
@@ -475,7 +475,7 @@ Inductive expr : Type :=
 
 Expressions can exist of concrete values (`5', `true'), names of variables
 saved in a store (see Section~\ref{sec:stores}) and operations on these values
-(+, *, ==, $<$, negation and $\&\&$). 
+(+, *, ==, \coq{<= }, negation and \coq{&& }). 
 
 \begin{listing}
 \begin{minted}{coq}
@@ -495,8 +495,8 @@ assigns the result of an expression to a variable, an if statement, a try-catch
 statement and a throw statement that acts as an exception.
 
 \subsubsection{Stores}\label{sec:stores}
-When evaluating the assignment statement \mintinline{coq}{CAss } and the variable
-expression \mintinline{coq}{EVar }, the interpreter should write to and read from a variable
+When evaluating the assignment statement \coq{CAss } and the variable
+expression \coq{EVar }, the interpreter should write to and read from a variable
 storage. We call these stores. 
 
 The concrete store is a map\footnote{The \textit{total\_map} comes from 
@@ -543,12 +543,12 @@ parenthesis involved.
 
 \begin{listing}
 \begin{minted}{coq}
-Definition do_notation :=
+Example do_notation :=
 	v << (eval_expr e) ;
 	b << (ensure_bool v) ;
 	returnM (VBool (negb b)).
 
-Definition nested_notation :=
+Example nested_notation :=
 	(eval_expr e) >>= (λ v,
 		(ensure_bool v) >>= (λ b,
 			returnM (VBool (negb b)))).
@@ -683,10 +683,10 @@ class for Galois connections.
 \subsection{Preordered sets}
 The first definition we shall implement is the notion of a preordered set. 
 A preordered set is any set S on which we can define a preorder relation
-$\sqsubseteq$ such that the preorder relation is reflexive and transitive. That
-is, for all $a, a \sqsubseteq a$ (reflexivity) and for all $a$ $b$ $c$, if $a
-\sqsubseteq b$ and $b \sqsubseteq c$, then $a \sqsubseteq c$ (transitivity).
-We refer to such a combination of set S and relation as $(A, \sqsubseteq)$.
+\coq{⊑ } such that the preorder relation is reflexive and transitive. That
+is, for all \coq{a, a ⊑ a } (reflexivity) and for all \coq{a b c }, if 
+\coq{a ⊑ b } and \coq{b ⊑ c }, then \coq{a ⊑ c } (transitivity).
+We refer to such a combination of set S and relation as \coq{(A, ⊑) }.
 
 The definitions of reflexive and transitive relations are already included in
 the standard library of Coq, so we can import those. This gives us the
@@ -694,9 +694,9 @@ following definition of the preorderd set as a Coq type class.
 
 \begin{listing}
 \begin{minted}{Coq}
-Class PreorderedSet (X : Type) : Type :=
+Class PreorderedSet (A : Type) : Type :=
 {
-  preorder : X → X → Prop;
+  preorder : A → A → Prop;
   preorder_refl: Reflexive preorder;
   preorder_trans: Transitive preorder;
 }.
@@ -718,36 +718,35 @@ that a partial order is antisymmetric in addition to reflexive and transitive.
 We do not require the antisymmetric property, so we can loosen that restraint.
 
 The definition of Galois connections that we have implemented is that of the
-monotone Galois connection. Given two preordered sets $(A,\sqsubseteq)$ and
-$(B,\sqsubseteq)$, a Galois connection between those two sets is defined as two
-functions $\alpha : A \rightarrow B$ and $\gamma : B \rightarrow A$ such 
-that $\alpha(a)
-\sqsubseteq b$ iff $a \sqsubseteq \gamma(b)$.
+monotone Galois connection. Given two preordered sets \coq{(A,⊑) } and
+\coq{(B,⊑) }, a Galois connection between those two sets is defined as two
+functions \coq{alpha : A -> B } and \coq{gamma : B -> A } such that 
+\coq{alpha(a) ⊑ b } iff \coq{a ⊑ gamma(b) }.
 
 \begin{minted}{Coq}
-Class Galois (A A' : Type) `{PreorderedSet A'} : Type :=
+Class Galois (A A' : Type) {PA : PreorderedSet A} : Type :=
 {
-  gamma : A' → A → Prop;
+  gamma : A → A' → Prop;
   gamma_monotone : monotone gamma;
 }.
 \end{minted}
 
 Instancing the Coq type class definition of Galois connections between two
-types $A$ and $B$ requires supplying those types, as well as a gamma function
-$gamma : B \rightarrow A \rightarrow Prop$ that is monotone. 
-A monotone function $f : A \rightarrow B$ is
-a function between two preordered sets $A$ and $B$ such that if $a \sqsubseteq
-a'$, then $f(a) \sqsubseteq f(a')$.
+types \coq{A } and \coq{B } requires supplying those types, as well as a gamma 
+function \coq{γ : B -> A -> Prop } that is monotone. 
+A monotone function \coq{f : A -> B }  is
+a function between two preordered sets \coq{A } and \coq{B } such that if 
+\coq{a ⊑ a' }, then \coq{f(a) ⊑ f(a') }.
 
-Note that the Coq definition does not require A to be a preordered set. This is
-because we actuall consider Galois connections between $\mathcal{P}(A)$ and
-$B$. For example, we will consider the relation between sets of natural numbers
-e.g.\ $\{2, 4, 8\}$ and parities e.g.\ even.
+Note that the Coq definition does not require \coq{A' } to be a preordered set. 
+This is because we actually consider Galois connections between 
+\coq{A } and \coq{℘ A' }. For example, we will consider the relation between 
+parities like even and sets of natural numbers e.g.\ \coq{{2, 4, 8} }.
 
 Another difference between the Coq implementation and the mathematical
 definition is the lack of corresponding \textit{alpha} function. This is
 because we are unable to define this function, due to limitations in Coq.
-Luckily, it turns out that the $\alpha$ function is not necessary to prove
+Luckily, it turns out that the \coq{α } function is not necessary to prove
 soundness~\cite{jourdan2016verasco}.
 
 It is difficult to grasp what a Galois connection means from the definition
@@ -772,10 +771,10 @@ represents any natural number.
 
 We can define a Galois connection between natural numbers and the parity type.
 To do so, we must provide a gamma function and prove its monotonicity. Recall
-that the signature is of the form $A' \rightarrow A \rightarrow Prop$. In this
-case, we shall use \coq{parity } as $A'$ and \coq{nat } as $A$.
+that the signature is of the form \coq{A -> A' -> Prop }. In this
+case, we shall use \coq{parity } as \coq{A' } and \coq{nat } as \coq{A }.
 
-Any type of the form $B \rightarrow Prop$ can be seen as sets of $A'$. We define
+Any type of the form \coq{A' -> Prop } can be seen as sets of \coq{A' }. We define
 a function \coq{gamma_par } as taking a parity as a parameter and returning
 sets of natural numbers.
 
@@ -814,15 +813,15 @@ implementation of intervals using dependent records.
 
 An interval of natural numbers is a valid abstraction of a set of natural
 numbers if each of the natural numbers in the set falls within the interval.
-For example, the the interval $[1,5]$ is an abstract approximation of the set
-$\{2, 4, 5\}$. It is also a valid approximation of the set $\{1,5\}$. This
-again illustrates the fact that the abstract approximation often lose 
+For example, the the interval \coq{[1,5] } is an abstract approximation of the set
+\coq{{2, 4, 5} }. It is also a valid approximation of the set \coq{\{1,5\} }. 
+This again illustrates the fact that the abstract approximation often lose 
 precision.
 
 The same operators than can be defined on natural numbers can be defined on
 intervals. Addition, multiplication and comparisons can all be implemented.
-Adding the intervals $[1,3]$ and $[4, 7]$ would result in the interval $[5,
-10]$, for example. Whenever we define an interval, we also need to provide a
+Adding the intervals \coq{[1,3] } and \coq{[4, 7] }  would result in the 
+interval \coq{[5, 10] }, for example. Whenever we define an interval, we also need to provide a
 proof that the mininum end of the interval is less than the maximum end. This
 is represented in the record by the \coq{min_max } field.
 
@@ -967,8 +966,8 @@ else {
 
 We could try to model such a program with just the fail value of Maybe. 
 This proves insufficient when this program is interpreted in an abstract way, 
-because an abstract interpreter might be uncertain whether $x$ is equal to 
-$0$ or not and has to reflect this in the returned value.
+because an abstract interpreter might be uncertain whether \coq{x } is equal to 
+\coq{0 } or not and has to reflect this in the returned value.
 
 We introduce the monad AbstractMaybe~\cite{keidel2018compositional} 
 to capture this side effect.
@@ -1262,9 +1261,10 @@ function is sound if its output approximates the output of a concrete function,
 provided the inputs of the abstract function approximated the inputs of the
 concrete function.
 
-For example, \textbf{if} we have two functions $f : A \rightarrow B$ and $f' 
-: A' \rightarrow B'$, where there are two Galois connections 
-between $A$ and $A'$, and $B$ and $B'$ respectively, \textbf{then} when 
+For example, \textbf{if} we have two functions \coq{f : A -> B } and \coq{f' 
+: A' -> B' }, where there are two Galois connections 
+between \coq{A } and \coq{A' }, and \coq{B } and \coq{B' } respectively, 
+\textbf{then} when 
 there is a gamma relation between the input values, there will be a gamma
 relation between the output values.
 
@@ -1392,7 +1392,7 @@ We will discuss how the two interpreters work through these programs. When the
 concrete interpreter evaluates the first program, it is able to tell that 5 is
 not less than 4. As such, it evaluates the first branch of the if statement and
 ignores the second. As such, it will end up with a store that contains
-\textit{true} as the value of $x$.
+\coq{true } as the value of \coq{x }.
 
 In contrast, the abstract interpreter, when using parities, extracts the 
 abstract values for 5 and 4
@@ -1400,7 +1400,7 @@ and will end up with an if statement that compares the set of odd numbers with
 the set of even numbers. It is unable to determine which of these is smaller
 than the other so it evaluates to the top value for the abstract booleans. In
 this case, it joins the stores of the two branches and this results in a store
-with the abstract top value for $x$. The concrete value of \textit{true} is
+with the abstract top value for \coq{x }. The concrete value of \coq{true } is
 sound with regards to this top value, and so the abstract interpreter is sound
 for the first program.
 

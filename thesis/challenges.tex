@@ -145,7 +145,7 @@ encapsulated monad M to be Joinable.
 
 This poses a problem. For example, say that we would encapsulate the Maybe
 monad. The Joinable instance for Maybe is predicated on the fact that the inner
-value $A$ is also joinable. This is necessary to be able to join two values of
+value \coq{A } is also joinable. This is necessary to be able to join two values of
 \coq{Just } constructors. This constraint would then pass on to our MaybeAT
 moand, but monads should not place restrictions on the values they wrap.
 

@@ -21,7 +21,7 @@ interpreters and receive a series of lemmas to prove. The soundness of the
 interpreters should follow from those for free 
 by~\cite{keidel2018compositional}.
 
-After the framework has been written, I will verify if the usage of the
+After the framework has been written, we will verify if the usage of the
 framework will indeed result in easier proofs by performing a case study on an
 abstract interpreter.
 
@@ -72,7 +72,7 @@ also requires that the parameters \coq{M } and \coq{A } be of types \coq{Type
 The second Definition defines a function \coq{parity_plus } that takes 
 two parities \coq{p } and \coq{q } and returns a new parity. Via the match
 tactic, Coq looks at which constructors where used to build \coq{p } and
-\coq{q } and returns the value associated with that case. The pipe symbol $|$
+\coq{q } and returns the value associated with that case. The pipe symbol \coq{| }
 precedes a set of constructors for \coq{p } and \coq{q } and can be used to
 group cases together that have the same output. The underscore indicates that
 we are not interested in the specific value. Together, this means that the
