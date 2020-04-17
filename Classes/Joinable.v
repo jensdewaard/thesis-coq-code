@@ -1,5 +1,5 @@
 Require Export Base.
-Require Import Classes.Galois.
+Require Import Classes.Galois Classes.Monad.
 
 Class Joinable (A B : Type) : Type := join_op : A → A → B.
 
@@ -12,6 +12,16 @@ Class JoinableIdem {A} (J : Joinable A A) : Prop :=
 Class JoinableSound {A B A' : Type} {GA : Galois A A'} {GB : Galois B A'}
   (JA : Joinable A B)  : Prop :=
   join_sound : ∀ x y : A, γ x ∪ γ y ⊆ γ (x ⊔ y).
+
+Class joinsecondable M {MM : Monad M} : Type := {
+  joinsecond : ∀ {A : Type}, (A → A) → M A → M A;
+  joinsecond_return : ∀ {A : Type} (f : A → A) (a : A),
+    joinsecond f (returnM a) = returnM (f a);
+  joinsecond_bind_i : ∀ {A B} (f : A → A) (m : M A) (k : A → M B),
+    (joinsecond f m) >>= k = m >>= (λ a, k (f a));
+  joinsecond_bind_o : ∀ {A B} (g : B → B) (m : M A) (k : A → M B),
+    (joinsecond g (m >>= k)) = m >>= k >>= (λ b : B, returnM (g b));
+}.
 
 Instance functions_joinable {A B C} {JB : Joinable B C} : 
 Joinable (A → B) (A → C) := λ f, λ g, λ a : A, (f a) ⊔ (g a).
