@@ -2,63 +2,63 @@
 
 In this chapter, we describe some of the challenges we faced in implementing
 the decomposition of the intepreters and proving their soundness. Specifically,
-we cover the bind method of the MaybeAT monad.
+we cover the bind method of the optionAT monad.
 
-\section{MaybeAT}~\label{sec:challenges-maybeat}
+\section{optionAT}~\label{sec:challenges-optionat}
 
-The AbstractMaybe monad is the abstract analogue of the Maybe monad, a monad
+The optionA monad is the abstract analogue of the option monad, a monad
 designed to add the possibility of failure to a program. Aside from
-constructors \coq{NoneA } and \coq{JustA }, which correspond to \coq{None } and
-\coq{Just }, the AbstractMaybe monad also has a \coq{JustOrNoneA } constructor.
+constructors \coq{NoneA } and \coq{SomeA }, which correspond to \coq{None } and
+\coq{Some }, the optionA monad also has a \coq{SomeOrNoneA } constructor.
 We use this constructor in the cases where the interpreter cannot ascertain
-whether the program has encountered an error or not. The MaybeAT monad is the
-monad transformer that adds the capabilities of AbstractMaybe to another monad.
+whether the program has encountered an error or not. The optionAT monad is the
+monad transformer that adds the capabilities of optionA to another monad.
 
-In our work, we use the AbstractMaybe monad to model exceptions, as opposed to
+In our work, we use the optionA monad to model exceptions, as opposed to
 program crashes. It is possible to write a valid program in which in an
 IF-statement only one of the branches raises an exception. If the abstract
 interpreter cannot tell which path would be taken, the results of both branches
-are joined into the \coq{JustOrNoneA } value.
+are joined into the \coq{SomeOrNoneA } value.
 
-The challenge posed by the MaybeAT monad comes from its bind method. Our
-first implementation of \coq{bind_maybeAT } is given below.
+The challenge posed by the optionAT monad comes from its bind method. Our
+first implementation of \coq{bind_optionAT } is given below.
 
 \begin{listing}[H]
 \begin{minted}{coq}
-  Definition bind_maybeAT {A B} 
-    (Mma : MaybeAT M A)
-    (f : A -> MaybeAT M B) : MaybeAT M B :=
+  Definition bind_optionAT {A B} 
+    (Mma : optionAT M A)
+    (f : A -> optionAT M B) : optionAT M B :=
   bindM (M:=M) Mma (fun ma =>
     match ma with
     | NoneA => returnM NoneA
-    | JustA a => f a
-    | JustOrNoneA a => (
+    | SomeA a => f a
+    | SomeOrNoneA a => (
         bindM (M:=M) (f a) (fun mfa =>
                        match mfa with
                        | NoneA => returnM NoneA
-                       | JustA b => returnM (JustOrNoneA b)
-                       | JustOrNoneA b => returnM (JustOrNoneA b)
+                       | SomeA b => returnM (SomeOrNoneA b)
+                       | SomeOrNoneA b => returnM (SomeOrNoneA b)
                        end))
     end).
 \end{minted}
-\caption{First attempt at bind\_maybeAT}
-\label{lst:bind_maybeAT}
+\caption{First attempt at bind\_optionAT}
+\label{lst:bind_optionAT}
 \end{listing}
 
 At a first glance, this implementation appears correct. Exceptions are properly
-propagated throughout the binds, because whenever NoneA is found the total
-result will also be NoneA. In cases of uncertainty, the value is properly
-wrapped in the uncertain \coq{JustOrNoneA } constructor. Additionally, this bind
+propagated throughout the binds, because whenever \coq{NoneA } is found the total
+result will also be \coq{NoneA }. In cases of uncertainty, the value is properly
+wrapped in the uncertain \coq{SomeOrNoneA } constructor. Additionally, this bind
 method satisfies all the requirements imposed on it via the monad laws.
 
 However, when we attempt to prove the soundness of the function we run into a
-problem. Because \coq{bind_maybeAT } is a method of a monad transformer, the
+problem. Because \coq{bind_optionAT } is a method of a monad transformer, the
 value of \coq{f a } is a transformed monad. That means that by evaluating it as
-we do in the \coq{JustOrNoneA } case, we also run the side effects of the
+we do in the \coq{SomeOrNoneA } case, we also run the side effects of the
 encapsulating monad. 
 
 These are the side effects from the case where the first computation did not 
-fail. However, to be sound, the \coq{JustOrNoneA } case also needs to consider
+fail. However, to be sound, the \coq{SomeOrNoneA } case also needs to consider
 the possibility that the computation did fail. This is exactly where the
 soundness proof begins to break down if we use the above definition. We end up
 with the unprovable and incorrect goal of 
@@ -66,7 +66,7 @@ with the unprovable and incorrect goal of
 \begin{minted}{coq}
 gamma 
     (f' a >>= fun mfa => 
-       | JustA b | JustOrNoneA b => returnM (JustOrNoneA b) 
+       | SomeA b | SomeOrNoneA b => returnM (SomeOrNoneA b) 
        | NoneA => returnM NoneA) 
     (returnM None).
 \end{minted}
@@ -75,7 +75,7 @@ We require some way to broaden the encapsulated monad so that the side-effects o
 both branches are included. We will detail a few of our attempts in the
 following sections.
 
-\subsubsection{Attempt 1: Joinable}~\label{sec:maybeat_join}
+\subsubsection{Attempt 1: Joinable}~\label{sec:optionat_join}
 An important part of the definition of the Galois connections was that the
 abstract values are part of a lattice. The abstract values consist of a set
 equipped with a preorder. Because we have a lattice for all abstract values, we
@@ -85,7 +85,7 @@ We define a Joinable typeclass, with the requirement that instances of the
 typeclass are also instances of the PreorderedSet typeclass. Instances of
 Joinable have a \coq{join_op } method, which takes two values and returns their
 least upper bound. We use this typeclass to merge the values of two branches.
-This makes it seem like Joinable is the way to solve the challenge of MaybeAT
+This makes it seem like Joinable is the way to solve the challenge of optionAT
 as well.
 
 \begin{listing}
@@ -110,46 +110,47 @@ right. These make sure that the result of the join\_op is a valid approximation
 of all the concrete values approximated by either of the two input values. 
 The interval [1,3] approximates the number 1, and the interval [2,5]
 approximates 4. The join of those intervals is [1,5], which approximates both 1
-and 4. Because we want the branch of \coq{JustOrNoneA } to approximate both
-\coq{None } and \coq{Just }, this looks promising.
+and 4. Because we want the branch of \coq{SomeOrNoneA } to approximate both
+\coq{None } and \coq{Some }, this looks promising.
 
 Unfortunately, we run into problems when deciding to use join\_op in the
 definition for a bind method. Say that we were the replace the earlier
-definition of \coq{bind_maybeAT } with the following.
+definition of \coq{bind_optionAT } with the following.
 
 \begin{listing}[H]
 \begin{minted}{coq}
-  Definition bind_maybeAT {A B} `{Joinable B}
-    (Mma : MaybeAT M A)
-    (f : A -> MaybeAT M B) : MaybeAT M B :=
+  Definition bind_optionAT {A B} `{Joinable B}
+    (Mma : optionAT M A)
+    (f : A -> optionAT M B) : optionAT M B :=
   bindM (M:=M) Mma (fun ma =>
     match ma with
     | NoneA => returnM NoneA
-    | JustA a => f a
-    | JustOrNoneA a => join_op (returnM NoneA) (f a)
+    | SomeA a => f a
+    | SomeOrNoneA a => join_op (returnM NoneA) (f a)
     end).
 \end{minted}
-\caption{bind\_maybeAT with a join\_op}
-\label{lst:bind_maybeAT_join}
+\caption{bind\_optionAT with a join\_op}
+\label{lst:bind_optionAT_join}
 \end{listing}
 
-In the case of JustOrNoneA, we now join the results of both branches. As long
-as the cases for NoneA and JustA are sound with respects to the cases None and
-Just in the bind method for Maybe, the result for JustOrNoneA is sound as well.
-This is by virtue of the laws for join we discussed above.
+In the case of \coq{SomeOrNoneA }, we now join the results of both branches. As long
+as the cases for \coq{NoneA } and \coq{SomeA } are sound with respects to the 
+cases \coq{None } and \coq{Some } in the bind method for \coq{option }, 
+the result for \coq{SomeOrNoneA } is sound
+as well. This is by virtue of the laws for join we discussed above.
 
 However, in order for us to have access to a join operator, we need to have the
-encapsulated monad be an instance of Joinable. Because \coq{MaybeAT M A } is 
-an alias for \coq{M (AbstractMaybe A) }, that means that we need the
+encapsulated monad be an instance of Joinable. Because \coq{optionAT M A } is 
+an alias for \coq{M (optionA A) }, that means that we need the
 encapsulated monad M to be Joinable. 
 
-This poses a problem. For example, say that we would encapsulate the Maybe
-monad. The Joinable instance for Maybe is predicated on the fact that the inner
+This poses a problem. For example, say that we would encapsulate the option
+monad. The Joinable instance for option is predicated on the fact that the inner
 value \coq{A } is also joinable. This is necessary to be able to join two values of
-\coq{Just } constructors. This constraint would then pass on to our MaybeAT
+\coq{Some } constructors. This constraint would then pass on to our optionAT
 moand, but monads should not place restrictions on the values they wrap.
 
-The same goes for if we were to wrap MaybeAT around a State monad. The join
+The same goes for if we were to wrap optionAT around a State monad. The join
 operator for State is 
 \coq{fun m1 => fun m2 => fun st => join_op (m1 st) (m2 st) }.
 Because states have the type signature \coq{S -> (A * S) }, we are calling the
