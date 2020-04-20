@@ -279,7 +279,7 @@ Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : monads.
 Section optionAT_monad.
   Context {M} {MM : Monad M} {JM : joinsecondable M}.
 
-  Definition lub {A} (y : optionA A) : optionA A := 
+  Definition lub {A} (x y : optionA A) : optionA A := 
     match y with
     | NoneA => NoneA
     | SomeA a | SomeOrNoneA a => SomeOrNoneA a
@@ -292,7 +292,7 @@ Section optionAT_monad.
     match ma with
     | NoneA => returnM NoneA
     | SomeA a => f a
-    | SomeOrNoneA a => joinsecond lub (f a)
+    | SomeOrNoneA a => joinsecond lub (returnM NoneA) (f a)
     end).
   Hint Unfold bind_optionAT : monads.
 
@@ -321,12 +321,10 @@ Section optionAT_monad.
     intros. unfold bind_optionAT. autorewrite with monads.
     f_equal; ext. destruct x; simpl. 
     1-2: autorewrite with monads; reflexivity.
-    rewrite joinsecond_bind_i.
-    rewrite joinsecond_bind_o. rewrite bind_assoc. f_equal. ext.
-    destruct x; simpl.
-    - admit.
-    - admit.
-    - admit.
+    Check (@lub B).
+    erewrite joinsecond_bind.
+    rewrite bind_id_left. reflexivity.
+    About lub.
   Admitted.
   Arguments bind_optionAT_assoc [A B C] m f g.
 

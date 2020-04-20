@@ -14,13 +14,14 @@ Class JoinableSound {A B A' : Type} {GA : Galois A A'} {GB : Galois B A'}
   join_sound : ∀ x y : A, γ x ∪ γ y ⊆ γ (x ⊔ y).
 
 Class joinsecondable M {MM : Monad M} : Type := {
-  joinsecond : ∀ {A : Type}, (A → A) → M A → M A;
-  joinsecond_return : ∀ {A : Type} (f : A → A) (a : A),
-    joinsecond f (returnM a) = returnM (f a);
-  joinsecond_bind_i : ∀ {A B} (f : A → A) (m : M A) (k : A → M B),
-    (joinsecond f m) >>= k = m >>= (λ a, k (f a));
-  joinsecond_bind_o : ∀ {A B} (g : B → B) (m : M A) (k : A → M B),
-    (joinsecond g (m >>= k)) = m >>= k >>= (λ b : B, returnM (g b));
+  joinsecond : ∀ {A : Type}, (A → A → A) → M A → M A → M A;
+  joinsecond_return : ∀ {A} (f : A → A → A) (x y : A),
+    joinsecond f (returnM x) (returnM y) =
+    returnM (f x y);
+  joinsecond_bind : ∀ {A B} (f : A → A → A) (g : B → B → B)
+    (m1 m2 : M A) (k k' : A → M B),
+    joinsecond f m1 m2 >>= k = 
+    joinsecond g (m1 >>= k) (m2 >>= k);
 }.
 
 Instance functions_joinable {A B C} {JB : Joinable B C} : 
