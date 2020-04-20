@@ -324,7 +324,6 @@ Section optionAT_monad.
     Check (@lub B).
     erewrite joinsecond_bind.
     rewrite bind_id_left. reflexivity.
-    About lub.
   Admitted.
   Arguments bind_optionAT_assoc [A B C] m f g.
 

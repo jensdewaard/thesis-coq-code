@@ -117,37 +117,45 @@ Section stateT.
 End stateT.
 Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
-Class joinsecondable_sound M {MM : Monad M} {JS : joinsecondable M} 
-  M' {MM : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop :=
-  joinsecond_sound : ∀ {A A'} {GA : Galois A A'} 
-  (f : A → A) (m : M A) (m' : M' A'),
-  γ m m' → 
-  (∀ a a', γ a a' → γ (f a) a') → 
-  γ (joinsecond (M:=M) f m) m'.
-
 Section joinsecond_state.
   Context {ST : Type} {JST : Joinable ST ST} {JI : JoinableIdem JST}.
     
-  Definition joinsecond_state {A} (f : A → A) (m : State ST A) 
+  Definition joinsecond_state {A} (f : A → A → A) (m1 m2 : State ST A) 
     : State ST A := λ s : ST, 
-      let (a,s') := (m s) in (f a, s ⊔ s').
+      let (a1,s1) := (m1 s) in 
+      let (a2,s2) := (m2 s) in
+      (f a1 a2, join_op s1 s2).
 
-  Lemma joinsecond_state_return : ∀ (A : Type) (f : A → A) (a : A),
-  joinsecond_state f (return_state a) = return_state (f a).
+  Lemma joinsecond_state_return : ∀ (A : Type) (f : A → A → A) (x y : A),
+  joinsecond_state f (return_state x) (return_state y) = 
+  return_state (f x y).
   Proof.
     intros. unfold joinsecond_state. ext. simpl. unfold return_state.
     rewrite JI. reflexivity.
   Qed.
 
-  Lemma joinsecond_state_bind : ∀ (A B : Type) (f : A → A) (g : B → B)
-    (m : State ST A) (k : A → State ST B),
-  joinsecond_state f m >>= k = joinsecond_state g (m >>= k).
+  Lemma joinsecond_state_bind : ∀ (A B : Type) (f : A → A → A) (g : B → B → B)
+    (m1 m2 : State ST A) (k : A → State ST B),
+  joinsecond_state f m1 m2 >>= k = joinsecond_state g (m1 >>= k) (m2 >>= k).
   Proof. 
     intros. unfold joinsecond_state. extensionality s. 
-    cbn.
+    unfold bindM; simpl. unfold bind_state. 
+    destruct (m1 s) eqn:?. destruct (m2 s) eqn:?. 
+    destruct (k a s0) eqn:?. destruct (k a0 s1) eqn:?.
   Admitted.
 
 End joinsecond_state.
+
+Class joinsecondable_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
+  {JM : joinsecondable M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  : Type := {
+    joinsecond_sound_l : ∀ {A A'} {GA : Galois A A'}
+      (f : A → A → A) (m1 m2 : M A) (m' : M' A'),
+      γ m1 m' → γ (joinsecond f m1 m2) m';
+    joinsecond_sound_r : ∀ {A A'} {GA : Galois A A'} 
+      (f : A → A → A) (m1 m2 : M A) (m' : M' A'),
+      γ m2 m' → γ (joinsecond f m1 m2) m';
+}.
 
 Section optionAT.
   Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
@@ -172,12 +180,9 @@ Section optionAT.
     unfold bind_sound in BS. eapply BS. assumption.
     intros a a' Ha.
     inversion Ha; subst; eauto with soundness. 
-    - admit.
-    - assert (∀ (f : optionA B → optionA B) (m : optionAT M B) (m' : optionT M' B') , 
-        γ m m' → γ (joinsecond (M:=M) f m) m').
-      { intros. admit. }
-      eapply H0. eauto.
-  Admitted.
+    - apply joinsecond_sound_l. apply RS. constructor.
+    - apply joinsecond_sound_r. apply Hf. assumption.
+  Qed.
 End optionAT.
 Hint Resolve someAT_sound bind_optionAT_sound : soundness.
 
