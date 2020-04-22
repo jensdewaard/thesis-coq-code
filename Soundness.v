@@ -202,7 +202,6 @@ Hint Resolve subtype_trans_l_sound' : soundness.
 
 (* TODO abstract the above *)
 
-Set Typeclasses Debug.
 Theorem eval_expr_sound : ∀ (e : expr), 
   γ 
     (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤) e)
