@@ -117,45 +117,6 @@ Section stateT.
 End stateT.
 Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
-Section joinsecond_state.
-  Context {ST : Type} {JST : Joinable ST ST} {JI : JoinableIdem JST}.
-    
-  Definition joinsecond_state {A} (f : A → A → A) (m1 m2 : State ST A) 
-    : State ST A := λ s : ST, 
-      let (a1,s1) := (m1 s) in 
-      let (a2,s2) := (m2 s) in
-      (f a1 a2, join_op s1 s2).
-
-  Lemma joinsecond_state_return : ∀ (A : Type) (f : A → A → A) (x y : A),
-  joinsecond_state f (return_state x) (return_state y) = 
-  return_state (f x y).
-  Proof.
-    intros. unfold joinsecond_state. ext. simpl. unfold return_state.
-    rewrite JI. reflexivity.
-  Qed.
-
-  Lemma joinsecond_state_bind : ∀ (A B : Type) (f : A → A → A) (g : B → B → B)
-    (m1 m2 : State ST A) (k : A → State ST B),
-  joinsecond_state f m1 m2 >>= k = joinsecond_state g (m1 >>= k) (m2 >>= k).
-  Proof. 
-    intros. unfold joinsecond_state. extensionality s. 
-    unfold bindM; simpl. unfold bind_state. 
-    destruct (m1 s) eqn:?. destruct (m2 s) eqn:?. 
-    destruct (k a s0) eqn:?. destruct (k a0 s1) eqn:?.
-  Admitted.
-
-End joinsecond_state.
-
-Class joinsecondable_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
-  {JM : joinsecondable M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
-  : Type := {
-    joinsecond_sound_l : ∀ {A A'} {GA : Galois A A'}
-      (f : A → A → A) (m1 m2 : M A) (m' : M' A'),
-      γ m1 m' → γ (joinsecond f m1 m2) m';
-    joinsecond_sound_r : ∀ {A A'} {GA : Galois A A'} 
-      (f : A → A → A) (m1 m2 : M A) (m' : M' A'),
-      γ m2 m' → γ (joinsecond f m1 m2) m';
-}.
 
 Section optionAT.
   Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
@@ -180,9 +141,13 @@ Section optionAT.
     unfold bind_sound in BS. eapply BS. assumption.
     intros a a' Ha.
     inversion Ha; subst; eauto with soundness. 
-    - apply joinsecond_sound_l. apply RS. constructor.
-    - apply joinsecond_sound_r. apply Hf. assumption.
-  Qed.
+    - admit.
+    - apply joinsecond_sound. 
+      + intros. destruct a, a'; simpl; try assumption.
+        * constructor. inversion H0. auto.
+        * inversion H0.
+      + auto.
+  Admitted.
 End optionAT.
 Hint Resolve someAT_sound bind_optionAT_sound : soundness.
 
@@ -237,12 +202,19 @@ Hint Resolve subtype_trans_l_sound' : soundness.
 
 (* TODO abstract the above *)
 
+Set Typeclasses Debug.
 Theorem eval_expr_sound : ∀ (e : expr), 
   γ 
     (shared_eval_expr (M:=AbstractState) (valType:=avalue+⊤) e)
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
   eapply shared_eval_expr_sound; eauto 10 with soundness.
+  - apply monadfail_optionAT_sound. apply monadfail_stateT_sound.
+    apply fail_option_sound.
+  - apply bind_optionAT_sound. apply joinsecondable_stateT_sound; eauto with
+    soundness.
+    apply return_stateT_sound; eauto with soundness.
+    apply bind_stateT_sound; eauto with soundness.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 
@@ -254,9 +226,14 @@ Theorem sound_interpreter: ∀ c,
     (boolType:=bool) (natType:=nat) c).
 Proof.
   eapply shared_ceval_sound; eauto 10 with soundness. 
-  apply catch_optionAT_sound; eauto with soundness.
-  apply stateT_monadjoin_sound.
-  apply if_top_sound. eauto 10 with soundness. 
-  apply if_ab_op_sound. 
+  - apply monadfail_optionAT_sound. apply monadfail_stateT_sound.
+    apply fail_option_sound.
+  - apply catch_optionAT_sound; eauto with soundness.
+    apply stateT_monadjoin_sound.
+  - apply bind_optionAT_sound. apply joinsecondable_stateT_sound; eauto with
+    soundness. apply return_stateT_sound; eauto with soundness.
+    apply bind_stateT_sound; eauto with soundness.
+  - apply if_top_sound. eauto 10 with soundness. 
+    apply if_ab_op_sound. 
 Qed.
 

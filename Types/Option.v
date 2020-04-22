@@ -322,11 +322,12 @@ Section optionAT_monad.
     f_equal; ext. destruct x; simpl. 
     1-2: autorewrite with monads; reflexivity.
     apply joinsecond_bind. 
-    destruct x; simpl. 
-    - reflexivity.
-    - rewrite joinsecond_return. reflexivity.
-    - rewrite <- joinsecond_compose. f_equal. ext. destruct x; reflexivity.
-  Qed.
+    destruct a0; simpl. 
+    - admit.
+    - rewrite bind_id_left. reflexivity.
+    - rewrite <- bind_id_right at 1. 
+      f_equal. ext. admit.
+  Admitted.
   Arguments bind_optionAT_assoc [A B C] m f g.
 
   Global Instance monad_optionAT : Monad (optionAT M) :=

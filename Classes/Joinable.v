@@ -19,13 +19,23 @@ Class joinsecondable M {MM : Monad M} : Type := {
     joinsecond f (returnM x) =
     returnM (f x);
   joinsecond_bind : ∀ {A B} (f : A → A) (g : B → B)
-    (m1 : M A) (k : A → M B),
-    (∀ x, k (f x) = joinsecond g (k x)) → 
-    joinsecond f m1 >>= k = 
-    joinsecond g (m1 >>= k);
-  joinsecond_compose : ∀ {A} (f1 f2 : A → A) (m : M A),
-   joinsecond (f1 ∘ f2) m = joinsecond f1 (joinsecond f2 m);
+    (m : M A) (k : A → M B),
+    (∀ a, k (f a) = k a >>= λ b, returnM (g b)) →
+    joinsecond f m >>= k = 
+    joinsecond g (m >>= k);
+  joinsecond_compose : ∀ {A} (f g : A → A) (m : M A),
+   joinsecond (g ∘ f) m = joinsecond f (joinsecond g m);
 }.
+
+Class joinsecondable_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
+  {JM : joinsecondable M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+  : Type := {
+    joinsecond_sound : ∀ {A A'} {GA : Galois A A'}
+      (f : A → A) (m : M A) (m' : M' A'),
+      (∀ a a', γ a a' → γ (f a) a') →
+      γ m m' → γ (joinsecond f m) m';
+}.
+
 
 Instance functions_joinable {A B C} {JB : Joinable B C} : 
 Joinable (A → B) (A → C) := λ f, λ g, λ a : A, (f a) ⊔ (g a).

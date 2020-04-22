@@ -158,3 +158,131 @@ Instance stateT_joinable {S} {JS : Joinable S S} {M} {MM : Monad M}
   {A B} {JA : Joinable A B} : Joinable (StateT S M A) (StateT S M B) :=
     λ m1, λ m2, λ st, (m1 st) ⊔ (m2 st).
 Hint Resolve stateT_joinable : soundness.
+
+Section joinsecond_state.
+  Context {ST : Type} {JST : Joinable ST ST} {JI : JoinableIdem JST}.
+    
+  Definition joinsecond_state {A} (f : A → A) (m : State ST A) 
+    : State ST A := m >>= λ a, returnM (f a).
+  Arguments joinsecond_state [A].
+
+  Lemma joinsecond_state_return : ∀ (A : Type) (f : A → A) (a : A),
+  joinsecond_state f (return_state a) = 
+  return_state (f a).
+  Proof.
+    intros. unfold joinsecond_state. unfold bindM; simpl; unfold bind_state.
+    unfold return_state; simpl.
+    ext. unfold returnM; simpl; unfold return_state.
+    reflexivity.
+  Qed.
+
+  Lemma joinsecond_state_bind : ∀ (A B : Type) (f : A → A) (g : B → B)
+    (m : State ST A) (k : A → State ST B),
+  (∀ a, k (f a) = k a >>= (λ b, return_state (g b))) →
+  joinsecond_state f m >>= k = joinsecond_state g (m >>= k).
+  Proof. 
+    intros. unfold joinsecond_state. extensionality s. 
+    rewrite bind_assoc. rewrite bind_assoc. f_equal. ext.
+    rewrite <- H. unfold bindM; simpl. unfold bind_state. 
+    ext. unfold returnM; simpl; unfold return_state. reflexivity.
+  Qed.
+
+  Lemma joinsecond_state_compose : ∀ (A : Type) (f : A → A) (g : A → A)
+    (m : State ST A),
+  joinsecond_state (g ∘ f) m = joinsecond_state f (joinsecond_state g m).
+  Proof.
+    intros A f g m. unfold joinsecond_state, compose. rewrite bind_assoc.
+    f_equal. 
+  Qed.
+End joinsecond_state.
+Arguments joinsecond_state {ST} A.
+
+Instance joinsecondable_state {S : Type} 
+  {JS : Joinable S S} {JI : JoinableIdem JS} : joinsecondable (State S) :=
+{
+  joinsecond := joinsecond_state;
+  joinsecond_return := joinsecond_state_return;
+  joinsecond_bind := joinsecond_state_bind;
+  joinsecond_compose := joinsecond_state_compose;
+}.
+
+Instance joinsecondable_state_sound {S S' : Type} 
+  {JS : Joinable S S} {JS' : Joinable S' S'} 
+  {JSI : JoinableIdem JS} {JSI' : JoinableIdem JS'} {GS : Galois S S'} :
+  joinsecondable_sound (State S) (State S').
+Proof.
+  constructor. intros A A' GA f m m' Hf Hm. unfold joinsecond; simpl.
+  unfold joinsecond_state. unfold bindM; simpl; unfold bind_state.
+  unfold returnM; simpl; unfold return_state.
+  intros s s' Hs. apply Hm in Hs. destruct (m s), (m' s'). 
+  inversion Hs; subst. split; simpl in *; auto.
+Qed.
+
+Section joinsecond_stateT.
+  Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
+  Context {M : Type → Type} {MM : Monad M}.
+
+  Definition joinsecond_stateT {A} 
+    (f : A → A) (m : StateT S M A) : StateT S M A :=
+    m >>= λ a, returnM (f a).
+  Arguments joinsecond_stateT [A].
+
+  Lemma joinsecond_stateT_return : ∀ (A : Type) (f : A → A) (a : A),
+    joinsecond_stateT f (return_stateT a) = 
+    return_stateT (f a).
+  Proof.
+    intros A f a. unfold joinsecond_stateT. 
+    unfold bindM; simpl; unfold bind_stateT.
+    unfold return_stateT; simpl. ext.
+    rewrite bind_id_left. reflexivity. 
+  Qed.
+
+  Lemma joinsecond_stateT_bind : ∀ (A B : Type) (f : A → A) (g : B → B)
+    (m : StateT S M A) (k : A → StateT S M B),
+  (∀ a, k (f a) = k a >>= (λ b, return_stateT (g b))) →
+  joinsecond_stateT f m >>= k = joinsecond_stateT g (m >>= k).
+  Proof. 
+    intros. unfold joinsecond_stateT. 
+    unfold bindM; simpl. unfold bind_stateT. extensionality s.
+    autorewrite with monads. f_equal. ext. destruct x.
+    unfold returnM; simpl; unfold return_stateT.
+    autorewrite with monads. rewrite H.  unfold bindM at 1; simpl.
+    unfold bind_stateT, return_stateT. reflexivity.
+  Qed.
+
+  Lemma joinsecond_stateT_compose : ∀ (A : Type) (f g : A → A) 
+    (m : StateT S M A),
+    joinsecond_stateT (g ∘ f) m = joinsecond_stateT f (joinsecond_stateT g m).
+  Proof.
+    intros A f g m.
+    unfold joinsecond_stateT. rewrite bind_assoc. f_equal. ext.
+    unfold returnM, bindM; simpl; unfold return_stateT, bind_stateT; ext.
+    autorewrite with monads. reflexivity. 
+  Qed.
+
+  Global Instance joinsecondable_stateT : joinsecondable (StateT S M) := {
+    joinsecond := joinsecond_stateT;
+    joinsecond_return := joinsecond_stateT_return;
+    joinsecond_bind := joinsecond_stateT_bind;
+    joinsecond_compose := joinsecond_stateT_compose;
+  }.
+End joinsecond_stateT.
+
+Instance joinsecondable_stateT_sound {S S' : Type} 
+  {JS : Joinable S S} {JSI : JoinableIdem JS} {GS : Galois S S'}
+  {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} :
+  return_sound M M' → bind_sound M M' →
+  joinsecondable_sound (StateT S M) (StateT S' M').
+Proof.
+  intros RS BS;
+  constructor; intros A A' GA f m m' Hf Hm. 
+  unfold joinsecond; simpl; unfold joinsecond_stateT.
+  intros s s' Hs. 
+  unfold bindM; simpl; unfold bind_stateT.
+  apply Hm in Hs. rewrite <- bind_id_right. apply bindM_sound. apply Hs.
+  intros a a' Ha; destruct a. apply returnM_sound. 
+  destruct a'. inversion Ha; subst.
+  split; simpl; auto. 
+Qed.
+    
