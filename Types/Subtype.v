@@ -41,7 +41,6 @@ Proof.
   intros. split.
   - intros. apply H. 
   - intros. destruct s, s'; simpl; eauto with soundness.
-    inversion H.
 Qed.
 Hint Resolve subtype_sound_l : soundness.
 
@@ -55,7 +54,7 @@ Instance subtype_sound_r : ∀ {A B A' B' : Type}
   SubType_sound (subtype_r A B) (subtype_r A' B').
 Proof. split; intros.
   - apply H.
-  - destruct s, s'; eauto with soundness. inversion H.
+  - destruct s, s'; eauto with soundness. 
 Qed.
 Hint Resolve subtype_sound_r : soundness.
 
@@ -100,7 +99,7 @@ Instance subtype_sound_trans_l : ∀ {A A' B B' C C'}
   SubType_sound (subtype_trans_l A B C ST) (subtype_trans_l A' B' C' ST').
 Proof. split; intros.
   - unfold inject; simpl. unfold γ; simpl. apply inject_sound. assumption.
-  - unfold project; simpl. destruct s, s'; eauto with soundness. contradiction.
+  - unfold project; simpl. destruct s, s'; eauto with soundness. 
 Qed.
 Hint Resolve subtype_sound_trans_l : soundness.
 
@@ -147,7 +146,5 @@ Proof. split.
     + constructor.
     + cbn. unfold γ in Hs. simpl in Hs. apply project_sound in Hs.
       destruct (project b), (project s'); eauto with soundness.
-      * constructor. unfold γ; simpl. inversion Hs; subst. assumption.
-      * inversion Hs.
 Qed.
 Hint Resolve subtype_sound_top_l : soundness.

@@ -8,6 +8,7 @@ Ltac gamma_destruct := repeat
   match goal with
   | x : γ _  _ |- _ => inv x
   end.
+Hint Extern 0 (γ _ _) => progress gamma_destruct : soundness.
 
 Definition gamma_bot (A A' : Type) `{Galois A A'} : (A+⊥) → A' → Prop :=
   λ a : A+⊥, match a with

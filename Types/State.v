@@ -65,6 +65,24 @@ Section State_Monad.
     bind_assoc := bind_state_assoc;
   }. 
 End State_Monad.
+Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
+  return_sound (State S) (State S').
+Proof.
+  unfold return_sound; unfold returnM; simpl; intros. unfold return_state.
+  constructor; simpl; eauto with soundness. 
+Qed.
+Hint Resolve return_state_sound : soundness.
+
+Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
+  bind_sound (State S) (State S').
+Proof.
+  unfold bind_sound, bindM; simpl. 
+  intros A A' B b' GA GB m m' f f' Hm Hf. 
+  unfold bind_state. intros s s' Hs. apply Hm in Hs.
+  destruct (m s), (m' s'). inversion Hs; subst. simpl in *. 
+  gamma_destruct; simpl in *. apply Hf; assumption.
+Qed.
+Hint Resolve bind_state_sound : soundness.
 
 Section Monad_StateT.
   Context {M} `{M_monad : Monad M}.
@@ -115,6 +133,31 @@ Section Monad_StateT.
     bind_assoc := bind_stateT_assoc;
   }. 
 End Monad_StateT.
+
+Section stateT.
+  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
+  Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
+  Context {S S' : Type} {GS : Galois S S'}.
+  Context {RS : return_sound M M'}.
+  Context {BS : bind_sound M M'}.
+
+  Global Instance return_stateT_sound : 
+    return_sound (StateT S M) (StateT S' M').
+  Proof.
+    unfold return_sound, returnM; simpl. unfold return_stateT. 
+    intros A A' GA a a' Ha s s' Hs. eauto with soundness.
+  Qed.
+
+  Global Instance bind_stateT_sound : bind_sound (StateT S M) (StateT S' M').
+  Proof.
+    unfold bind_sound, bindM; simpl; unfold bind_stateT; intros.
+    intros s s' Hs. apply bindM_sound; eauto with soundness.
+    intros p q Hpq. destruct p, q; eauto with soundness. 
+    gamma_destruct; simpl in *.
+    apply H0; assumption.
+  Qed.
+End stateT.
+Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
 Section mjoin_stateT.
   Context {S : Type} {JS: Joinable S S} {JSI : JoinableIdem JS}. 

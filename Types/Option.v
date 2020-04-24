@@ -1,6 +1,6 @@
 Require Export Base.
 Require Import Classes.Galois Classes.Monad Classes.PreorderedSet
-  Classes.Joinable Classes.Monad.MonadJoin.
+  Classes.Joinable Classes.Monad.MonadJoin Types.State.
 
 Inductive optionA (A : Type) : Type :=
   | SomeA : A → optionA A
@@ -184,6 +184,18 @@ Section option_monad.
     bind_assoc := bind_option_assoc;
   }. 
 End option_monad.
+Instance some_sound : return_sound option option.
+Proof.
+  unfold return_sound. eauto with soundness.
+Qed.
+Hint Resolve some_sound : soundness.
+
+Instance bind_option_sound : bind_sound option option.
+Proof.
+  unfold bind_sound. unfold bindM; simpl. intros. destruct m, m'; 
+  eauto with soundness; simpl.
+Qed.
+Hint Resolve bind_option_sound : soundness.
 
 Section optionA_monad.
   Definition bind_optionA {A B : Type}
@@ -224,6 +236,23 @@ Section optionA_monad.
     bind_assoc := bind_optionA_assoc;
   }. 
 End optionA_monad.
+Instance someA_sound : return_sound optionA option.
+Proof.
+  unfold return_sound; eauto with soundness.
+Qed.
+Hint Resolve someA_sound : soundness.
+
+Instance bind_optionA_sound : bind_sound optionA option.
+Proof.
+  unfold bind_sound. intros A A' B B' GA GB m m' f f' Hm Hf. 
+  unfold bindM; simpl. 
+  destruct m as [a | |], m' as [a' |]; eauto with soundness.
+  - simpl. 
+    inversion Hm as [ | | | a1' a1 Ha H1 H0  ]; subst.
+    apply Hf in Ha. destruct (f a), (f' a'); eauto with soundness.
+  - simpl. destruct (f a); eauto with soundness.
+Qed.
+Hint Resolve bind_optionA_sound : soundness.
 
 Section optionT_Monad.
   Context {M} `{M_monad : Monad M}.
@@ -338,6 +367,38 @@ Section optionAT_monad.
   }.
 End optionAT_monad.
 Hint Unfold bind_optionAT : monads.
+
+Section optionAT.
+  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
+    {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+    {JM : joinsecondable M} {JS : joinsecondable_sound M M'}.
+
+  Global Instance someAT_sound :  
+    return_sound M M' → return_sound (optionAT M) (optionT M').
+  Proof.
+    unfold return_sound, returnM; simpl. eauto with soundness.
+  Qed.
+
+  Global Instance bind_optionAT_sound :
+    return_sound M M' → 
+    bind_sound M M' → 
+    bind_sound (optionAT M) (optionT M').
+  Proof.
+    intros RS BS.
+    unfold bind_sound. unfold bindM; simpl.
+    intros A A' B B' GA GB m m' f f' Hm Hf. 
+    unfold bind_optionAT, bind_optionT, optionAT, optionT.
+    unfold bind_sound in BS. eapply BS. assumption.
+    intros a a' Ha.
+    inversion Ha; subst; eauto with soundness. 
+    - admit.
+    - apply joinsecond_sound. 
+      + intros. destruct a, a'; simpl; try assumption.
+        * constructor. inversion H0. auto.
+        * inversion H0.
+      + auto.
+  Admitted.
+End optionAT.
 
 Definition mjoin_option A {JA : Joinable A A} {JI : JoinableIdem JA} : 
   option A → option A → option A :=
