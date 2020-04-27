@@ -18,6 +18,7 @@ Class Monad M : Type :=
   bind_assoc : ∀ {A B C} (m : M A) (f : A → M B) (g : B → M C),
     bindM (bindM m f) g = bindM m (λ a, bindM (f a) g);
 }.
+
 Arguments bindM : simpl never.
 Arguments returnM: simpl never.
 Hint Unfold bindM : monads.

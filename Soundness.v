@@ -41,20 +41,13 @@ Proof.
 Qed.
 Hint Extern 3 (γ (?f ?x) (?g ?y)) => apply gamma_fun_apply : soundness.
 
-(* Soundness of monadic operations *)
-
-Hint Resolve someAT_sound bind_optionAT_sound : soundness.
-
 (* Soundness of interpreters *)
 
 Definition avalue := ((parity+⊤)+(abstr_bool+⊤))%type.
+
 Definition ConcreteState := optionT (StateT (store cvalue) option).
-Definition ConcreteState' A := (string → nat + bool) → option (option A * (string
-  → nat + bool)).
 
 Definition AbstractState := optionAT (StateT (store (avalue+⊤)) option).
-Definition AbstractState' A := (string → (parity +⊤ + abstr_bool +⊤) +⊤)
-         → option (optionA A * (string → (parity +⊤ + abstr_bool +⊤) +⊤)).
 
 (*** Refactor these lemmas ***)
 Lemma joinable_values_idem : @JoinableIdem (avalue +⊤)
@@ -102,12 +95,8 @@ Theorem eval_expr_sound : ∀ (e : expr),
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
   eapply shared_eval_expr_sound; eauto 10 with soundness.
-  - apply monadfail_optionAT_sound. apply monadfail_stateT_sound.
-    apply fail_option_sound.
-  - apply bind_optionAT_sound. apply joinsecondable_stateT_sound; eauto with
-    soundness.
-    apply return_stateT_sound; eauto with soundness.
-    apply bind_stateT_sound; eauto with soundness.
+  - apply bind_optionAT_stateT_sound.
+  - apply someAT_stateT_sound.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 
@@ -119,13 +108,9 @@ Theorem sound_interpreter: ∀ c,
     (boolType:=bool) (natType:=nat) c).
 Proof.
   eapply shared_ceval_sound; eauto 10 with soundness. 
-  - apply monadfail_optionAT_sound. apply monadfail_stateT_sound.
-    apply fail_option_sound.
-  - apply catch_optionAT_sound; eauto with soundness.
-    apply stateT_monadjoin_sound.
-  - apply bind_optionAT_sound. apply joinsecondable_stateT_sound; eauto with
-    soundness. apply return_stateT_sound; eauto with soundness.
-    apply bind_stateT_sound; eauto with soundness.
+  - apply catch_optionAT_sound.
+  - apply bind_optionAT_stateT_sound.
+  - apply someAT_stateT_sound.
   - apply if_top_sound. eauto 10 with soundness. 
     apply if_ab_op_sound. 
 Qed.

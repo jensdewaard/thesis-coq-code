@@ -20,7 +20,7 @@ Class joinsecondable M {MM : Monad M} : Type := {
     returnM (f x);
   joinsecond_bind : ∀ {A B} (f : A → A) (g : B → B)
     (m : M A) (k : A → M B),
-    (∀ a, k (f a) = k a >>= λ b, returnM (g b)) →
+    (∀ a, k (f a) = joinsecond g (k a)) →
     joinsecond f m >>= k = 
     joinsecond g (m >>= k);
   joinsecond_compose : ∀ {A} (f g : A → A) (m : M A),
