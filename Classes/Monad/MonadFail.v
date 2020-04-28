@@ -1,7 +1,7 @@
 Require Export Base.
 Require Import Classes.Monad Classes.Galois.
 
-Class MonadFail M `{MM : Monad M} : Type := {
+Class MonadFail M {BM : bind_op M} : Type := {
   fail : ∀ {A : Type}, M A;
   fail_left: ∀ {A B} (m : A → M B), (@fail A) >>= m = fail;
 }.
