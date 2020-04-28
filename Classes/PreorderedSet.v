@@ -15,6 +15,13 @@ Hint Resolve preorder_refl preorder_trans : preorders.
 Class PreorderSound (A B : Type) `{PreorderedSet A} `{Galois A B} : Prop :=
   preorder_sound : ∀ x y : A, x ⊑ y → γ x ⊆ γ y.
 
+Corollary preorder_gamma : ∀ (A A' : Type) {GA : Galois A A'} 
+  {PA : PreorderedSet A} {PS : PreorderSound A A'}
+  (a1 a2 : A) (a' : A'), a1 ⊑ a2 → γ a1 a' → γ a2 a'.
+Proof.
+  intros. apply preorder_sound in H. apply H. assumption.
+Qed.
+
 Ltac pre_trans :=
   match goal with
   | H : ?a ⊑ ?b, K : ?b ⊑ ?c  |- ?a ⊑ ?c =>

@@ -37,26 +37,34 @@ Section State_Monad.
 
   Definition return_state {A} (a :A) : State S A := 
     λ st : S, (a, st).
+  Global Instance return_op_state : return_op (State S) := @return_state.
 
   Definition bind_state {A B} 
     (m : State S A) (f : A -> State S B) : State S B :=
     λ st, let (x, st') := (m st) in f x st'.
   Arguments bind_state [A B] m f.
   Hint Unfold bind_state : monads.
+  Global Instance bind_op_state : bind_op (State S) := @bind_state.
 
   Lemma bind_state_id_left : ∀ (A B : Type) (f : A → State S B) (a : A),
     bind_state (return_state a) f = f a.
-  Proof. simple_solve. Qed.
+  Proof. easy. Qed.
 
   Lemma bind_state_id_right : ∀ (A : Type) (m : State S A),
     bind_state m return_state = m.
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_state, return_state; extensionality s.
+    destruct (m s); reflexivity.
+  Qed.
 
   Lemma bind_state_assoc : ∀ (A B C : Type) (m : State S A) 
     (f : A → State S B) (g : B → State S C),
     bind_state (bind_state m f) g =
     bind_state m (λ a : A, bind_state (f a) g).
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_state, return_state; extensionality s.
+    destruct (m s) as [a s'], (f a s'); reflexivity.
+  Qed.
 
   Global Instance monad_state : Monad (State S) :=
   {
@@ -66,25 +74,47 @@ Section State_Monad.
   }. 
 End State_Monad.
 
+Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
+  return_sound (State S) (State S').
+Proof.
+  unfold return_sound; unfold returnM; simpl; intros; unfold return_state.
+  constructor; simpl; eauto with soundness. 
+Qed.
+Hint Resolve return_state_sound : soundness.
+
+Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
+  bind_sound (State S) (State S').
+Proof.
+  unfold bind_sound, bindM; simpl; intros A A' B b' GA GB m m' f f' Hm Hf. 
+  unfold bind_op_state, bind_state; intros s s' Hs. 
+  apply Hm in Hs.
+  destruct (m s), (m' s'). 
+  inversion Hs; subst; clear Hs; simpl in *.
+  apply Hf; assumption.
+Qed.
+Hint Resolve bind_state_sound : soundness.
+
 Section Monad_StateT.
-  Context {M} `{M_monad : Monad M}.
+  Context {M} `{MM : Monad M}.
   Context {S : Type}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
   Hint Unfold return_stateT : monads.
+  Global Instance return_op_stateT : return_op (StateT S M) := @return_stateT.
 
   Definition bind_stateT {A B} (m : StateT S M A) 
     (f : A -> StateT S M B) : StateT S M B :=
     λ st, m st >>= λ p : (A*S)%type, let (a,st') := p in f a st'.
   Arguments bind_stateT [A B] m f.
   Hint Unfold bind_stateT : monads.
+  Global Instance bind_op_stateT : bind_op (StateT S M) := @bind_stateT.
 
   Lemma bind_stateT_id_left : ∀ (A B : Type) (f : A → StateT S M B) (a : A), 
     bind_stateT (return_stateT a) f = f a.
   Proof.
-    autounfold with monads. intros. ext. 
-    rewrite bind_id_left. reflexivity.
+    intros; unfold bind_stateT, return_stateT; extensionality s.
+    rewrite bind_id_left; reflexivity.
   Qed.
   Arguments bind_stateT_id_left [A B] f a.
 
@@ -102,9 +132,9 @@ Section Monad_StateT.
     bind_stateT (bind_stateT m f) g =
     bind_stateT m (λ a : A, bind_stateT (f a) g).
   Proof.
-    intros. autounfold with monads. ext.
-    autorewrite with monads. f_equal. repeat rewrite bind_assoc. extensionality p.
-    destruct p. reflexivity.
+    intros; unfold bind_stateT; extensionality s.
+    rewrite bind_assoc; f_equal; extensionality p.
+    destruct p; reflexivity.
   Qed.
   Arguments bind_stateT_assoc [A B C] m f g.
 
@@ -116,38 +146,35 @@ Section Monad_StateT.
   }. 
 End Monad_StateT.
 
-Section MonadT_StateT.
-  Context {S : Type}.
+Section stateT.
+  Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.
+  Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
+  Context {S S' : Type} {GS : Galois S S'}.
+  Context {RS : return_sound M M'}.
+  Context {BS : bind_sound M M'}.
 
-  Definition lift_stateT {M} `{Monad M} {A} (m : M A) : StateT S M A :=
-    λ st, m >>= λ a, returnM (a, st).
-  Hint Unfold lift_stateT : monads.
-  
-  Lemma lift_stateT_pure {M} `{Monad M} {A} : ∀ (a : A), 
-    lift_stateT (returnM a) = return_stateT a.
+  Global Instance return_stateT_sound : 
+    return_sound (StateT S M) (StateT S' M').
   Proof.
-    intros. autounfold with monads. ext.
-    autorewrite with monads. reflexivity.
+    unfold return_sound, returnM; simpl.
+    unfold return_op_stateT, return_state. 
+    intros A A' GA a a' Ha s s' Hs; eauto with soundness.
   Qed.
 
-  Lemma lift_stateT_bind {M} `{Monad M} {A B} : ∀ (m : M A) (f : A → M B),
-    lift_stateT (m >>= f) = bind_stateT (lift_stateT m) (f ∘ lift_stateT (A:=B)).
+  Global Instance bind_stateT_sound : bind_sound (StateT S M) (StateT S' M').
   Proof.
-    intros. simpl. autounfold with monads. unfold bind_stateT. ext. 
-    autorewrite with monads. f_equal. simpl. ext. 
-    autorewrite with monads. reflexivity.
+    unfold bind_sound, bindM; simpl; unfold bind_stateT; intros.
+    intros s s' Hs. apply bindM_sound; eauto with soundness.
+    intros p q Hpq. destruct p, q; eauto with soundness. 
+    gamma_destruct; simpl in *.
+    apply H0; assumption.
   Qed.
-
-  Global Instance monadT_stateT : MonadT (StateT S) :=
-  {
-    lift_return := @lift_stateT_pure;
-    lift_bind := @lift_stateT_bind;
-  }. 
-End MonadT_StateT.
+End stateT.
+Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
 Section mjoin_stateT.
   Context {S : Type} {JS: Joinable S S} {JSI : JoinableIdem JS}. 
-  Context {M : Type → Type} {MM : Monad M} {JM : MonadJoin M}.
+  Context {M : Type → Type} `{MM : Monad M} {JM : MonadJoin M}.
 
   Definition mjoin_stateT {A : Type} {JA : Joinable A A} {JI : JoinableIdem JA}
     (m1 m2 : StateT S M A) : StateT S M A := λ s : S, (m1 s) <⊔> (m2 s).
@@ -172,7 +199,7 @@ Hint Resolve stateT_monadjoin : soundness.
 
 Instance stateT_monadjoin_sound {S S'} {JS : Joinable S S} {GS : Galois S S'}
   {JSS : JoinableSound JS}
-  {JSI : JoinableIdem JS} {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {JSI : JoinableIdem JS} {M M' : Type → Type} `{MM : Monad M} `{MM' : Monad M'}
   {JM : MonadJoin M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MS : MonadJoinSound M M'} :
   MonadJoinSound (StateT S M) (StateT S' M').
@@ -182,7 +209,7 @@ Proof. split; intros.
 Qed.
 Hint Resolve stateT_monadjoin_sound : soundness.
 
-Instance stateT_joinable {S} {JS : Joinable S S} {M} {MM : Monad M}
+Instance stateT_joinable {S} {JS : Joinable S S} {M} `{MM : Monad M}
   {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
   {A B} {JA : Joinable A B} : Joinable (StateT S M A) (StateT S M B) :=
     λ m1, λ m2, λ st, (m1 st) ⊔ (m2 st).
