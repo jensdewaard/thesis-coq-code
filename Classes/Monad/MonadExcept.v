@@ -4,7 +4,7 @@ Require Import Classes.Monad Classes.Joinable Classes.Galois.
 Implicit Type M : Type → Type.
 Implicit Type A : Type.
 
-Class MonadExcept M {MM : Monad M} := {
+Class MonadExcept M `{MM : Monad M} := {
   throw : ∀ {A}, M A;
   throw_left: ∀ {A B} (f : A → M B), throw >>= f = throw;
   catch : ∀ {A} {JA : Joinable A A} {JAI: JoinableIdem JA}, 
@@ -21,8 +21,8 @@ Arguments catch : simpl never.
 Hint Rewrite @throw_left @catch_left @catch_right @catch_return : monads.
 
 Class catch_op_sound (M M' : Type → Type) 
-  {MM : Monad M} {MF : MonadExcept M}
-  {MM' : Monad M'} {MF' : MonadExcept M'}
+  `{MM : Monad M} {MF : MonadExcept M}
+  `{MM' : Monad M'} {MF' : MonadExcept M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop :=
   catch_sound : ∀ {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
     {A'} {JA' : Joinable A' A'} {JAI' : JoinableIdem JA'}
@@ -34,8 +34,8 @@ Class catch_op_sound (M M' : Type → Type)
     γ (catch p1 p2) (catch p1' p2').
 
 Class throw_op_sound (M M' : Type → Type) 
-  {MM : Monad M} {MF : MonadExcept M}
-  {MM' : Monad M'} {MF' : MonadExcept M'}
+  `{MM : Monad M} {MF : MonadExcept M}
+  `{MM' : Monad M'} {MF' : MonadExcept M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop :=
   throw_sound : ∀ {A A'} {GA : Galois A A'},
-    γ (throw (A:=A)) (throw (A:=A')).
+    γ throw throw.

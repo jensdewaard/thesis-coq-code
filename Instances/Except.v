@@ -135,7 +135,7 @@ Section except_optionA.
 End except_optionA.
 
 Section fail_optionT.
-  Context M {MM : Monad M}.
+  Context M `{MM : Monad M}.
 
   Definition fail_optionT {A} : optionT M A := returnM None.
 
@@ -143,8 +143,8 @@ Section fail_optionT.
     fail_optionT >>= m = fail_optionT.
   Proof.
     intros A B m. unfold fail_optionT. 
-    unfold bindM; simpl. unfold bind_optionT. rewrite bind_id_left.
-    reflexivity.
+    unfold bindM; simpl. unfold bind_op_optionT, bind_optionT. 
+    rewrite bind_id_left; reflexivity.
   Qed.
 
   Global Instance monadfail_optionT : MonadFail (optionT M) := {
@@ -153,7 +153,7 @@ Section fail_optionT.
 End fail_optionT.
 
 Section except_optionT.
-  Context M {MM : Monad M}.
+  Context M `{MM : Monad M}.
 
   Definition throw_optionT {A} : optionT M A := returnM None.
 
@@ -161,7 +161,7 @@ Section except_optionT.
     throw_optionT >>= m = throw_optionT.
   Proof.
     intros; unfold throw_optionT. 
-    unfold bindM; simpl; unfold bind_optionT.
+    unfold bindM; simpl; unfold bind_op_optionT, bind_optionT.
     rewrite bind_id_left; reflexivity.
   Qed.
 
@@ -195,9 +195,9 @@ Section except_optionT.
 
   Lemma catch_optionT_return : ∀ (A : Type) {JA : Joinable A A} 
   {JAI : JoinableIdem JA} (x : optionT M A) (a : A),
-    catch_optionT (returnM a) x = returnM a.
+    catch_optionT (return_optionT a) x = return_optionT a.
   Proof.
-    unfold catch_optionT. intros. unfold returnM; simpl.
+    intros. unfold catch_optionT, return_optionT.
     rewrite bind_id_left. reflexivity.
   Qed.
 
@@ -212,7 +212,7 @@ End except_optionT.
 Hint Resolve except_optionT : soundness.
 
 Section fail_stateT.
-  Context {M : Type -> Type} {MM : Monad M} {MF : MonadFail M}.
+  Context {M : Type -> Type} `{MM : Monad M} {MF : MonadFail M}.
   Context {S : Type}.
 
   Definition fail_stateT {A} : StateT S M A := 
@@ -223,7 +223,7 @@ Section fail_stateT.
   Proof.
     intros; unfold fail_stateT; extensionality s.
     rewrite fail_left. 
-    unfold bindM at 1; simpl; unfold bind_stateT. 
+    unfold bindM at 1; simpl; unfold bind_op_stateT, bind_stateT. 
     repeat rewrite fail_left; reflexivity.
   Qed.
 
@@ -234,7 +234,8 @@ Section fail_stateT.
   }.
 End fail_stateT.
 
-Instance monadfail_stateT_sound {M M'} {MM : Monad M} {MM' : Monad M'}
+Instance monadfail_stateT_sound {M M'} 
+  `{MM : Monad M} `{MM' : Monad M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {S S'} {GS : Galois S S'}
   {MF : MonadFail M} {MF' : MonadFail M'} : 
@@ -248,7 +249,7 @@ Qed.
 Hint Resolve monadfail_stateT_sound : soundness.
 
 Section except_stateT.
-  Context {M : Type → Type} {MM : Monad M} {ME : MonadExcept M}.
+  Context {M : Type → Type} `{MM : Monad M} {ME : MonadExcept M}.
   Context {S : Type} {JS : Joinable S S} {JSI : JoinableIdem JS}.
 
   Definition throw_stateT {A} : StateT S M A := 
@@ -258,7 +259,7 @@ Section except_stateT.
     throw_stateT >>= f = throw_stateT.
   Proof.
     intros; unfold throw_stateT; extensionality s.
-    unfold bindM at 1; simpl; unfold bind_stateT. 
+    unfold bindM at 1; simpl; unfold bind_op_stateT, bind_stateT. 
     repeat rewrite throw_left; reflexivity.
   Qed.
 
@@ -311,11 +312,8 @@ Section fail_optionAT.
   Lemma fail_optionAT_left : ∀ (A B : Type) (f : A → optionAT (StateT S option) B),
     fail_optionAT >>= f = fail_optionAT.
   Proof.
-    intros A B f. unfold fail_optionAT.  repeat rewrite fail_left.
-    unfold bindM; simpl. unfold bind_optionAT_stateT. 
-    extensionality s. 
-    unfold bindM; simpl. unfold fail; simpl.
-    reflexivity.
+    intros A B f. unfold fail_optionAT. repeat rewrite fail_left.
+    easy.
   Qed.
 
   Global Instance monadfail_optionAT : MonadFail (optionAT (StateT S option)) :=
@@ -419,9 +417,9 @@ Instance catch_optionAT_sound {S S' : Type} {GS : Galois S S'}
 Proof.
   intros A JA JAI A' JA' JAI' GA JAS p1 p2 p1' p2' Hp1 Hp2.
   unfold catch; simpl. unfold catch_optionAT, catch_optionT.
-  unfold bindM; simpl; unfold bind_stateT.
+  unfold bindM; simpl; unfold bind_op_stateT, bind_stateT.
   intros s s' Hs.
-  unfold bindM; simpl; unfold bind_option.
+  unfold bindM; simpl; unfold bind_op_option, bind_option.
   apply Hp1 in Hs.
   destruct (p1 s), (p1' s').
   - destruct p, p0. destruct o, o0.

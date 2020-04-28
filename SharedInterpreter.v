@@ -14,16 +14,16 @@ Require Import Types.Stores.
 Require Import Types.Subtype.
 
 Definition ensure_type (subType : Type)
-  {M : Type → Type} {MM : Monad M} {MF : MonadFail M} 
+  {M : Type → Type} `{MM : Monad M} {MF : MonadFail M} 
   {valType : Type}
-  `{SubType subType valType}
+  {ST : SubType subType valType}
   (n : valType) : M subType :=
   match project n with
   | Some x =>  returnM (M:=M) x
   | None => fail
   end.
 
-Lemma ensure_type_sound {M M'} {MM : Monad M} {MM' : Monad M'}
+Lemma ensure_type_sound {M M'} `{MM : Monad M} `{MM' : Monad M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'}
   {MS : MonadFail_sound M M'}
@@ -47,7 +47,7 @@ Proof.
 Qed.
 
 Fixpoint shared_eval_expr 
-    {valType boolType natType : Type} {M : Type → Type} {MM : Monad M}
+    {valType boolType natType : Type} {M : Type → Type} `{MM : Monad M}
     {MF : MonadFail M} {MS : MonadState (store valType) M}
     {EC : extract_op cvalue valType}
     {SB : SubType boolType valType}
@@ -106,13 +106,11 @@ Fixpoint shared_eval_expr
       returnM (M:=M) (inject b)
   end.
 
-Definition avalue := ((parity+⊤)+(abstr_bool+⊤))%type.
-
-Lemma shared_eval_expr_sound (M M' : Type → Type) {MM : Monad M}
-  {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+Lemma shared_eval_expr_sound (M M' : Type → Type) `{MM : Monad M}
+  `{MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MFS : MonadFail_sound M M'}
-  {avalue } {GV : Galois avalue cvalue}
+  {avalue} {GV : Galois avalue cvalue}
   {natType natType' boolType boolType' : Type } 
   {EC : extract_op cvalue avalue}
   {ECS : extract_op_sound EC (extract_sum extract_nat extract_bool)}
@@ -196,7 +194,7 @@ Open Scope com_scope.
 Fixpoint shared_ceval 
     {valType boolType natType : Type} 
     {M : Type → Type} 
-    {MM : Monad M}
+    `{MM : Monad M}
     {MF : MonadFail M} 
     {MS : MonadState (store valType) M}
     {ME : MonadExcept M} (c : com) 
@@ -228,8 +226,8 @@ Fixpoint shared_ceval
   | CFail => throw
   end.
 
-Lemma shared_ceval_sound (M M' : Type → Type) {MM : Monad M}
-  {MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+Lemma shared_ceval_sound (M M' : Type → Type) `{MM : Monad M}
+  `{MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MFS : MonadFail_sound M M'}
   {avalue : Type} {GV : Galois avalue cvalue}

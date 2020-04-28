@@ -153,6 +153,8 @@ End optionA_preorder.
 Hint Constructors optionA_le : preorders.
 
 Section option_monad.
+  Global Instance return_op_option : return_op option := @Some.
+
   Definition bind_option {A B} 
     (m : option A) (f : A -> option B) : option B :=
     match m with
@@ -160,6 +162,7 @@ Section option_monad.
     | Some a => f a
     end.
   Hint Unfold bind_option : monads.
+  Global Instance bind_op_option : bind_op option := @bind_option.
 
   Lemma bind_option_id_left : ∀ {A B} (f : A → option B) (a : A), 
     bind_option (Some a) f = f a.
@@ -193,6 +196,7 @@ Section option_monad.
     bind_assoc := bind_option_assoc;
   }. 
 End option_monad.
+
 Instance some_sound : return_sound option option.
 Proof.
   unfold return_sound; intros. 
@@ -209,6 +213,8 @@ Qed.
 Hint Resolve bind_option_sound : soundness.
 
 Section optionA_monad.
+  Global Instance return_op_optionA : return_op optionA := @SomeA.
+
   Definition bind_optionA {A B : Type}
     (m : optionA A) (f : A -> optionA B) : optionA B :=
     match m with
@@ -222,6 +228,7 @@ Section optionA_monad.
     end.
   Arguments bind_optionA [_ _].
   Hint Unfold bind_optionA : monads.
+  Global Instance bind_op_optionA : bind_op optionA := @bind_optionA.
 
   Lemma bind_optionA_id_left : ∀ {A B} (f : A → optionA B) (a : A),
   bind_optionA (SomeA a) f = f a.
@@ -231,7 +238,7 @@ Section optionA_monad.
   Lemma bind_optionA_id_right :  ∀ {A} (m : optionA A),
     bind_optionA m SomeA = m.
   Proof. 
-    intros A m. unfold bind_optionA.
+    intros A m; unfold bind_optionA.
     destruct m; reflexivity.
   Qed.
   Arguments bind_optionA_id_right [A].
@@ -255,6 +262,7 @@ Section optionA_monad.
     bind_assoc := bind_optionA_assoc;
   }. 
 End optionA_monad.
+
 Instance someA_sound : return_sound optionA option.
 Proof.
   unfold return_sound; eauto with soundness.
@@ -274,7 +282,12 @@ Qed.
 Hint Resolve bind_optionA_sound : soundness.
 
 Section optionT_Monad.
-  Context {M} `{M_monad : Monad M}.
+  Context {M} `{MM : Monad M}.
+
+  Definition return_optionT {A} (a : A) : optionT M A :=
+    returnM (Some a).
+  Global Instance return_op_optionT : return_op (optionT M) :=
+    @return_optionT.
 
   Definition bind_optionT {A B} (m : optionT M A) 
     (f : A -> optionT M B) : optionT M B :=
@@ -285,20 +298,22 @@ Section optionT_Monad.
       end).
   Arguments bind_optionT [A B] m f.
   Hint Unfold bind_optionT : monads.
+  Global Instance bind_op_optionT : bind_op (optionT M) :=
+    @bind_optionT.
 
   Lemma bind_optionT_id_left : ∀ {A B} (f : A → optionT M B) (a : A), 
-    bind_optionT (returnM (M:=M) (Some a)) f = f a.
+    bind_optionT (return_optionT a) f = f a.
   Proof. 
-    intros. unfold bind_optionT.
+    intros. unfold bind_optionT, return_optionT.
     rewrite bind_id_left. reflexivity.
   Qed.
   Arguments bind_optionT_id_left [A B] f a.
 
   Lemma bind_optionT_id_right : ∀ {A} (m : optionT M A),
-    bind_optionT m (λ a, returnM (M:=M) (Some a)) = m.
+    bind_optionT m (λ a, return_optionT a) = m.
   Proof. 
-    intros. unfold bind_optionT.
-    rewrite <- (bind_id_right (M:=M)). f_equal. 
+    intros; unfold bind_optionT, return_optionT.
+    rewrite <- (bind_id_right (M:=M)); f_equal. 
     ext; destruct x; reflexivity.
   Qed.
   Arguments bind_optionT_id_right [A] m.
@@ -311,7 +326,7 @@ Section optionT_Monad.
     intros; unfold bind_optionT. 
     rewrite bind_assoc; f_equal; extensionality x. 
     destruct x; eauto with monads.
-    rewrite bind_id_left. reflexivity.
+    rewrite bind_id_left; reflexivity.
   Qed.
   Arguments bind_optionT_assoc [A B C] m f g.
 
@@ -330,6 +345,8 @@ Section optionAT_state_monad.
 
   Definition return_optionAT_state {A} (a : A) : optionAT (State S) A :=
     λ s : S, (SomeA a, s).
+  Global Instance return_op_optionAT_state : return_op (optionAT (State S)) :=
+    @return_optionAT_state.
 
   Definition bind_optionAT_state {A B} 
     (m : optionAT (State S) A)
@@ -346,6 +363,8 @@ Section optionAT_state_monad.
                              end
     end.
   Hint Unfold bind_optionAT_state : monads.
+  Global Instance bind_op_optionAT_state : bind_op (optionAT (State S)) :=
+    @bind_optionAT_state.
 
   Lemma bind_optionAT_state_id_left : ∀ {A B} (f : A → optionAT (State S) B) (a : A), 
     bind_optionAT_state (return_optionAT_state  a) f = f a.
@@ -411,7 +430,10 @@ Section optionAT_state_sound.
     bind_sound (optionAT (State S)) (optionT (State S')).
   Proof.
     intros A A' B B' GA GB m m' f f' Hm Hf. 
-    unfold bindM; simpl; unfold bind_optionAT_state, bind_state.
+    unfold bindM; simpl. 
+    unfold bind_op_optionAT_state, bind_optionAT_state.
+    unfold bind_op_optionT, bind_optionT.
+    unfold bindM; simpl; unfold bind_op_state, bind_state.
     intros s s' Hs. 
     apply Hm in Hs; destruct (m s) as [o s2], (m' s') as [o' s2'].
     inversion Hs as [? ? Ho Hs2 H1 H2]; simpl in *; subst; clear Hs.
@@ -462,6 +484,8 @@ Section optionAT_stateT_monad.
 
   Definition return_optionAT_stateT {A} (a : A) : optionAT (StateT S option) A :=
     λ s : S, Some (SomeA a, s).
+  Global Instance return_op_optionAT_stateT : 
+    return_op (optionAT (StateT S option)) := @return_optionAT_stateT.
 
   Definition bind_optionAT_stateT {A B} 
     (m : optionAT (StateT S option) A)
@@ -478,13 +502,14 @@ Section optionAT_stateT_monad.
                              end
     end.
   Hint Unfold bind_optionAT_stateT : monads.
+  Global Instance bind_op_optionAT_stateT :
+    bind_op (optionAT (StateT S option)) := @bind_optionAT_stateT.
 
   Lemma bind_optionAT_stateT_id_left : ∀ {A B} (f : A → optionAT (StateT S option) B) (a : A), 
     bind_optionAT_stateT (return_optionAT_stateT a) f = f a.
   Proof. 
-    unfold bind_optionAT_stateT; simpl; intros. 
-    extensionality s.
-    reflexivity.
+    unfold bind_optionAT_stateT, return_optionAT_stateT; simpl; intros. 
+    extensionality s; easy. 
   Qed.
   Arguments bind_optionAT_stateT_id_left [A B] f a.
 
@@ -493,14 +518,16 @@ Section optionAT_stateT_monad.
   Proof. 
     unfold bind_optionAT_stateT; intros. 
     rewrite <- (bind_id_right (M:=StateT S option)).
-    unfold bindM; simpl; unfold bind_stateT, bind_option, return_optionAT_stateT.
+    unfold bindM; simpl. 
+    unfold bind_op_option, bind_option, bind_op_stateT, bind_stateT.
+    unfold return_optionAT_stateT.
     extensionality s; destruct (m s).
     - destruct p, o.
-      + reflexivity. 
-      + reflexivity. 
+      + easy. 
+      + easy. 
       + unfold returnM; simpl.
-        unfold bindM; simpl. rewrite JI. reflexivity.
-    - reflexivity.
+        unfold bindM; simpl. rewrite JI. easy.
+    - easy.
   Qed.
 
   Lemma bind_optionAT_stateT_assoc : ∀ {A B C} (m : optionAT (StateT S option) A) 
@@ -510,7 +537,7 @@ Section optionAT_stateT_monad.
   Proof. 
     intros; unfold bind_optionAT_stateT. 
     extensionality s.
-    unfold bindM; simpl; unfold bind_option.
+    unfold bindM; simpl; unfold bind_op_option, bind_option.
     destruct (m s); try reflexivity; destruct p as [o s'].
     destruct o; simpl; try reflexivity.
     destruct (f a s'); try reflexivity.
@@ -519,7 +546,7 @@ Section optionAT_stateT_monad.
   Admitted.
   Arguments bind_optionAT_stateT_assoc [A B C] m f g.
 
-Global Instance monad_optionAT_stateT : Monad (optionAT (StateT S option)) :=
+  Global Instance monad_optionAT_stateT : Monad (optionAT (StateT S option)) :=
   {
     bind_id_left := bind_optionAT_stateT_id_left;
     bind_id_right := bind_optionAT_stateT_id_right;
@@ -542,9 +569,12 @@ Section optionAT_stateT_sound.
     bind_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
   Proof.
     intros A A' B B' GA GB m m' f f' Hm Hf. 
-    unfold bindM; simpl; unfold bind_optionAT_stateT, bind_stateT.
+    unfold bindM; simpl. 
+    unfold bind_op_optionAT_stateT, bind_op_optionT, 
+      bind_optionAT_stateT, bind_optionT.
+    unfold bindM at 3; unfold bind_op_stateT, bind_stateT.
     intros s s' Hs. 
-    apply Hm in Hs; destruct (m s) as [[o s2]|];
+    apply Hm in Hs; destruct (m s) as [[o s2]|]; 
         destruct (m' s') as [[o' s2']|].
     - apply bindM_sound. assumption.
       intros [x s3] [x' s3'] H. inversion H; subst; simpl in *.

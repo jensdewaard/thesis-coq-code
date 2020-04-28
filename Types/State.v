@@ -37,12 +37,14 @@ Section State_Monad.
 
   Definition return_state {A} (a :A) : State S A := 
     λ st : S, (a, st).
+  Global Instance return_op_state : return_op (State S) := @return_state.
 
   Definition bind_state {A B} 
     (m : State S A) (f : A -> State S B) : State S B :=
     λ st, let (x, st') := (m st) in f x st'.
   Arguments bind_state [A B] m f.
   Hint Unfold bind_state : monads.
+  Global Instance bind_op_state : bind_op (State S) := @bind_state.
 
   Lemma bind_state_id_left : ∀ (A B : Type) (f : A → State S B) (a : A),
     bind_state (return_state a) f = f a.
@@ -71,6 +73,7 @@ Section State_Monad.
     bind_assoc := bind_state_assoc;
   }. 
 End State_Monad.
+
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
 Proof.
@@ -83,7 +86,7 @@ Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
   bind_sound (State S) (State S').
 Proof.
   unfold bind_sound, bindM; simpl; intros A A' B b' GA GB m m' f f' Hm Hf. 
-  unfold bind_state; intros s s' Hs. 
+  unfold bind_op_state, bind_state; intros s s' Hs. 
   apply Hm in Hs.
   destruct (m s), (m' s'). 
   inversion Hs; subst; clear Hs; simpl in *.
@@ -92,18 +95,20 @@ Qed.
 Hint Resolve bind_state_sound : soundness.
 
 Section Monad_StateT.
-  Context {M} `{M_monad : Monad M}.
+  Context {M} `{MM : Monad M}.
   Context {S : Type}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
   Hint Unfold return_stateT : monads.
+  Global Instance return_op_stateT : return_op (StateT S M) := @return_stateT.
 
   Definition bind_stateT {A B} (m : StateT S M A) 
     (f : A -> StateT S M B) : StateT S M B :=
     λ st, m st >>= λ p : (A*S)%type, let (a,st') := p in f a st'.
   Arguments bind_stateT [A B] m f.
   Hint Unfold bind_stateT : monads.
+  Global Instance bind_op_stateT : bind_op (StateT S M) := @bind_stateT.
 
   Lemma bind_stateT_id_left : ∀ (A B : Type) (f : A → StateT S M B) (a : A), 
     bind_stateT (return_stateT a) f = f a.
@@ -142,7 +147,7 @@ Section Monad_StateT.
 End Monad_StateT.
 
 Section stateT.
-  Context (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}.
+  Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.
   Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
   Context {S S' : Type} {GS : Galois S S'}.
   Context {RS : return_sound M M'}.
@@ -151,8 +156,9 @@ Section stateT.
   Global Instance return_stateT_sound : 
     return_sound (StateT S M) (StateT S' M').
   Proof.
-    unfold return_sound, returnM; simpl. unfold return_stateT. 
-    intros A A' GA a a' Ha s s' Hs. eauto with soundness.
+    unfold return_sound, returnM; simpl.
+    unfold return_op_stateT, return_state. 
+    intros A A' GA a a' Ha s s' Hs; eauto with soundness.
   Qed.
 
   Global Instance bind_stateT_sound : bind_sound (StateT S M) (StateT S' M').
@@ -168,7 +174,7 @@ Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
 Section mjoin_stateT.
   Context {S : Type} {JS: Joinable S S} {JSI : JoinableIdem JS}. 
-  Context {M : Type → Type} {MM : Monad M} {JM : MonadJoin M}.
+  Context {M : Type → Type} `{MM : Monad M} {JM : MonadJoin M}.
 
   Definition mjoin_stateT {A : Type} {JA : Joinable A A} {JI : JoinableIdem JA}
     (m1 m2 : StateT S M A) : StateT S M A := λ s : S, (m1 s) <⊔> (m2 s).
@@ -193,7 +199,7 @@ Hint Resolve stateT_monadjoin : soundness.
 
 Instance stateT_monadjoin_sound {S S'} {JS : Joinable S S} {GS : Galois S S'}
   {JSS : JoinableSound JS}
-  {JSI : JoinableIdem JS} {M M' : Type → Type} {MM : Monad M} {MM' : Monad M'}
+  {JSI : JoinableIdem JS} {M M' : Type → Type} `{MM : Monad M} `{MM' : Monad M'}
   {JM : MonadJoin M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MS : MonadJoinSound M M'} :
   MonadJoinSound (StateT S M) (StateT S' M').
@@ -203,13 +209,8 @@ Proof. split; intros.
 Qed.
 Hint Resolve stateT_monadjoin_sound : soundness.
 
-Instance stateT_joinable {S} {JS : Joinable S S} {M} {MM : Monad M}
+Instance stateT_joinable {S} {JS : Joinable S S} {M} `{MM : Monad M}
   {JM : ∀ A B, Joinable A B → Joinable (M A) (M B)}
   {A B} {JA : Joinable A B} : Joinable (StateT S M A) (StateT S M B) :=
     λ m1, λ m2, λ st, (m1 st) ⊔ (m2 st).
 Hint Resolve stateT_joinable : soundness.
-
-Section joinsecond_state.
-  Context {ST : Type} {JST : Joinable ST ST} {JI : JoinableIdem JST}.
-    
-End joinsecond_state.

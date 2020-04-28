@@ -13,7 +13,7 @@ Class JoinableSound {A B A' : Type} {GA : Galois A A'} {GB : Galois B A'}
   (JA : Joinable A B)  : Prop :=
   join_sound : ∀ x y : A, γ x ∪ γ y ⊆ γ (x ⊔ y).
 
-Class joinsecondable M {MM : Monad M} : Type := {
+Class joinsecondable M `{MM : Monad M} : Type := {
   joinsecond : ∀ {A : Type}, (A → A) → M A → M A;
   joinsecond_return : ∀ {A} (f : A → A) (x : A),
     joinsecond f (returnM x) =
@@ -27,7 +27,8 @@ Class joinsecondable M {MM : Monad M} : Type := {
    joinsecond (g ∘ f) m = joinsecond f (joinsecond g m);
 }.
 
-Class joinsecondable_sound (M M' : Type → Type) {MM : Monad M} {MM' : Monad M'}
+Class joinsecondable_sound 
+  (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'} 
   {JM : joinsecondable M} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   : Type := {
     joinsecond_sound : ∀ {A A'} {GA : Galois A A'}
