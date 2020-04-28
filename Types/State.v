@@ -46,17 +46,23 @@ Section State_Monad.
 
   Lemma bind_state_id_left : ∀ (A B : Type) (f : A → State S B) (a : A),
     bind_state (return_state a) f = f a.
-  Proof. simple_solve. Qed.
+  Proof. easy. Qed.
 
   Lemma bind_state_id_right : ∀ (A : Type) (m : State S A),
     bind_state m return_state = m.
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_state, return_state; extensionality s.
+    destruct (m s); reflexivity.
+  Qed.
 
   Lemma bind_state_assoc : ∀ (A B C : Type) (m : State S A) 
     (f : A → State S B) (g : B → State S C),
     bind_state (bind_state m f) g =
     bind_state m (λ a : A, bind_state (f a) g).
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_state, return_state; extensionality s.
+    destruct (m s) as [a s'], (f a s'); reflexivity.
+  Qed.
 
   Global Instance monad_state : Monad (State S) :=
   {
@@ -68,7 +74,7 @@ End State_Monad.
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
 Proof.
-  unfold return_sound; unfold returnM; simpl; intros. unfold return_state.
+  unfold return_sound; unfold returnM; simpl; intros; unfold return_state.
   constructor; simpl; eauto with soundness. 
 Qed.
 Hint Resolve return_state_sound : soundness.
@@ -76,11 +82,12 @@ Hint Resolve return_state_sound : soundness.
 Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
   bind_sound (State S) (State S').
 Proof.
-  unfold bind_sound, bindM; simpl. 
-  intros A A' B b' GA GB m m' f f' Hm Hf. 
-  unfold bind_state. intros s s' Hs. apply Hm in Hs.
-  destruct (m s), (m' s'). inversion Hs; subst. simpl in *. 
-  gamma_destruct; simpl in *. apply Hf; assumption.
+  unfold bind_sound, bindM; simpl; intros A A' B b' GA GB m m' f f' Hm Hf. 
+  unfold bind_state; intros s s' Hs. 
+  apply Hm in Hs.
+  destruct (m s), (m' s'). 
+  inversion Hs; subst; clear Hs; simpl in *.
+  apply Hf; assumption.
 Qed.
 Hint Resolve bind_state_sound : soundness.
 
@@ -101,8 +108,8 @@ Section Monad_StateT.
   Lemma bind_stateT_id_left : ∀ (A B : Type) (f : A → StateT S M B) (a : A), 
     bind_stateT (return_stateT a) f = f a.
   Proof.
-    autounfold with monads. intros. ext. 
-    rewrite bind_id_left. reflexivity.
+    intros; unfold bind_stateT, return_stateT; extensionality s.
+    rewrite bind_id_left; reflexivity.
   Qed.
   Arguments bind_stateT_id_left [A B] f a.
 
@@ -120,9 +127,9 @@ Section Monad_StateT.
     bind_stateT (bind_stateT m f) g =
     bind_stateT m (λ a : A, bind_stateT (f a) g).
   Proof.
-    intros. autounfold with monads. ext.
-    autorewrite with monads. f_equal. repeat rewrite bind_assoc. extensionality p.
-    destruct p. reflexivity.
+    intros; unfold bind_stateT; extensionality s.
+    rewrite bind_assoc; f_equal; extensionality p.
+    destruct p; reflexivity.
   Qed.
   Arguments bind_stateT_assoc [A B C] m f g.
 

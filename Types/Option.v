@@ -163,18 +163,27 @@ Section option_monad.
 
   Lemma bind_option_id_left : ∀ {A B} (f : A → option B) (a : A), 
     bind_option (Some a) f = f a.
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_option. 
+    reflexivity.
+  Qed.
   Arguments bind_option_id_left [A B] f a.
 
   Lemma bind_option_id_right : ∀ {A} (m : option A), 
     bind_option m Some = m.
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_option.
+    destruct m; reflexivity.
+  Qed.
   Arguments bind_option_id_right [A] m.
 
   Lemma bind_option_assoc : ∀ {A B C} (m : option A) 
     (f : A → option B) (g : B → option C),
   bind_option (bind_option m f) g = bind_option m (λ a : A, bind_option (f a) g).
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros; unfold bind_option.
+    destruct m; reflexivity.
+  Qed. 
   Arguments bind_option_assoc [A B C] m f g.
 
   Global Instance option_monad : Monad option :=
@@ -186,14 +195,16 @@ Section option_monad.
 End option_monad.
 Instance some_sound : return_sound option option.
 Proof.
-  unfold return_sound. eauto with soundness.
+  unfold return_sound; intros. 
+  constructor; assumption.
 Qed.
 Hint Resolve some_sound : soundness.
 
 Instance bind_option_sound : bind_sound option option.
 Proof.
-  unfold bind_sound. unfold bindM; simpl. intros. destruct m, m'; 
-  eauto with soundness; simpl.
+  unfold bind_sound; intros A A' B B' GA GB m m' f f' Hm Hf.
+  unfold bindM; simpl; unfold bind_option.
+  destruct m, m'; eauto with soundness.
 Qed.
 Hint Resolve bind_option_sound : soundness.
 
@@ -214,19 +225,27 @@ Section optionA_monad.
 
   Lemma bind_optionA_id_left : ∀ {A B} (f : A → optionA B) (a : A),
   bind_optionA (SomeA a) f = f a.
-  Proof. simple_solve. Qed.
+  Proof. reflexivity. Qed.
   Arguments bind_optionA_id_left [A B] f a.
 
   Lemma bind_optionA_id_right :  ∀ {A} (m : optionA A),
     bind_optionA m SomeA = m.
-  Proof. simple_solve. Qed.
+  Proof. 
+    intros A m. unfold bind_optionA.
+    destruct m; reflexivity.
+  Qed.
   Arguments bind_optionA_id_right [A].
 
   Lemma bind_optionA_assoc : ∀ {A B C} (m : optionA A) 
     (f : A → optionA B) (g : B → optionA C),
     bind_optionA (bind_optionA m f) g =
     bind_optionA m (λ a : A, bind_optionA (f a) g).
-  Proof. solve_monad. Qed.
+  Proof. 
+    intros; unfold bind_optionA.
+    destruct m; try reflexivity.
+    destruct (f a); try reflexivity.
+    destruct (g b); try reflexivity.
+  Qed.
   Arguments bind_optionA_assoc [A B C] m f g.
 
   Global Instance optionA_monad : Monad optionA :=
@@ -289,9 +308,10 @@ Section optionT_Monad.
     bind_optionT (bind_optionT m f) g =
     bind_optionT m (λ a : A, bind_optionT (f a) g).
   Proof. 
-    intros. unfold bind_optionT. autorewrite with monads.
-    f_equal. ext. destruct x; eauto with monads.
-    autorewrite with monads. reflexivity.
+    intros; unfold bind_optionT. 
+    rewrite bind_assoc; f_equal; extensionality x. 
+    destruct x; eauto with monads.
+    rewrite bind_id_left. reflexivity.
   Qed.
   Arguments bind_optionT_assoc [A B C] m f g.
 
@@ -307,6 +327,9 @@ Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : monads.
 
 Section optionAT_state_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
+
+  Definition return_optionAT_state {A} (a : A) : optionAT (State S) A :=
+    λ s : S, (SomeA a, s).
 
   Definition bind_optionAT_state {A B} 
     (m : optionAT (State S) A)
@@ -325,22 +348,19 @@ Section optionAT_state_monad.
   Hint Unfold bind_optionAT_state : monads.
 
   Lemma bind_optionAT_state_id_left : ∀ {A B} (f : A → optionAT (State S) B) (a : A), 
-    bind_optionAT_state (returnM (M:=State S) (SomeA a)) f = f a.
+    bind_optionAT_state (return_optionAT_state  a) f = f a.
   Proof. 
-    unfold bind_optionAT_state; simpl. intros. ext.
+    intros; unfold bind_optionAT_state, return_optionAT_state.
     reflexivity.
   Qed.
   Arguments bind_optionAT_state_id_left [A B] f a.
 
   Lemma bind_optionAT_state_id_right : ∀ (A : Type) (m : optionAT (State S) A), 
-    bind_optionAT_state m (λ a, returnM (M:=State S) (SomeA a))= m.
+    bind_optionAT_state m (λ a, return_optionAT_state  a) = m.
   Proof. 
-    unfold bind_optionAT_state.  intros. 
-    rewrite <- (bind_id_right (M:=State S)).
-    unfold bindM; simpl; unfold bind_state. 
-    f_equal; extensionality s; destruct (m s).
-    destruct o; simpl; try reflexivity.
-    unfold returnM; simpl; unfold return_state.
+    intros; unfold bind_optionAT_state, return_optionAT_state; extensionality s.
+    destruct (m s) as [o s'].
+    destruct o; try reflexivity.
     rewrite JI; reflexivity.
   Qed.
 
@@ -439,7 +459,6 @@ End optionAT_state_sound.
 
 Section optionAT_stateT_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
-  Compute (optionAT (StateT S option)).
 
   Definition return_optionAT_stateT {A} (a : A) : optionAT (StateT S option) A :=
     λ s : S, Some (SomeA a, s).
