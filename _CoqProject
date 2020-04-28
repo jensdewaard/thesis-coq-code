@@ -22,7 +22,7 @@ Classes/IsBool.v
 Instances/Preorder.v
 Instances/Joinable.v
 Instances/Store.v
-Instances/Except.v
+Instances/MonadExcept.v
 Instances/Galois.v
 SharedInterpreter.v
 Soundness.v
