@@ -37,8 +37,8 @@ Section fail_optionT.
     fail_optionT >>= m = fail_optionT.
   Proof.
     intros A B m. unfold fail_optionT. 
-    unfold bindM; simpl. unfold bind_op_optionT, bind_optionT. 
-    rewrite bind_id_left; reflexivity.
+    unfold bindM; simpl; unfold bind_op_optionT, bind_optionT. 
+    rewrite bind_id_left. reflexivity.
   Qed.
 
   Global Instance monadfail_optionT : MonadFail (optionT M) := {
@@ -47,7 +47,7 @@ Section fail_optionT.
 End fail_optionT.
 
 Section fail_stateT.
-  Context {M : Type -> Type} `{MM : Monad M} {MF : MonadFail M}.
+  Context {M : Type -> Type} {RO : return_op M} `{MF : MonadFail M}.
   Context {S : Type}.
 
   Definition fail_stateT {A} : StateT S M A := 
@@ -70,10 +70,11 @@ Section fail_stateT.
 End fail_stateT.
 
 Instance monadfail_stateT_sound {M M'} 
-  `{MM : Monad M} `{MM' : Monad M'}
+  {RM : return_op M} {RM' : return_op M'}
+  {BM : bind_op M} {BM' : bind_op M'}
+  {MF : MonadFail M} {MF' : MonadFail M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
-  {S S'} {GS : Galois S S'}
-  {MF : MonadFail M} {MF' : MonadFail M'} : 
+  {S S'} {GS : Galois S S'}:
     MonadFail_sound M M' →
     MonadFail_sound (StateT S M) (StateT S' M').
 Proof.
@@ -89,7 +90,8 @@ Section fail_optionAT.
   Definition fail_optionAT {A} : optionAT (StateT S option) A := 
     fail >>= λ a, returnM (SomeA a).
 
-  Lemma fail_optionAT_left : ∀ (A B : Type) (f : A → optionAT (StateT S option) B),
+  Lemma fail_optionAT_left : ∀ (A B : Type) 
+    (f : A → optionAT (StateT S option) B),
     fail_optionAT >>= f = fail_optionAT.
   Proof.
     intros A B f. unfold fail_optionAT. repeat rewrite fail_left.
@@ -102,8 +104,8 @@ Section fail_optionAT.
   }.
 End fail_optionAT.
 
-Instance monadfail_optionAT_sound {S S'} {JS : Joinable S S} {JI : JoinableIdem
-  JS} {GS : Galois S S'} :
+Instance monadfail_optionAT_sound {S S'} {JS : Joinable S S} 
+  {JI : JoinableIdem JS} {GS : Galois S S'} :
     MonadFail_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
 Proof.
   intros A A' GA m'. 
