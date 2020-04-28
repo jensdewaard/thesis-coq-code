@@ -481,15 +481,17 @@ End optionAT_state_sound.
 
 Section optionAT_stateT_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
+  Context {M} {RO : return_op M} {BO : bind_op M} {MM : Monad M}.
 
-  Definition return_optionAT_stateT {A} (a : A) : optionAT (StateT S option) A :=
-    λ s : S, Some (SomeA a, s).
+  Definition return_optionAT_stateT {A} (a : A) : optionAT (StateT S M) A :=
+    λ s : S, returnM (SomeA a, s).
+
   Global Instance return_op_optionAT_stateT : 
-    return_op (optionAT (StateT S option)) := @return_optionAT_stateT.
+    return_op (optionAT (StateT S M)) := @return_optionAT_stateT.
 
   Definition bind_optionAT_stateT {A B} 
-    (m : optionAT (StateT S option) A)
-    (f : A -> optionAT (StateT S option) B) : optionAT (StateT S option) B :=
+    (m : optionAT (StateT S M) A)
+    (f : A -> optionAT (StateT S M) B) : optionAT (StateT S M) B :=
   λ s : S, m s >>= λ '(o, s'),
     match o with
     | NoneA => returnM (NoneA, s')
@@ -503,50 +505,46 @@ Section optionAT_stateT_monad.
     end.
   Hint Unfold bind_optionAT_stateT : monads.
   Global Instance bind_op_optionAT_stateT :
-    bind_op (optionAT (StateT S option)) := @bind_optionAT_stateT.
+    bind_op (optionAT (StateT S M)) := @bind_optionAT_stateT.
 
-  Lemma bind_optionAT_stateT_id_left : ∀ {A B} (f : A → optionAT (StateT S option) B) (a : A), 
+  Lemma bind_optionAT_stateT_id_left : ∀ {A B} 
+    (f : A → optionAT (StateT S M) B) (a : A), 
     bind_optionAT_stateT (return_optionAT_stateT a) f = f a.
   Proof. 
     unfold bind_optionAT_stateT, return_optionAT_stateT; simpl; intros. 
-    extensionality s; easy. 
+    extensionality s. 
+    rewrite bind_id_left; reflexivity.
   Qed.
   Arguments bind_optionAT_stateT_id_left [A B] f a.
 
-  Lemma bind_optionAT_stateT_id_right : ∀ (A : Type) (m : optionAT (StateT S option) A), 
+  Lemma bind_optionAT_stateT_id_right : ∀ (A : Type) 
+    (m : optionAT (StateT S M) A), 
     bind_optionAT_stateT m (λ a, return_optionAT_stateT a) = m.
   Proof. 
     unfold bind_optionAT_stateT; intros. 
-    rewrite <- (bind_id_right (M:=StateT S option)).
-    unfold bindM; simpl. 
-    unfold bind_op_option, bind_option, bind_op_stateT, bind_stateT.
     unfold return_optionAT_stateT.
-    extensionality s; destruct (m s).
-    - destruct p, o.
-      + easy. 
-      + easy. 
-      + unfold returnM; simpl.
-        unfold bindM; simpl. rewrite JI. easy.
-    - easy.
+    extensionality s.
+    rewrite <- bind_id_right; f_equal.
+    extensionality p; destruct p, o.
+    1, 2: reflexivity. 
+    rewrite bind_id_left, JI; reflexivity.
   Qed.
 
-  Lemma bind_optionAT_stateT_assoc : ∀ {A B C} (m : optionAT (StateT S option) A) 
-    (f : A → optionAT (StateT S option) B) (g : B → optionAT (StateT S option) C),
+  Lemma bind_optionAT_stateT_assoc : ∀ {A B C} 
+    (m : optionAT (StateT S M) A) 
+    (f : A → optionAT (StateT S M) B) 
+    (g : B → optionAT (StateT S M) C),
     bind_optionAT_stateT (bind_optionAT_stateT m f) g =
     bind_optionAT_stateT m (λ a : A, bind_optionAT_stateT (f a) g).
   Proof. 
     intros; unfold bind_optionAT_stateT. 
     extensionality s.
-    unfold bindM; simpl; unfold bind_op_option, bind_option.
-    destruct (m s); try reflexivity; destruct p as [o s'].
-    destruct o; simpl; try reflexivity.
-    destruct (f a s'); try reflexivity.
-    destruct p as [o' s''].
-    destruct o'; simpl; try reflexivity.
+    rewrite bind_assoc; f_equal; extensionality p. 
+    destruct p, o.
   Admitted.
   Arguments bind_optionAT_stateT_assoc [A B C] m f g.
 
-  Global Instance monad_optionAT_stateT : Monad (optionAT (StateT S option)) :=
+  Global Instance monad_optionAT_stateT : Monad (optionAT (StateT S M)) :=
   {
     bind_id_left := bind_optionAT_stateT_id_left;
     bind_id_right := bind_optionAT_stateT_id_right;
