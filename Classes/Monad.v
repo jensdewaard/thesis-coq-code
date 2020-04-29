@@ -1,5 +1,6 @@
 Require Export Base.
 Require Import Classes.Galois List.
+Require Import Classes.PreorderedSet.
 
 Implicit Type M : Type → Type.
 Implicit Type T : (Type → Type) → Type → Type.
@@ -25,6 +26,14 @@ Class Monad M {RO : return_op M} {BO : bind_op M} : Type :=
     m >>= returnM = m;
   bind_assoc : ∀ {A B C} (m : M A) (f : A → M B) (g : B → M C),
     (m >>= f) >>= g = m >>= (λ a, (f a) >>= g);
+}.
+
+Class OrderedMonad M {RO : return_op M} {BO : bind_op M} : Type :=
+{
+  monad_preorder : ∀ {A} {PA : PreorderedSet A}, PreorderedSet (M A);
+  bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}
+   (m m' : M A) (f f' : A → M B),
+   m ⊑ m' → (∀ a : A, (f a) ⊑ (f' a)) → (m >>= f) ⊑ (m' >>= f');
 }.
 
 Arguments bindM : simpl never.
