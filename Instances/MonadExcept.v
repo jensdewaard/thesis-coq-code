@@ -234,21 +234,23 @@ Hint Resolve except_stateT : soundness.
 
 Section except_optionAT.
   Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
+  Context {M : Type → Type} `{MM : Monad M} {MJ : MonadJoin M}.
 
-  Definition throw_optionAT {A} : optionAT (StateT S option) A := 
+  Definition throw_optionAT {A} : optionAT (StateT S M) A := 
     returnM NoneA.
 
   Lemma throw_optionAT_left : ∀ (A B : Type) 
-    (m : A → optionAT (StateT S option) B), 
+    (m : A → optionAT (StateT S M) B), 
     bind_optionAT_stateT (A:=A) (B:=B) throw_optionAT m = throw_optionAT (A:=B).
   Proof. 
     intros; unfold bind_optionAT_stateT, throw_optionAT; extensionality s. 
-    reflexivity.
+    unfold returnM; unfold return_op_stateT, return_stateT.
+    rewrite bind_id_left; reflexivity.
   Qed.
 
   Definition catch_optionAT {A} {JA : Joinable A A} {JAI : JoinableIdem JA}
-    (mx my : optionAT (StateT S option) A) : optionAT (StateT S option) A :=
-    bindM (M:=(StateT S option)) mx (fun x : optionA A =>
+    (mx my : optionAT (StateT S M) A) : optionAT (StateT S M) A :=
+    bindM (M:=(StateT S M)) mx (fun x : optionA A =>
       match x with
       | SomeA a => returnM (SomeA a)
       | SomeOrNoneA a => 
@@ -258,7 +260,7 @@ Section except_optionAT.
 
   Lemma catch_optionAT_throw_left :
       ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} 
-      (x : optionAT (StateT S option) A),
+      (x : optionAT (StateT S M) A),
     catch_optionAT throw_optionAT x = x.
   Proof. 
     intros; unfold catch_optionAT, throw_optionAT. 
@@ -266,29 +268,28 @@ Section except_optionAT.
   Qed.
 
   Lemma catch_optionAT_throw_right :
-    ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} (m : optionAT (StateT S option) A),
+    ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} 
+    (m : optionAT (StateT S M) A),
     catch_optionAT m throw_optionAT = m.
   Proof. 
     intros; unfold catch_optionAT, throw_optionAT. 
-    rewrite <- (bind_id_right (M:=(StateT S option))). 
+    rewrite <- (bind_id_right (M:=(StateT S M))). 
     f_equal; extensionality x.
     destruct x; try reflexivity.
-    unfold "<⊔>"; simpl; unfold mjoin_stateT. extensionality s.
-    unfold "<⊔>"; simpl; cbn. 
-    unfold "⊔", pair_joinable; simpl. 
-    rewrite JI; reflexivity.
+    rewrite mjoin_return; easy.
   Qed.
 
   Lemma catch_optionAT_return :
     ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} 
-    (m : optionAT (StateT S option) A) (a : A),
+    (m : optionAT (StateT S M) A) (a : A),
     catch_optionAT (return_optionAT_stateT a) m = return_optionAT_stateT a.
   Proof.
     intros; unfold catch_optionAT, return_optionAT_stateT; extensionality s.
-    unfold bindM; simpl. reflexivity.
+    unfold bindM; simpl; unfold bind_op_stateT, bind_stateT. 
+    rewrite bind_id_left; reflexivity.
   Qed.
 
-  Global Instance except_optionAT : MonadExcept (optionAT (StateT S option)) :=
+  Global Instance except_optionAT : MonadExcept (optionAT (StateT S M)) :=
     {
       throw_left := throw_optionAT_left;
       catch_left := catch_optionAT_throw_left;
@@ -298,66 +299,46 @@ Section except_optionAT.
 End except_optionAT.
 
 Instance throw_optionAT_sound {S S' : Type} {GS : Galois S S'} 
-  {JS : Joinable S S} {JI : JoinableIdem JS} : 
-  throw_op_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
+  {JS : Joinable S S} {JI : JoinableIdem JS} 
+  {M M' : Type → Type} `{MM : Monad M} `{MM' : Monad M'} {MJ : MonadJoin M} 
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
+  return_sound M M' →
+  throw_op_sound (optionAT (StateT S M)) (optionT (StateT S' M')).
 Proof.
-  intros A A' GA; unfold throw; simpl; unfold throw_optionAT, return_stateT.
+  intros RS A A' GA; unfold throw; simpl; unfold throw_optionAT, throw_optionT.
   intros s s' Hs. 
+  unfold returnM, return_op_stateT, return_stateT.
   apply returnM_sound.
   constructor; simpl; constructor + assumption.
 Qed.
 
 Instance catch_optionAT_sound {S S' : Type} {GS : Galois S S'} 
-  {JS : Joinable S S} {JSS : JoinableSound JS} {JI : JoinableIdem JS} :
-  catch_op_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
+  {JS : Joinable S S} {JSS : JoinableSound JS} {JI : JoinableIdem JS} 
+  {M M' : Type → Type} `{MM : Monad M} `{MM' : Monad M'} {MJ : MonadJoin M}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} 
+  {MJS : MonadJoinSound M M'} :
+  return_sound M M' →
+  bind_sound M M' →
+  catch_op_sound (optionAT (StateT S M)) (optionT (StateT S' M')).
 Proof.
-  intros A JA JAI A' JA' JAI' GA JAS p1 p2 p1' p2' Hp1 Hp2.
-  unfold catch; simpl. unfold catch_optionAT, catch_optionT.
+  intros RS BS A JA JAI A' JA' JAI' GA JAS p1 p2 p1' p2' Hp1 Hp2.
+  unfold catch; simpl; unfold catch_optionAT, catch_optionT.
   unfold bindM; simpl; unfold bind_op_stateT, bind_stateT.
   intros s s' Hs.
-  unfold bindM; simpl; unfold bind_op_option, bind_option.
   apply Hp1 in Hs.
-  destruct (p1 s), (p1' s').
-  - destruct p, p0. destruct o, o0.
-    + apply Hs.
-    + inversion Hs; subst.
-      inversion H1; subst; simpl in *.
-      inversion H.
-    + inversion Hs; subst.
-      inversion H1; subst; simpl in *.
-      inversion H.
-    + inversion Hs; subst.
-      inversion H1; subst; simpl in *.
-      apply Hp2 in H0. assumption.
-    + unfold mjoin_stateT. unfold returnM; simpl.
-      inversion Hs; subst.
-      inversion H1; subst; simpl in *.
-      apply Hp2 in H0.
-      destruct (p2 s0).
-      * constructor. destruct p; simpl. unfold "⊔", pair_joinable; simpl.
-        destruct o.
-        -- constructor; simpl; apply join_sound.
-          ++ left. assumption.
-          ++ left. inversion H1; simpl in *. assumption.
-        -- constructor; simpl in *; apply join_sound.
-          ++ left. assumption.
-          ++ left. inversion H1; simpl in *; subst. assumption.
-        -- constructor; simpl in *; apply join_sound.
-          ++ left. assumption.
-          ++ left. inversion H1; subst; simpl in *. assumption.
-      * constructor.
-    + unfold mjoin_stateT. unfold returnM; simpl.
-      inversion Hs; subst; clear Hs.
-      inversion H1; subst; simpl in *; clear H1.
-      apply Hp2 in H0. destruct (p2 s0), (p2' s1).
-      * constructor. destruct p, p0. apply join_sound. right.
-        inversion H0; subst. assumption.
-      * inversion H0.
-      * constructor.
-      * constructor.
-  - inversion Hs.
-  - constructor.
-  - constructor.
+  apply bindM_sound; try assumption.
+  intros p3 p3' Hp3.
+  destruct p3 as [o3 s3], p3' as [o3' s3']; destruct o3, o3'.
+    + apply returnM_sound. assumption.
+    + inversion Hp3; subst; simpl in *; inversion H.
+    + inversion Hp3; subst; simpl in *; inversion H.
+    + inversion Hp3; subst; simpl in *; apply Hp2 in H0; assumption.
+    + unfold mjoin_stateT. unfold returnM; simpl; unfold return_op_stateT,
+        return_stateT.
+      apply mjoin_sound_left, returnM_sound; assumption.
+    + unfold mjoin_stateT; apply mjoin_sound_right.
+      inversion Hp3; subst; simpl in *. apply Hp2 in H0.
+      assumption.
 Qed.
 Hint Resolve catch_optionAT_sound throw_optionAT_sound : soundness.
 Hint Resolve except_optionAT : soundness.

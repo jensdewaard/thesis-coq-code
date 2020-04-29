@@ -96,6 +96,7 @@ Theorem eval_expr_sound : ∀ (e : expr),
     (shared_eval_expr (M:=ConcreteState) (valType:=cvalue) e).
 Proof.
   eapply shared_eval_expr_sound; eauto 10 with soundness.
+  - apply except_optionAT.
   - apply except_optionT. apply monad_stateT.
   - apply bind_optionAT_stateT_sound.
   - apply someAT_stateT_sound.
@@ -111,9 +112,10 @@ Theorem sound_interpreter: ∀ c,
 Proof.
   eapply shared_ceval_sound; eauto 10 with soundness. 
   - apply catch_optionAT_sound.
+    + apply some_sound.
+    + apply bind_option_sound.
   - apply bind_optionAT_stateT_sound.
   - apply someAT_stateT_sound.
-  - apply if_top_sound. eauto 10 with soundness. 
-    apply if_ab_op_sound. 
+  - apply if_top_sound, if_ab_op_sound. 
 Qed.
 
