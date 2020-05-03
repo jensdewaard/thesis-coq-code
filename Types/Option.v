@@ -197,6 +197,17 @@ Section option_monad.
   }. 
 End option_monad.
 
+Instance option_ordered : OrderedMonad option.
+Proof.
+  split with @option_preorder; intros A B PA PB m m' f f' Hm Hf Hff'.
+  destruct m, m'; unfold bindM, bind_op_option, bind_option.
+  - inversion Hm; subst. eapply preorder_trans with (y:=f a0). apply Hf.
+    assumption. apply Hff'.
+  - constructor.
+  - inversion Hm.
+  - constructor.
+Defined.
+
 Instance some_sound : return_sound option option.
 Proof.
   unfold return_sound; intros. 
@@ -262,6 +273,32 @@ Section optionA_monad.
     bind_assoc := bind_optionA_assoc;
   }. 
 End optionA_monad.
+
+Instance optionA_ordered : OrderedMonad optionA.
+Proof.
+  split with @optionA_preorder. intros A B PA PB m m' f f' Hm Hf Hff'.
+  destruct m, m'; unfold bindM, bind_op_optionA, bind_optionA.
+  - inversion Hm; subst.
+    eapply preorder_trans with (f a0); auto. 
+  - inversion Hm.
+  - inversion Hm; subst.
+    apply Hf in H1.
+    assert (f a ⊑ f' a0) as Hf2.
+    { eapply preorder_trans with (f a0); auto. }
+    destruct (f' a0).
+    + apply preorder_trans with (SomeA b); auto. constructor.
+      apply preorder_refl.
+    + inversion Hf2. apply preorder_refl.
+    + assumption.
+  - inversion Hm.
+  - apply preorder_refl.
+  - destruct (f' a); constructor.
+  - inversion Hm.
+  - inversion Hm.
+  - inversion Hm; subst. assert (f a ⊑ f' a0) as Hb.
+    { apply preorder_trans with (f a0); auto. }
+    destruct (f a), (f' a0); inversion Hb; subst; constructor; assumption.
+Defined.
 
 Instance someA_sound : return_sound optionA option.
 Proof.

@@ -108,19 +108,15 @@ Section preordered_sets_le.
 End preordered_sets_le.
 Hint Constructors preordered_set_le : preorders.
 
-Section identity_preorder.
-  Context {A} `{A_preorder : PreorderedSet A}.
+Definition identity_le {A} {PA : PreorderedSet A} (i1 i2 : Identity A) : Prop 
+  := match i1, i2 with | identity a1, identity a2 => a1 ⊑ a2 end.
 
-  Definition identity_le (i1 i2 : Identity A) : Prop :=
-    match i1, i2 with
-    | identity a1, identity a2 => preorder a1 a2
-    end.
-  Hint Unfold identity_le : preorders.
-
-  Global Instance identity_preorder : PreorderedSet (Identity A).
-  Proof. proof_preorder identity_le. Defined.
-End identity_preorder.
-
+Instance identity_preorder A {PA : PreorderedSet A} : PreorderedSet (Identity A).
+Proof.
+  split with identity_le.
+  - destruct x. apply preorder_refl.
+  - destruct x, y, z. apply preorder_trans.
+Defined.
 
 Global Instance preorder_nat : PreorderedSet nat.
 Proof. proof_preorder le; eauto with arith. Defined.

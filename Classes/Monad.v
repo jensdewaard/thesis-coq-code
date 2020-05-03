@@ -33,7 +33,10 @@ Class OrderedMonad M {RO : return_op M} {BO : bind_op M} : Type :=
   monad_preorder : ∀ {A} {PA : PreorderedSet A}, PreorderedSet (M A);
   bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}
    (m m' : M A) (f f' : A → M B),
-   m ⊑ m' → (∀ a : A, (f a) ⊑ (f' a)) → (m >>= f) ⊑ (m' >>= f');
+   m ⊑ m' → 
+   (∀ a a' : A, a ⊑ a' → (f a) ⊑ (f a')) → 
+   (∀ a : A, (f a) ⊑ (f' a)) →
+   (m >>= f) ⊑ (m' >>= f');
 }.
 
 Arguments bindM : simpl never.
@@ -109,6 +112,16 @@ Section Identity_Monad.
     bind_id_right := bind_id_id_right;
     bind_assoc := bind_id_assoc;
   }.
+
+  Global Instance ordered_identity : OrderedMonad Identity.
+  Proof.
+    split with identity_preorder; intros A B PA PB m m' f f' Hm Hf Hf'.
+    unfold bindM. unfold bind_op_id.
+    destruct m as [a], m' as [a']; simpl in Hm.
+    eapply preorder_trans. 
+    - apply Hf. apply Hm.
+    - apply Hf'.
+  Qed.
 End Identity_Monad.
 
 Section list_monad.
@@ -160,5 +173,15 @@ Section list_monad.
     bind_id_right := @bind_list_id_right;
     bind_assoc := @bind_list_assoc;
   }.
+
+  Definition list_le {A} (l1 l2 : list A) : Prop :=
+    ∀ a, In a l1 → In a l2.
+
+  Global Instance list_preorder {A} : PreorderedSet (list A).
+  Proof.
+    split with list_le.
+    - intros l a H. apply H.
+    - intros x y z Hxy Hyz. unfold list_le in *. auto. 
+  Defined.
 End list_monad.
 
