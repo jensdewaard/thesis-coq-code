@@ -31,6 +31,8 @@ Class Monad M {RO : return_op M} {BO : bind_op M} : Type :=
 Class OrderedMonad M {RO : return_op M} {BO : bind_op M} : Type :=
 {
   monad_preorder : ∀ {A} {PA : PreorderedSet A}, PreorderedSet (M A);
+  return_monotone : ∀ {A} {PA : PreorderedSet A} (a1 a2 : A),
+    a1 ⊑ a2 → returnM a1 ⊑ returnM a2;
   bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}
    (m m' : M A) (f f' : A → M B),
    m ⊑ m' → 
@@ -115,12 +117,12 @@ Section Identity_Monad.
 
   Global Instance ordered_identity : OrderedMonad Identity.
   Proof.
-    split with identity_preorder; intros A B PA PB m m' f f' Hm Hf Hf'.
-    unfold bindM. unfold bind_op_id.
-    destruct m as [a], m' as [a']; simpl in Hm.
-    eapply preorder_trans. 
-    - apply Hf. apply Hm.
-    - apply Hf'.
+    split with identity_preorder. 
+    - intros A PA a1 a2 Ha. apply Ha.
+    - intros A B PA PB m m' f f' Hm Hf Hf'.
+      unfold bindM, bind_op_id.
+      destruct m as [a], m' as [a']; simpl in Hm.
+      eapply preorder_trans with (f a'); auto.
   Qed.
 End Identity_Monad.
 

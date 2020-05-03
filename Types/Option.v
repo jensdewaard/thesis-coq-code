@@ -199,13 +199,12 @@ End option_monad.
 
 Instance option_ordered : OrderedMonad option.
 Proof.
-  split with @option_preorder; intros A B PA PB m m' f f' Hm Hf Hff'.
-  destruct m, m'; unfold bindM, bind_op_option, bind_option.
-  - inversion Hm; subst. eapply preorder_trans with (y:=f a0). apply Hf.
-    assumption. apply Hff'.
-  - constructor.
-  - inversion Hm.
-  - constructor.
+  split with @option_preorder. 
+  - intros A PA a1 a2 Ha; constructor; assumption.
+  - intros A B PA PB m m' f f' Hm Hf Hff'.
+    destruct m, m'; unfold bindM, bind_op_option, bind_option;
+      try constructor; inversion Hm; subst. 
+    apply preorder_trans with (y:=f a0); auto. 
 Defined.
 
 Instance some_sound : return_sound option option.
@@ -276,7 +275,9 @@ End optionA_monad.
 
 Instance optionA_ordered : OrderedMonad optionA.
 Proof.
-  split with @optionA_preorder. intros A B PA PB m m' f f' Hm Hf Hff'.
+  split with @optionA_preorder. 
+  intros A PA a1 a2 Ha; constructor; assumption.
+  intros A B PA PB m m' f f' Hm Hf Hff'.
   destruct m, m'; unfold bindM, bind_op_optionA, bind_optionA.
   - inversion Hm; subst.
     eapply preorder_trans with (f a0); auto. 
@@ -376,6 +377,42 @@ Section optionT_Monad.
 End optionT_Monad.
 Hint Unfold bind_optionT : monads.
 Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : monads.
+
+(*Definition optionT_le {M} {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)} 
+  {BO : bind_op M} {RO : return_op M}
+  {A} (m1 m2 : optionT M A) : Prop :=
+  m1 >>= (λ o1, *)
+
+Program Instance optionT_preorder {M} 
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)} : ∀ A, 
+  PreorderedSet A →  PreorderedSet (optionT M A) :=
+{
+  preorder := preorder;
+}.
+Next Obligation.
+  apply preorder_refl.
+Defined.
+Next Obligation.
+  apply preorder_trans with y; assumption.
+Defined.
+
+Instance monad_optionT_ordered {M : Type → Type} 
+  {BO : bind_op M} {RO : return_op M} 
+  {OM : OrderedMonad M} : 
+  OrderedMonad (optionT M).
+Proof.
+  destruct OM; split with optionT_preorder.
+  intros A PA a1 a2 Ha; apply return_monotone; constructor; assumption.
+  intros A B PA PB m m' f f' Hm Hf Hf'.
+  unfold bindM, bind_op_optionT, bind_optionT.
+  eapply bind_monotone.
+  + assumption.
+  + intros a a' Ha. destruct a eqn:?, a' eqn:?.
+    * inversion Ha; subst. apply Hf. assumption. 
+    * admit.
+    * inversion Ha.
+    * apply return_monotone. constructor.
+Admitted.
 
 Section optionAT_state_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
@@ -588,6 +625,8 @@ Section optionAT_stateT_monad.
     bind_assoc := bind_optionAT_stateT_assoc;
   }.
 End optionAT_stateT_monad.
+
+
 
 Section optionAT_stateT_sound.
   Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
