@@ -465,12 +465,9 @@ Section optionAT_state_monad.
     intros; unfold bind_optionAT_state. 
     extensionality s.
     destruct (m s) as [o s'] eqn:Hms.
-    destruct o as [x | x | x].
+    destruct o as [x |  | x].
     - destruct (f x s') as [o' s''] eqn:Hfxs.
-      destruct o'.
-      + reflexivity.
-      + reflexivity.
-      + reflexivity.
+      destruct o'; reflexivity.
     - reflexivity.
     - (* m f = (SomeOrNoneA, ) *) 
       destruct (f x s') as [o s''] eqn:Hfxs.
@@ -511,7 +508,7 @@ Section optionAT_state_sound.
     intros s s' Hs. 
     apply Hm in Hs; destruct (m s) as [o s2], (m' s') as [o' s2'].
     inversion Hs as [? ? Ho Hs2 H1 H2]; simpl in *; subst; clear Hs.
-    destruct o as [a|a|a], o' as [a'|a'].
+    destruct o as [a| |a], o' as [a'|].
     - inversion Ho as [| | ? ? Ha |]; subst; clear Ho.
       apply Hf in Ha; apply Ha in Hs2; assumption.
     - inversion Ho.
