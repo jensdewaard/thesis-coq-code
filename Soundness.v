@@ -63,9 +63,60 @@ Proof.
 Qed.
 Hint Resolve joinable_values_idem : soundness.
 
-Lemma subtype_trans_r_sound' : SubType_sound 
+Lemma subtype_trans_r_sound' : 
+  SubType_sound
+    (Subtype.subtype_top_l abstr_bool avalue
+      (Subtype.subtype_trans_r (parity +⊤) (Subtype.subtype_top_r abstr_bool)))
+    (Subtype.subtype_r nat bool).
+Proof. split.
+  - intros b b' Hb. 
+    destruct b, b'; simpl.
+    + constructor.
+    + constructor.
+    + destruct a; simpl.
+      * constructor; reflexivity.
+      * inversion Hb; discriminate.
+    + destruct a; simpl.
+      * inversion Hb; discriminate.
+      * constructor; reflexivity.
+  - intros s s' Hs. 
+    destruct s, s'; simpl.
+    + constructor.
+    + constructor.
+    + destruct a; try constructor.
+      destruct t; try constructor.
+      inversion Hs.
+    + destruct a; try constructor.
+      destruct t; try constructor.
+      inversion Hs; subst; constructor; reflexivity.
+Qed.
+Hint Resolve subtype_trans_r_sound' : soundness.
+
+Lemma subtype_trans_l_sound' : 
+  SubType_sound
+    (Subtype.subtype_top_l parity avalue
+     (Subtype.subtype_trans_l parity (parity +⊤) (abstr_bool +⊤)
+        (Subtype.subtype_top_r parity))) 
+    (Subtype.subtype_l nat bool).
+Proof. split.
+  - intros p n Hp.
+    destruct p; simpl; try constructor.
+    destruct p; simpl; inversion Hp; subst; constructor; assumption.
+  - intros s s' Hs.
+    destruct s, s'; simpl; try constructor.
+    + destruct a; try constructor.
+      destruct t; try constructor.
+      inversion Hs; subst; constructor; assumption.
+    + destruct a; try constructor.
+      destruct t; try constructor.
+      inversion Hs; subst; constructor; assumption.
+Qed.
+Hint Resolve subtype_trans_l_sound' : soundness.
+
+(*Lemma subtype_trans_r_sound' : 
+  SubType_sound 
     (subtype_trans_r (parity +⊤) (subtype_top_r abstr_bool))
-  (subtype_r nat bool).
+    (subtype_r nat bool).
 Proof. split.
   - intros s s' Hs. simpl. unfold compose. destruct s, s'.
     + constructor. reflexivity.
@@ -87,6 +138,7 @@ Proof. split.
     + inversion Hs.
 Qed.
 Hint Resolve subtype_trans_l_sound' : soundness.
+*)
 
 (* TODO abstract the above *)
 

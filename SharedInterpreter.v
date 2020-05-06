@@ -12,6 +12,7 @@ Require Import Types.Maps.
 Require Import Types.Parity.
 Require Import Types.Stores.
 Require Import Types.Subtype.
+Require Export Program.Basics.
 
 Definition ensure_type (subType : Type)
   {M : Type → Type} `{MM : Monad M} {MF : MonadFail M} 
@@ -62,8 +63,8 @@ Fixpoint shared_eval_expr
   match e with
   | EVal v => returnM (extract v)
   | EVar x =>
-      s <- get;
-      returnM (M:=M) (s x)
+      s <- MonadState.get;
+      returnM (s x)
   | EPlus e1 e2 => 
       v1 <- shared_eval_expr e1 ;
       v2 <- shared_eval_expr e2 ;
@@ -215,7 +216,7 @@ Fixpoint shared_ceval
       (shared_ceval c1) ;; (shared_ceval c2)
   | x ::= a => 
       v <- shared_eval_expr a ;
-      s <- get ;
+      s <- MonadState.get ;
       put (t_update s x v)
   | CIf b c1 c2 => 
       v <- shared_eval_expr b ;
