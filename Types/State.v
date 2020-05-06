@@ -1,6 +1,6 @@
 Require Export Base.
 Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois
-  Classes.Monad.MonadJoin.
+  Classes.Monad.MonadJoin Classes.PreorderedSet.
 
 Definition State (S A : Type) := S -> (A * S).
 Definition StateT S M A : Type := S → M (A*S)%type.
@@ -21,6 +21,23 @@ Proof.
   intros A A' GA. unfold StateT. apply galois_fun. apply GS.
   apply GM. apply galois_pairs; assumption.
 Defined.
+
+Section state_preordered.
+  Context {S} {PS : PreorderedSet S}.
+
+  Definition state_preorder {A} {PA : PreorderedSet A}
+    (m m' : State S A) : Prop :=
+      ∀ s : S, m s ⊑ m' s.
+
+  Global Instance state_preordered {A} {PA : PreorderedSet A} : 
+    PreorderedSet (State S A).
+  Proof.
+    split with state_preorder; unfold state_preorder.
+    - intros m s . apply preorder_refl.
+    - intros x y z Hxy Hyz s.
+      apply preorder_trans with (y s); auto.
+  Defined.
+End state_preordered.
 
 Section state_joinable.
   Context {S} {JS : Joinable S S}.
