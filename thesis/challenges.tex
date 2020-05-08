@@ -28,12 +28,12 @@ first implementation of \coq{bind_optionAT } is given below.
   Definition bind_optionAT {A B} 
     (Mma : optionAT M A)
     (f : A -> optionAT M B) : optionAT M B :=
-  bindM (M:=M) Mma (fun ma =>
+  bindM (M:=M) Mma (λ ma,
     match ma with
     | NoneA => returnM NoneA
     | SomeA a => f a
     | SomeOrNoneA a => (
-        bindM (M:=M) (f a) (fun mfa =>
+        bindM (M:=M) (f a) (λ mfa,
                        match mfa with
                        | NoneA => returnM NoneA
                        | SomeA b => returnM (SomeOrNoneA b)
@@ -64,8 +64,8 @@ soundness proof begins to break down if we use the above definition. We end up
 with the unprovable and incorrect goal of 
 
 \begin{minted}{coq}
-gamma 
-    (f' a >>= fun mfa => 
+γ 
+    (f' a >>= λ mfa,
        | SomeA b | SomeOrNoneA b => returnM (SomeOrNoneA b) 
        | NoneA => returnM NoneA) 
     (returnM None).
@@ -90,30 +90,32 @@ as well.
 
 \begin{listing}
 \begin{minted}{coq}
-Class Joinable (T : Type) `{PreorderedSet T} : Type :=
+Class Joinable (T : Type) {PT : PreorderedSet T} : Type :=
 {
   join_op : T -> T -> T;
-  join_idem : forall x, join_op x x = x;
-  join_upper_bound_left: forall t t', preorder t (join_op t t');
-  join_upper_bound_right: forall t t', preorder t' (join_op t t');
-  join_assoc : forall x y z : T, 
+  join_idem : ∀ x, join_op x x = x;
+  join_upper_bound_left: ∀ t t', preorder t (join_op t t');
+  join_upper_bound_right: ∀ t t', preorder t' (join_op t t');
+  join_assoc : ∀ x y z : T, 
     join_op x (join_op y z) = join_op (join_op x y) z;
-  join_comm : forall x y, join_op x y = join_op y x;
+  join_comm : ∀ x y, join_op x y = join_op y x;
 }.
+Infix "⊔" := join_op (at level 40).
 \end{minted}
 \caption{The Joinable typeclass}
 \label{lst:joinable_typeclass}
 \end{listing}
 
-Included in the Joinable typeclass are two lemmas, join\_upper\_bound left and
-right. These make sure that the result of the join\_op is a valid approximation
+Included in the Joinable typeclass are two lemmas, 
+\coq{join_upper_bound_left } and \coq{join_upper_bound_right }. 
+These make sure that the result of \coq{join_op } is a valid approximation
 of all the concrete values approximated by either of the two input values. 
 The interval [1,3] approximates the number 1, and the interval [2,5]
 approximates 4. The join of those intervals is [1,5], which approximates both 1
 and 4. Because we want the branch of \coq{SomeOrNoneA } to approximate both
 \coq{None } and \coq{Some }, this looks promising.
 
-Unfortunately, we run into problems when deciding to use join\_op in the
+Unfortunately, we run into problems when deciding to use \coq{join_op } in the
 definition for a bind method. Say that we were the replace the earlier
 definition of \coq{bind_optionAT } with the following.
 
@@ -122,11 +124,11 @@ definition of \coq{bind_optionAT } with the following.
   Definition bind_optionAT {A B} `{Joinable B}
     (Mma : optionAT M A)
     (f : A -> optionAT M B) : optionAT M B :=
-  bindM (M:=M) Mma (fun ma =>
+  bindM (M:=M) Mma (λ ma,
     match ma with
     | NoneA => returnM NoneA
     | SomeA a => f a
-    | SomeOrNoneA a => join_op (returnM NoneA) (f a)
+    | SomeOrNoneA a => (returnM NoneA) ⊔ (f a)
     end).
 \end{minted}
 \caption{bind\_optionAT with a join\_op}
@@ -148,11 +150,11 @@ This poses a problem. For example, say that we would encapsulate the option
 monad. The Joinable instance for option is predicated on the fact that the inner
 value \coq{A } is also joinable. This is necessary to be able to join two values of
 \coq{Some } constructors. This constraint would then pass on to our optionAT
-moand, but monads should not place restrictions on the values they wrap.
+monad, but monads should not place restrictions on the values they wrap.
 
 The same goes for if we were to wrap optionAT around a State monad. The join
 operator for State is 
-\coq{fun m1 => fun m2 => fun st => join_op (m1 st) (m2 st) }.
+\coq{λ m1, λ m2, λ st, (m1 st) ⊔ (m2 st) }.
 Because states have the type signature \coq{S -> (A * S) }, we are calling the
 join operator for pairs, which also requires both components of the pair to be
 joinable. Again, we end up with a constraint for the wrapped value A.
@@ -161,4 +163,77 @@ However, joining the wrapped value is also not what we were looking for. In
 order for the bind method to be sound, it needs to join on the side effects,
 not on the wrapped value. The actual function we are looking for, in the case
 of State, looks more like 
-\coq{fun m => fun st => let (a, st') := m st in (a, join_op st st'). }
+\coq{λ m, λ st, let (a, st') := m st in (a, st ⊔ st'). }
+
+The above insight led us to develop an instance for bindM specific to adding
+the option functionality to the State monad.
+
+\begin{minted}{coq}
+  Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
+  Context {M : Type → Type} {MM : Monad M}.
+
+  Definition bind_optionAT_stateT {A B} 
+    (m : optionAT (StateT S M) A)
+    (f : A -> optionAT (StateT S M) B) : optionAT (StateT S M) B :=
+  λ s : S, m s >>= λ '(o, s'),
+    match o with
+    | NoneA => returnM (NoneA, s')
+    | SomeA x => (f x s')
+    | SomeOrNoneA x => (f x s') >>= λ '(o', s''),
+        match o' with 
+        | NoneA => returnM (NoneA, s' ⊔ s'')
+        | SomeA x' => returnM (SomeOrNoneA x', s' ⊔ s'')
+        | SomeOrNoneA x' => returnM (SomeOrNoneA x', s' ⊔ s'')
+        end
+    end.
+\end{minted}
+
+This definition satisfies our requirement on the joining of the side effect
+of the underlying monad \coq{(StateT M) }, without requiring a join on the
+types \coq{A } or \coq{B }. Indeed, because we now join on the carried state we
+are able to prove this bind operation sound.
+
+However, we run into an new problem. The above bind method is not associative,
+which means that a monad transformed by our \coq{optionAT } monad transformer
+is no longer a monad as it does not obey the monadic laws. This observation
+does not appear to be new, as Maillard et al. remark that there is no proper
+monad transformer know for the nondetermenistic
+monad~\cite{maillard2019dijkstra}, of which our option
+monad is a simpler form.
+
+Associativity of the bind function is not necessary for our soundness proofs.
+We can proof that soundness is retained not only via equality, but also when a
+new result is demonstrably an overapproximation of the previous result.
+Starting with this insight, we try and define a weaker set of monad laws. We
+call types that satisfy these laws lax monads. These laws are almost equal to
+the standard monadic laws, except for replacing equality by a less-than
+operator.
+
+To be able to define a less-than operator for monads, we also introduce a new
+type of monad called ordered monads, the definition of which is given below.
+For our definition of ordered monads, we are inspired by the ordered monads
+from~\cite{maillard2019dijkstra}. However, we place additional monotonicity 
+constraints on the continuations \coq{f, f' }, as the monotonicity of the entire
+bind method did not follow from the constraints given by Maillard et al.
+
+\begin{minted}{coq}
+Class OrderedMonad M {RO : return_op M} {BO : bind_op M} : Type :=
+{
+  monad_preorder : ∀ {A}, PreorderedSet A → PreorderedSet (M A);
+  return_monotone : ∀ {A} {PA : PreorderedSet A} (a1 a2 : A),
+    a1 ⊑ a2 → returnM a1 ⊑ returnM a2;
+  bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B} 
+   (m m' : M A) (f f' : A → M B),
+   m ⊑ m' → 
+   (∀ a a' : A, a ⊑ a' → (f a) ⊑ (f a')) → 
+   (∀ a : A, (f a) ⊑ (f' a)) →
+   (m >>= f) ⊑ (m' >>= f');
+}.
+\end{minted}
+
+The typeclasses \coq{return_op } and \coq{bind_op } are classes that are
+instantiated by all types that are equipped with return and bind functions. All
+of our defined monads are members of this class. We have split the \coq{returnM
+} and \coq{bindM } functions into seperate classes to able to define them
+without having to proof the monad laws that come with the \coq{Monad }
+typeclass.
