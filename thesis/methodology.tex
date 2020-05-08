@@ -42,42 +42,57 @@ this section. Other readers may wish to read it to help understand later code
 listings.
 
 \begin{minted}{coq}
-Inductive avalue_int : Type := 
-  | VInt : interval → avalue_int
-  | VAbool : abstr_bool → avalue_int
-  | VTop : avalue_int.
+Inductive option (A : Type) : Type := 
+  | Some : A → option A
+  | None : option A.
 \end{minted}
-In Coq, we define new types using the Inductive command. In the above example,
-we define a new type \coq{avalue_int } with three constructors, \coq{VInt },
-\coq{VAbool } and \coq{VTop }. A constructor is a function that can create the
-inductive type. The \coq{VInt } and \coq{VAbool } constructors each take one
-argument and \coq{VTop } doesn't take any.
+In Coq, we can define types using the Inductive command. In the above example,
+from the standard library,
+we define a type \coq{option } with two constructors, \coq{Some }
+and \coq{None }. A constructor is a function that can create the
+inductive type. The \coq{Some } constructor takes one
+argument and \coq{None } doesn't take any. The option type is dependent on the
+provided type \coq{A }, meaning that for every type \coq{A }, 
+there exists a type \coq{option A }.
 
 \begin{minted}{coq}
-Definition MaybeT (M : Type → Type) (A : Type) : Type := M (Maybe A).
+Definition optionT (M : Type → Type) (A : Type) : Type := M (Maybe A).
 
 Definition parity_plus (p q : parity) : parity :=
   match p, q with 
-  | par_top, _ | _, par_top => par_top
   | par_even, par_even | par_odd, par_odd  => par_even
   | par_odd, par_even  | par_even, par_odd => par_odd
   end.
 \end{minted}
 
-The Definition command creates type aliases or functions. In the first case, we
+The \coq{Definition } command creates type aliases or functions. 
+In the first case, we
 bind the identifier \coq{MaybeT M A } to \coq{M (Maybe A) }. The definition
 also requires that the parameters \coq{M } and \coq{A } be of types \coq{Type
--> Type} and \coq{Type} respectively.
+-> Type } and \coq{Type } respectively.
 
-The second Definition defines a function \coq{parity_plus } that takes 
+The second \coq{Definition } defines a function \coq{parity_plus } that takes
 two parities \coq{p } and \coq{q } and returns a new parity. Via the match
 tactic, Coq looks at which constructors where used to build \coq{p } and
 \coq{q } and returns the value associated with that case. The pipe symbol \coq{| }
 precedes a set of constructors for \coq{p } and \coq{q } and can be used to
-group cases together that have the same output. The underscore indicates that
-we are not interested in the specific value. Together, this means that the
-first case \coq{ | par_top, _ | _, par_top => par_top } matches any combination
-of values for \coq{p } and \coq{q } where either one of them is \coq{par_top }.
+group cases together that have the same output. An underscore indicates that
+we are not interested in the specific value. 
+
+\begin{minted}{coq}
+Definition parity_plus_lambda : parity → parity → parity :=
+    λ p, λ q, 
+        match p, q with 
+        | par_even, par_even | par_odd, par_odd  => par_even
+        | par_odd, par_even  | par_even, par_odd => par_odd
+        end.
+
+Definition swap {A B} : (A*B) -> (B*A) :=
+    λ '(a,b), (b, a).
+\end{minted}
+
+We can also define lambda functions using the above syntax. In the definition
+for \coq{swap }, \coq{'(a,b) } means that the provided value should be a pair.
 
 \begin{minted}{coq}
 Lemma parity_plus_par_even : forall p,
@@ -93,46 +108,56 @@ the original value. Proofs are delimited by the \coq{Proof.} and \coq{Qed.}
 commands. In between these commands come a series of \emph{tactics}. 
 
 There are several other commands we can use to define a lemma. These keywords 
-Theory, Lemma, Corollary, Remark, Fact and Proposition are all equivalent. Any
+\coq{Theorem }, \coq{Lemma }, \coq{Corollary }, \coq{Remark }, \coq{Fact } and 
+\coq{Proposition } are all equivalent. Any
 semantic difference is up to the developer. In our work, we will mostly use the
-Lemma keyword. We shall use the Theorem keyword for the final proof stating the
-soundness of the interpreters. On occassion, we will use the Corollary command
-to state a lemma that follows trivially from the preceding lemma.
+\coq{Lemma } keyword. We shall use the \coq{Theorem } keyword for the final proof 
+stating the soundness of the interpreters. On occassion, we will use the 
+\coq{Corollary } command to state a lemma that follows trivially from the 
+preceding lemma.
 
 \begin{minted}{coq}
-Class Galois (A A' : Type) {A'_preorder: PreorderedSet A'} : Type :=
-{
-  gamma : A' -> A -> Prop;
-  gamma_monotone : monotone gamma;
-}.
+Notation "℘ A" := (A → Prop) (at level 0, only parsing).
+Definition union {U : Type} (A B : ℘ U) : ℘ U :=
+  λ u : U, A u ∨ B u.
+Infix "∪" := union (at level 40).
+\end{minted}
+
+To keep our Coq code close to the mathematical theory behind it, we introduce a
+lot of notations. The \coq{Notation } command allows us to introduce those
+notations to Coq. The new notation is between the quotes, which its definition
+following after the \coq{:= }. The term between the second pair of brackets
+is technical information about how Coq should parse the notation, such as
+left or right associativity. The \coq{Infix } command is a shorthand for
+introducing a infix notation for a binary function.
+
+\begin{minted}{coq}
+Class Galois (A A' : Type) : Type :=  γ : A -> ℘ A'.
 \end{minted}
 
 In this thesis we utilize the typeclass mechanism of Coq. Typeclasses are a way
 to define methods and lemmas for types that implement that typeclass. In the
-above example, we define a Galois typeclass that takes two types, and a proof
-that the second type \coq{A'} forms a preordered set. It further states that
-implementation of this typeclass should define a function \coq{gamma} of type
-\coq{A' -> A -> Prop} and a proof that this function gamma is monotone.
+above example, we define a Galois typeclass that takes two types. It states that
+implementations of this typeclass should define a function \coq{γ} of type
+\coq{A' -> ℘ A}.
 
 \begin{minted}{coq}
-Inductive gamma_par : parity → nat → Prop :=
+Inductive gamma_par : parity → ℘ nat :=
   | gamma_par_even : ∀ n, Nat.Even n → gamma_par par_even n
-  | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n
-  | gamma_par_top  : ∀ n, gamma_par par_top n.
+  | gamma_par_odd  : ∀ n, Nat.Odd n → gamma_par par_odd n.
 Hint Constructors gamma_par : soundness.
 
-Lemma gamma_par_monotone : monotone gamma_par.
-Proof. (* proof omitted *) Qed.
-
-Instance galois_parity_nat : Galois nat parity :=
-{
-  gamma := gamma_par;
-  gamma_monotone := gamma_par_monotone;
-}.
+Instance galois_parity_nat : Galois parity nat := gamma_par.
 \end{minted}
 
 To create an instance of a typeclass, we need to define the required functions
-and lemma's. Here, we have defined an inductive relation called \coq{gamma_par}
-and proven it to be monotone. We can then use those definition in creating an
-\coq{Instance} of the Galois typeclass.
+and lemmas. Here, we have defined an inductive relation called \coq{gamma_par}
+that relates instances of \coq{parity } with sets of natural numbers. 
+We then use that definition in creating an \coq{Instance} of the Galois typeclass.
 
+\begin{minted}{coq}
+Context {M : Type -> Type} {MM : Monad M}.
+\end{minted}
+
+The \coq{Context } command allows us to add requirements to a section. Anything
+defined following the command while have those requirements added implicitly.
