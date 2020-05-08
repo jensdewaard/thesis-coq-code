@@ -12,6 +12,9 @@ Class PreorderedSet (A : Type) : Type :=
 Infix "⊑" := preorder (at level 40).
 Hint Resolve preorder_refl preorder_trans : preorders.
 
+Definition monotone {A B : Type} {PA : PreorderedSet A} {PB : PreorderedSet B}
+  (f : A -> B) : Prop := ∀ a a', a ⊑ a' -> (f a) ⊑ (f a').
+
 Class PreorderSound (A B : Type) `{PreorderedSet A} `{Galois A B} : Prop :=
   preorder_sound : ∀ x y : A, x ⊑ y → γ x ⊆ γ y.
 

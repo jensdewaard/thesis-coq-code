@@ -282,10 +282,11 @@ Section except_optionAT.
   Lemma catch_optionAT_return :
     ∀ A {JA : Joinable A A} {JAI : JoinableIdem JA} 
     (m : optionAT (StateT S M) A) (a : A),
-    catch_optionAT (return_optionAT_stateT a) m = return_optionAT_stateT a.
+    catch_optionAT (return_optionAT a) m = return_optionAT a.
   Proof.
-    intros; unfold catch_optionAT, return_optionAT_stateT; extensionality s.
+    intros; unfold catch_optionAT, return_optionAT; extensionality s.
     unfold bindM; simpl; unfold bind_op_stateT, bind_stateT. 
+    unfold returnM, return_op_stateT, return_stateT.
     rewrite bind_id_left; reflexivity.
   Qed.
 

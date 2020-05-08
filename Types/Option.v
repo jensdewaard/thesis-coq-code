@@ -383,44 +383,44 @@ Hint Rewrite @bind_optionT_id_left @bind_optionT_id_right : monads.
   {A} (m1 m2 : optionT M A) : Prop :=
   m1 >>= (λ o1, *)
 
-Program Instance optionT_preorder {M} 
-  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)} : ∀ A, 
-  PreorderedSet A →  PreorderedSet (optionT M A) :=
-{
-  preorder := preorder;
-}.
-Next Obligation.
-  apply preorder_refl.
-Defined.
-Next Obligation.
-  apply preorder_trans with y; assumption.
+Instance optionT_preorder : ∀ {M}
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)},
+  (∀ A, PreorderedSet A → PreorderedSet (optionT M A)).
+Proof.
+  intros M PM A PA. unfold optionT. apply PM. apply option_preorder.
 Defined.
 
-Instance monad_optionT_ordered {M : Type → Type} 
-  {BO : bind_op M} {RO : return_op M} 
-  {OM : OrderedMonad M} : 
-  OrderedMonad (optionT M).
+Instance monad_optionT_ordered {S} {PS : PreorderedSet S} :
+  OrderedMonad (optionT (State S)).
 Proof.
-  destruct OM; split with optionT_preorder.
-  intros A PA a1 a2 Ha; apply return_monotone; constructor; assumption.
-  intros A B PA PB m m' f f' Hm Hf Hf'.
-  unfold bindM, bind_op_optionT, bind_optionT.
-  eapply bind_monotone.
-  + assumption.
-  + intros a a' Ha. destruct a eqn:?, a' eqn:?.
-    * inversion Ha; subst. apply Hf. assumption. 
-    * admit.
-    * inversion Ha.
-    * apply return_monotone. constructor.
+  split with optionT_preorder. 
+  - intros A PA a1 a2 Ha. unfold returnM, return_op_optionT, return_optionT.
+    constructor.
+    + constructor; assumption.
+    + apply preorder_refl.
+  - intros A B PA PB m m' f f' Hm Hf Hff'.
+    unfold bindM, bind_op_optionT, bind_optionT.
+    unfold bindM, bind_op_state, bind_state.
+    unfold preorder; simpl. unfold state_preorder; intro s.
+    unfold preorder in Hm; simpl in Hm; unfold state_preorder in Hm.
+    assert (m s ⊑ m' s) as Hms. apply Hm.
+    destruct (m s), (m' s). 
+    inversion Hms; subst.
+    destruct o, o0. 
+    + inversion H2; subst. apply Hf in H1. 
+      Compute (f a).
+      unfold preorder in H1; simpl in H1; unfold state_preorder in H1.
+      unfold preorder; simpl.
 Admitted.
+
+Definition return_optionAT {M} {RM : return_op M} A (a : A) : optionAT M A :=
+  returnM (SomeA a).
+Instance return_op_optionAT_state {M} {RM : return_op M} : 
+  return_op (optionAT M) := return_optionAT.
+Arguments return_optionAT {M RM A} a.
 
 Section optionAT_state_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
-
-  Definition return_optionAT_state {A} (a : A) : optionAT (State S) A :=
-    λ s : S, (SomeA a, s).
-  Global Instance return_op_optionAT_state : return_op (optionAT (State S)) :=
-    @return_optionAT_state.
 
   Definition bind_optionAT_state {A B} 
     (m : optionAT (State S) A)
@@ -441,18 +441,19 @@ Section optionAT_state_monad.
     @bind_optionAT_state.
 
   Lemma bind_optionAT_state_id_left : ∀ {A B} (f : A → optionAT (State S) B) (a : A), 
-    bind_optionAT_state (return_optionAT_state  a) f = f a.
+    bind_optionAT_state (return_optionAT a) f = f a.
   Proof. 
-    intros; unfold bind_optionAT_state, return_optionAT_state.
+    intros; unfold bind_optionAT_state, return_optionAT.
     reflexivity.
   Qed.
   Arguments bind_optionAT_state_id_left [A B] f a.
 
   Lemma bind_optionAT_state_id_right : ∀ (A : Type) (m : optionAT (State S) A), 
-    bind_optionAT_state m (λ a, return_optionAT_state  a) = m.
+    bind_optionAT_state m (λ a, return_optionAT  a) = m.
   Proof. 
-    intros; unfold bind_optionAT_state, return_optionAT_state; extensionality s.
+    intros; unfold bind_optionAT_state, return_optionAT; extensionality s.
     destruct (m s) as [o s'].
+    unfold returnM, return_op_state, return_state.
     destruct o; try reflexivity.
     rewrite JI; reflexivity.
   Qed.
@@ -483,19 +484,20 @@ Global Instance monad_optionAT : Monad (optionAT (State S)) :=
     bind_id_right := bind_optionAT_state_id_right;
     bind_assoc := bind_optionAT_state_assoc;
   }.
+
 End optionAT_state_monad.
 Hint Unfold bind_optionAT_state : monads.
+
+Instance return_optionAT_sound {M M'} `{RS : return_sound M M'} :
+  return_sound (optionAT M) (optionT M').
+Proof.
+  unfold return_sound, returnM; simpl. eauto with soundness.
+Qed.
 
 Section optionAT_state_sound.
   Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
   Context {S' : Type} {GS : Galois S S'}.
   Context {JSS : JoinableSound JS}.
-
-  Global Instance someAT_state_sound :  
-    return_sound (optionAT (State S)) (optionT (State S')).
-  Proof.
-    unfold return_sound, returnM; simpl. eauto with soundness.
-  Qed.
 
   Global Instance bind_optionAT_state_sound :
     bind_sound (optionAT (State S)) (optionT (State S')).
@@ -554,12 +556,6 @@ Section optionAT_stateT_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
   Context {M} {RO : return_op M} {BO : bind_op M} {MM : Monad M}.
 
-  Definition return_optionAT_stateT {A} (a : A) : optionAT (StateT S M) A :=
-    λ s : S, returnM (SomeA a, s).
-
-  Global Instance return_op_optionAT_stateT : 
-    return_op (optionAT (StateT S M)) := @return_optionAT_stateT.
-
   Definition bind_optionAT_stateT {A B} 
     (m : optionAT (StateT S M) A)
     (f : A -> optionAT (StateT S M) B) : optionAT (StateT S M) B :=
@@ -580,9 +576,10 @@ Section optionAT_stateT_monad.
 
   Lemma bind_optionAT_stateT_id_left : ∀ {A B} 
     (f : A → optionAT (StateT S M) B) (a : A), 
-    bind_optionAT_stateT (return_optionAT_stateT a) f = f a.
+    bind_optionAT_stateT (return_optionAT a) f = f a.
   Proof. 
-    unfold bind_optionAT_stateT, return_optionAT_stateT; simpl; intros. 
+    unfold bind_optionAT_stateT, return_optionAT; simpl; intros. 
+    unfold returnM, return_op_stateT, return_stateT.
     extensionality s. 
     rewrite bind_id_left; reflexivity.
   Qed.
@@ -590,10 +587,10 @@ Section optionAT_stateT_monad.
 
   Lemma bind_optionAT_stateT_id_right : ∀ (A : Type) 
     (m : optionAT (StateT S M) A), 
-    bind_optionAT_stateT m (λ a, return_optionAT_stateT a) = m.
+    bind_optionAT_stateT m (λ a, return_optionAT a) = m.
   Proof. 
     unfold bind_optionAT_stateT; intros. 
-    unfold return_optionAT_stateT.
+    unfold return_optionAT, returnM, return_op_stateT, return_stateT.
     extensionality s.
     rewrite <- bind_id_right; f_equal.
     extensionality p; destruct p, o.
@@ -623,18 +620,10 @@ Section optionAT_stateT_monad.
   }.
 End optionAT_stateT_monad.
 
-
-
 Section optionAT_stateT_sound.
   Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
   Context {S' : Type} {GS : Galois S S'}.
   Context {JSS : JoinableSound JS}.
-
-  Global Instance someAT_stateT_sound :  
-    return_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
-  Proof.
-    unfold return_sound, returnM; simpl. eauto with soundness.
-  Qed.
 
   Global Instance bind_optionAT_stateT_sound :
     bind_sound (optionAT (StateT S option)) (optionT (StateT S' option)).

@@ -151,7 +151,7 @@ Proof.
   - apply except_optionAT.
   - apply except_optionT. apply monad_stateT.
   - apply bind_optionAT_stateT_sound.
-  - apply someAT_stateT_sound.
+  - apply return_optionAT_sound.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 
@@ -167,7 +167,7 @@ Proof.
     + apply some_sound.
     + apply bind_option_sound.
   - apply bind_optionAT_stateT_sound.
-  - apply someAT_stateT_sound.
+  - apply return_optionAT_sound.
   - apply if_top_sound, if_ab_op_sound. 
 Qed.
 
