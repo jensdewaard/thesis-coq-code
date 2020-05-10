@@ -29,9 +29,9 @@ Class Monad M {RO : return_op M} {BO : bind_op M} : Type :=
 }.
 
 
-Class OrderedMonad M {RO : return_op M} {BO : bind_op M} : Type :=
+Class OrderedMonad M {RO : return_op M} {BO : bind_op M} 
+  {MO : ∀ {A}, PreorderedSet A -> PreorderedSet (M A)} : Type :=
 {
-  monad_preorder : ∀ {A}, PreorderedSet A → PreorderedSet (M A);
   return_monotone : ∀ {A} {PA : PreorderedSet A} (a1 a2 : A),
     a1 ⊑ a2 → returnM a1 ⊑ returnM a2;
   bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B} 
@@ -46,13 +46,12 @@ Class LaxMonad M `{OM : OrderedMonad M} : Type :=
 {
   bind_id_left_lax : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}
     (f : A → M B) (a : A),
-    @preorder (M B) (monad_preorder PB) ((returnM a) >>= f) (f a);
+    ((returnM a) >>= f) ⊑ (f a);
   bind_id_right_lax : ∀ {A} {PA : PreorderedSet A} (m : M A),
-    @preorder (M A) (monad_preorder PA) (m >>= returnM) m;
+    (m >>= returnM) ⊑ m;
   bind_assoc_lax : ∀ {A B C} {PB : PreorderedSet B} {PC : PreorderedSet C}
     (m : M A) (f : A → M B) (g : B → M C),
-    @preorder (M C) (monad_preorder PC) 
-      ((m >>= f) >>= g) (m >>= (λ a, (f a) >>= g));
+      ((m >>= f) >>= g) ⊑ (m >>= (λ a, (f a) >>= g));
 }.
 
 Arguments bindM : simpl never.
@@ -131,7 +130,7 @@ Section Identity_Monad.
 
   Global Instance ordered_identity : OrderedMonad Identity.
   Proof.
-    split with identity_preorder. 
+    split. 
     - intros A PA a1 a2 Ha. apply Ha. 
     - intros A B PA PB m m' f f' Hm Hf Hf'.
       unfold bindM, bind_op_id.

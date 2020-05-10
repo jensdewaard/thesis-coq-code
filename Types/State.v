@@ -22,23 +22,29 @@ Proof.
   apply GM. apply galois_pairs; assumption.
 Defined.
 
-Section state_preordered.
+(*Section state_preordered.
   Context {S} {PS : PreorderedSet S}.
+  About monotone.
 
   Definition state_preorder {A} {PA : PreorderedSet A}
     (m m' : State S A) : Prop :=
-      ∀ s : S, m s ⊑ m' s.
+      ∀ s s' : S, monotone m -> s ⊑ s' → m s ⊑ m' s.
 
   Global Instance state_preordered {A} {PA : PreorderedSet A} : 
     PreorderedSet (State S A).
   Proof.
+    split with pointwise_ordering.
     split with state_preorder; unfold state_preorder.
-    - intros m s . apply preorder_refl.
-    - intros x y z Hxy Hyz s.
-      apply preorder_trans with (y s); auto.
+    - intros m s s' Hm Hs. 
+      apply Hm. 
+      apply preorder_refl.
+    - intros x y z Hxy Hyz s s' Hmono Hs.
+      apply preorder_trans with (y s). 
+      + apply Hxy with s'; auto.
+      + apply Hyz with s'; auto.
   Defined.
 End state_preordered.
-
+*)
 Section state_joinable.
   Context {S} {JS : Joinable S S}.
   Context {A B} {JA : Joinable A B}.
@@ -110,6 +116,25 @@ Proof.
   apply Hf; assumption.
 Qed.
 Hint Resolve bind_state_sound : soundness.
+
+Section stateT_preordered.
+  Context {S} {PS : PreorderedSet S}.
+  Context {M : Type -> Type} 
+    {PM : forall A, PreorderedSet A -> PreorderedSet (M A)}.
+
+  Definition stateT_preorder {A} {PA : PreorderedSet A}
+    (m m' : StateT S M A) : Prop :=
+      ∀ s : S, m s ⊑ m' s.
+
+  Global Instance stateT_preordered {A} {PA : PreorderedSet A} : 
+    PreorderedSet (StateT S M A).
+  Proof.
+    split with stateT_preorder; unfold stateT_preorder.
+    - intros m s . apply preorder_refl.
+    - intros x y z Hxy Hyz s.
+      apply preorder_trans with (y s); auto.
+  Defined.
+End stateT_preordered.
 
 Section Monad_StateT.
   Context {M} `{MM : Monad M}.

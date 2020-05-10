@@ -199,7 +199,7 @@ End option_monad.
 
 Instance option_ordered : OrderedMonad option.
 Proof.
-  split with @option_preorder. 
+  split. 
   - intros A PA a1 a2 Ha; constructor; assumption.
   - intros A B PA PB m m' f f' Hm Hf Hff'.
     destruct m, m'; unfold bindM, bind_op_option, bind_option;
@@ -275,7 +275,7 @@ End optionA_monad.
 
 Instance optionA_ordered : OrderedMonad optionA.
 Proof.
-  split with @optionA_preorder. 
+  split.
   intros A PA a1 a2 Ha; constructor; assumption.
   intros A B PA PB m m' f f' Hm Hf Hff'.
   destruct m, m'; unfold bindM, bind_op_optionA, bind_optionA.
@@ -393,25 +393,27 @@ Defined.
 Instance monad_optionT_ordered {S} {PS : PreorderedSet S} :
   OrderedMonad (optionT (State S)).
 Proof.
-  split with optionT_preorder. 
-  - intros A PA a1 a2 Ha. unfold returnM, return_op_optionT, return_optionT.
-    constructor.
-    + constructor; assumption.
+  split. 
+  - intros A PA a1 a2 Ha; unfold returnM, return_op_optionT, return_optionT.
+    constructor; constructor.
+    + constructor; assumption. 
     + apply preorder_refl.
   - intros A B PA PB m m' f f' Hm Hf Hff'.
     unfold bindM, bind_op_optionT, bind_optionT.
     unfold bindM, bind_op_state, bind_state.
-    unfold preorder; simpl. unfold state_preorder; intro s.
-    unfold preorder in Hm; simpl in Hm; unfold state_preorder in Hm.
-    assert (m s ⊑ m' s) as Hms. apply Hm.
+    unfold preorder; simpl; constructor; intro s.
+    inversion Hm as [f2' g Hm' H0 H1]; subst.
+    assert (m s ⊑ m' s) as Hms. apply Hm'.
     destruct (m s), (m' s). 
-    inversion Hms; subst.
     destruct o, o0. 
-    + inversion H2; subst. apply Hf in H1. 
-      Compute (f a).
-      unfold preorder in H1; simpl in H1; unfold state_preorder in H1.
-      unfold preorder; simpl.
 Admitted.
+
+Instance optionAT_preorder : ∀ {M}
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)},
+  (∀ A, PreorderedSet A → PreorderedSet (optionAT M A)).
+Proof.
+  intros M PM A PA. unfold optionAT. apply PM. apply optionA_preorder.
+Defined.
 
 Definition return_optionAT {M} {RM : return_op M} A (a : A) : optionAT M A :=
   returnM (SomeA a).
@@ -618,6 +620,28 @@ Section optionAT_stateT_monad.
     bind_id_right := bind_optionAT_stateT_id_right;
     bind_assoc := bind_optionAT_stateT_assoc;
   }.
+
+  Context {PS : PreorderedSet S}.
+  Context {PM : forall A, PreorderedSet A -> PreorderedSet (M A)}.
+
+  Instance preordered_optionAT : 
+    ∀ A, PreorderedSet A →
+    PreorderedSet (optionAT (StateT S M) A) :=
+  {
+    preorder := preorder;
+    preorder_refl := preorder_refl;
+    preorder_trans := preorder_trans;
+  }.
+
+  Instance ordered_optionAT_stateT : 
+    OrderedMonad M →
+    OrderedMonad (optionAT (StateT S M)).
+  Proof.
+    intros OM; split. 
+    - intros A PA a1 a2 Ha; constructor; intros s. 
+      unfold returnM, return_op_optionAT_state, return_optionAT.
+      unfold returnM, return_op_stateT, return_stateT.
+  Admitted.
 End optionAT_stateT_monad.
 
 Section optionAT_stateT_sound.
@@ -636,26 +660,50 @@ Section optionAT_stateT_sound.
     intros s s' Hs. 
     apply Hm in Hs; destruct (m s) as [[o s2]|]; 
         destruct (m' s') as [[o' s2']|].
-    - apply bindM_sound. assumption.
-      intros [x s3] [x' s3'] H. inversion H; subst; simpl in *.
-      destruct x, x'.
-      + simpl. apply Hf. 
-        * inversion H0; subst; assumption.
+    - inversion Hs as [| a a' Hp Hsss Haq]; subst.
+      inversion Hp as [? ? Ho Hs2]; subst; clear Hs Hp; simpl in *.
+      apply bindM_sound. constructor; constructor; assumption.
+      intros [x s3] [x' s3'] Hpq. 
+      inversion Hpq as [p q Hx Hs3 H2 H3]; subst; simpl in *; clear Hpq.
+      destruct x as [a| |a], x' as [a'|].
+      + simpl; apply Hf. 
+        * inversion Hx; subst; assumption.
         * assumption.
-      + inversion H0.
-      + inversion H0.
-      + unfold returnM; simpl. apply some_sound. constructor; simpl.
+      + inversion Hx.
+      + inversion Hx.
+      + apply some_sound. constructor; simpl.
         * constructor.
         * assumption.
-      + unfold bindM; simpl; unfold bind_option. 
-        inversion H0; subst; simpl in *.
-        apply Hf in H4. apply H4 in H1. destruct (f a s3), (f' a0 s3').
-        all: admit.
-      + admit.
+      + unfold bindM, bind_op_option, bind_option. 
+        inversion Hx as [| |  | ? ? Ha Heqa0 Heqa]; subst. 
+        apply Hf in Ha. apply Ha in Hs3.
+        destruct (f a s3) as [p|], (f' a' s3') as [p'|].
+        * destruct p as [a2 s4], p' as [a2' s4'].
+          inversion Hs3 as [| ? ? Hp H H0]; subst.
+          inversion Hp as [p q Ha2 Hs4 H1 H2]; subst; simpl in *; clear Hp Hs3.
+          destruct a2.
+          -- constructor; constructor; simpl.
+             ++ destruct a2'; constructor. 
+                inversion Ha2; subst; assumption. 
+             ++ apply join_sound; right; assumption.
+          -- constructor; constructor; simpl.
+             ++ assumption.
+             ++ apply join_sound; right; assumption.
+          -- constructor; constructor; simpl. 
+             ++ assumption.
+             ++ apply join_sound; right; assumption.
+        * inversion Hs3. 
+        * constructor.
+        * constructor.
+      + unfold bindM, bind_op_option, bind_option.
+        destruct (f a s3).
+        * destruct p as [o2 s4]; destruct o2; constructor; constructor; 
+            try constructor; simpl; apply join_sound; left; assumption.
+        * constructor.
     - inversion Hs.
     - constructor. 
     - constructor.
-  Admitted.
+  Qed.
 End optionAT_stateT_sound.
 
 Definition mjoin_option A {JA : Joinable A A} {JI : JoinableIdem JA} : 
