@@ -237,3 +237,17 @@ of our defined monads are members of this class. We have split the \coq{returnM
 } and \coq{bindM } functions into seperate classes to able to define them
 without having to proof the monad laws that come with the \coq{Monad }
 typeclass.
+
+\begin{minted}{coq}
+Class LaxMonad M `{OM : OrderedMonad M} : Type :=
+{
+  bind_id_left_lax : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}
+    (f : A → M B) (a : A),
+     (returnM a >>= f) ⊑ (f a);
+  bind_id_right_lax : ∀ {A} {PA : PreorderedSet A} (m : M A),
+    (m >>= returnM) ⊑ m;
+  bind_assoc_lax : ∀ {A B C} {PB : PreorderedSet B} {PC : PreorderedSet C}
+    (m : M A) (f : A → M B) (g : B → M C),
+    ((m >>= f) >>= g) ⊑ (m >>= (λ a, (f a) >>= g));
+}.
+\end{minted}
