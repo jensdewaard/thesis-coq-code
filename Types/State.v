@@ -213,9 +213,38 @@ Section Monad_StateT.
     bind_id_right := bind_stateT_id_right;
     bind_assoc := bind_stateT_assoc;
   }. 
+
 End Monad_StateT.
 
-Section stateT.
+Section stateT_ordered.
+  Context {S} {PS : PreorderedSet S}.
+  Context {M} {MM : ∀ A, PreorderedSet A → PreorderedSet (M A)}.
+  Context {RM : return_op M} {BM : bind_op M}.
+
+  Global Instance stateT_ordered_monad : 
+    OrderedMonad M →
+    OrderedMonad (StateT S M).
+  Proof. split. 
+    - intros A PA a1 a2 Ha. 
+      unfold returnM, return_op_stateT, return_stateT.
+      constructor; intros s. 
+      apply return_monotone. 
+      constructor; assumption + apply preorder_refl.
+    - intros A B PA PB m m' f f' Hm Hf Hf'.
+      unfold bindM, bind_op_stateT, bind_stateT.
+      constructor; intros s. 
+      apply bind_monotone.
+      + inversion Hm; subst. auto.
+      + intros p p' Hp. destruct p, p'.
+        inversion Hp as [???? Ha Hs0]; subst; clear Hp.
+        admit.
+      + intros [a s0]. 
+        assert (f a ⊑ f' a). apply Hf'.
+        inversion H0; subst. apply H1.
+  Admitted.
+End stateT_ordered.
+
+Section stateT_sound.
   Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.
   Context {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}.
   Context {S S' : Type} {GS : Galois S S'}.
@@ -238,7 +267,7 @@ Section stateT.
     gamma_destruct; simpl in *.
     apply H0; assumption.
   Qed.
-End stateT.
+End stateT_sound.
 Hint Resolve return_stateT_sound bind_stateT_sound : soundness.
 
 Section mjoin_stateT.
