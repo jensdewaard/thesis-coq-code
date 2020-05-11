@@ -99,6 +99,7 @@ Class extract_op (A B : Type) : Type := extract : A → B.
 Class extract_op_sound {A B B' : Type} {GB : Galois B B'}
   (EO : extract_op A B) (EO' : extract_op A B') : Prop :=
   extract_sound :  ∀ a, γ (extract a) (extract a).
+Hint Resolve extract_sound : soundness.
 
 Instance extract_nat : extract_op nat nat := id.
 Instance extract_bool : extract_op bool bool := id.

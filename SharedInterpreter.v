@@ -144,8 +144,7 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) `{MM : Monad M}
   γ (shared_eval_expr (M:=M) (valType:=avalue+⊤) (natType:=natType) (boolType:=boolType) e) 
     (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).
 Proof.
-  induction e.
-  - simpl. apply returnM_sound. apply extract_top_sound. apply ECS.
+  induction e; eauto with soundness.
   - simpl. apply bindM_sound; eauto with soundness.
     intros f g Hf. auto.
   - simpl. apply bindM_sound. assumption.
