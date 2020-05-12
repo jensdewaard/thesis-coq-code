@@ -204,7 +204,6 @@ End option_monad.
 Instance option_ordered : OrderedMonad option.
 Proof.
   split. 
-  - intros A PA a1 a2 Ha; constructor; assumption.
   - intros A B PA PB m m' f f' Hm Hf Hff'.
     destruct m, m'; unfold bindM, bind_op_option, bind_option;
       try constructor; inversion Hm; subst. 
@@ -280,7 +279,6 @@ End optionA_monad.
 Instance optionA_ordered : OrderedMonad optionA.
 Proof.
   split.
-  intros A PA a1 a2 Ha; constructor; assumption.
   intros A B PA PB m m' f f' Hm Hf Hff'.
   destruct m, m'; unfold bindM, bind_op_optionA, bind_optionA.
   - inversion Hm; subst.
@@ -398,10 +396,6 @@ Instance monad_optionT_ordered {S} {PS : PreorderedSet S} :
   OrderedMonad (optionT (State S)).
 Proof.
   split. 
-  - intros A PA a1 a2 Ha; unfold returnM, return_op_optionT, return_optionT.
-    constructor; constructor.
-    + constructor; assumption. 
-    + apply preorder_refl.
   - intros A B PA PB m m' f f' Hm Hf Hff'.
     unfold bindM, bind_op_optionT, bind_optionT.
     unfold bindM, bind_op_state, bind_state.

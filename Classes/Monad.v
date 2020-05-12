@@ -32,8 +32,6 @@ Class Monad M {RO : return_op M} {BO : bind_op M} : Type :=
 Class OrderedMonad M {RO : return_op M} {BO : bind_op M} 
   {MO : ∀ {A}, PreorderedSet A -> PreorderedSet (M A)} : Type :=
 {
-  return_monotone : ∀ {A} {PA : PreorderedSet A} (a1 a2 : A),
-    a1 ⊑ a2 → returnM a1 ⊑ returnM a2;
   bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B} 
    (m m' : M A) (f f' : A → M B),
    m ⊑ m' → 
@@ -46,9 +44,9 @@ Class LaxMonad M `{OM : OrderedMonad M} : Type :=
 {
   bind_id_left_lax : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}
     (f : A → M B) (a : A),
-    ((returnM a) >>= f) ⊑ (f a);
+    ((returnM a) >>= f) = (f a);
   bind_id_right_lax : ∀ {A} {PA : PreorderedSet A} (m : M A),
-    (m >>= returnM) ⊑ m;
+    (m >>= returnM) = m;
   bind_assoc_lax : ∀ {A B C} {PB : PreorderedSet B} {PC : PreorderedSet C}
     (m : M A) (f : A → M B) (g : B → M C),
       ((m >>= f) >>= g) ⊑ (m >>= (λ a, (f a) >>= g));
@@ -130,8 +128,7 @@ Section Identity_Monad.
 
   Global Instance ordered_identity : OrderedMonad Identity.
   Proof.
-    split. 
-    - intros A PA a1 a2 Ha. apply Ha. 
+    split.
     - intros A B PA PB m m' f f' Hm Hf Hf'.
       unfold bindM, bind_op_id.
       destruct m as [a], m' as [a']; simpl in Hm. 

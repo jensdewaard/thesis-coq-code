@@ -123,10 +123,6 @@ Qed.
 
 Instance state_ordered {S} {PS : PreorderedSet S} : OrderedMonad (State S).
 Proof. split.
-  - intros A PA a1 a2 Ha; constructor; intros s.
-    constructor.
-    + assumption.
-    + apply preorder_refl.
   - intros A B PA PB m m' f f' Hm Hf Hf'; constructor; intros s.
     unfold bindM, bind_op_state, bind_state. 
     assert (m s ⊑ m' s) as Hms.
@@ -225,11 +221,6 @@ Section stateT_ordered.
     OrderedMonad M →
     OrderedMonad (StateT S M).
   Proof. split. 
-    - intros A PA a1 a2 Ha. 
-      unfold returnM, return_op_stateT, return_stateT.
-      constructor; intros s. 
-      apply return_monotone. 
-      constructor; assumption + apply preorder_refl.
     - intros A B PA PB m m' f f' Hm Hf Hf'.
       unfold bindM, bind_op_stateT, bind_stateT.
       constructor; intros s. 
