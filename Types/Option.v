@@ -20,16 +20,20 @@ Inductive gamma_optionA {A A'} {GA : Galois A A'} : optionA A → option A' → 
   | gamma_Someornone_Some : ∀ a' a, 
       γ a' a →
       gamma_optionA (SomeOrNoneA a') (Some a).
+Hint Constructors gamma_optionA : soundness.
 
 Inductive gamma_option {A A'} {GA : Galois A A'} : option A → option A' → Prop :=
   | gamma_none : ∀ m, gamma_option None m
   | gamma_Some_Some : ∀ a' a, γ a' a → gamma_option (Some a') (Some a).
+Hint Constructors gamma_option : soundness.
 
 Instance galois_optionA : ∀ A A' (GA : Galois A A'), 
   Galois (optionA A) (option A') := @gamma_optionA.
+Hint Unfold galois_optionA : soundness.
 
 Instance galois_option : ∀ A A' (GA : Galois A A'), 
   Galois (option A) (option A') := @gamma_option.
+Hint Unfold galois_option : soundness.
 
 Instance galois_optionAT {M M'} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
@@ -218,7 +222,7 @@ Instance bind_option_sound : bind_sound option option.
 Proof.
   unfold bind_sound; intros A A' B B' GA GB m m' f f' Hm Hf.
   unfold bindM; simpl; unfold bind_option.
-  destruct m, m'; eauto with soundness.
+  destruct m, m'; eauto with soundness. 
 Qed.
 Hint Resolve bind_option_sound : soundness.
 

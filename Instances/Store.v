@@ -77,7 +77,8 @@ Instance get_store_optionAT_sound {S S' : Type} {GS : Galois S S'}
   get_state_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
 Proof.
   unfold get_state_sound, get; simpl. 
-  eauto with soundness.
+  eauto with soundness. 
+  constructor; constructor; simpl; [constructor | ]; assumption.
 Qed.
 Hint Resolve get_store_optionAT_sound : soundness.
 

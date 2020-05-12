@@ -2,7 +2,7 @@ Require Export Base.
 
 Class Galois (A A' : Type) : Type :=  γ : A -> ℘ A'.
 Arguments γ : simpl never.
-Hint Extern 10 (γ _ _) => constructor : soundness.
+Hint Unfold γ : soundness.
 
 Ltac gamma_destruct := repeat
   match goal with
@@ -15,7 +15,6 @@ Definition gamma_bot (A A' : Type) `{Galois A A'} : (A+⊥) → A' → Prop :=
              | Bot => λ _, False
              | NotBot x => λ y, γ x y
              end.
-
 
 Instance galois_bot : ∀ (A A' : Type),
   Galois A A' → Galois (A+⊥) A' := gamma_bot.
@@ -37,19 +36,23 @@ Instance galois_fun : ∀ (A A' : Type) {B B' : Type},
   Galois A A' →
   Galois B B' →
   Galois (A → B) (A' → B') := gamma_fun.
+Hint Unfold galois_fun gamma_fun : soundness.
 
 Instance galois_unit : Galois unit unit := λ _, λ _, True.
+Hint Unfold galois_unit : soundness.
 
 Inductive gamma_pairs {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'} 
 : prod A B → prod A' B' → Prop :=
     | gamma_pairs_cons : ∀ p q,
         γ (fst p) (fst q) → γ (snd p) (snd q) → gamma_pairs p q.
 Arguments gamma_pairs A A' B B' {GA GB}.
+Hint Constructors gamma_pairs : soundness.
 
-Global Instance galois_pairs : ∀ A A' B B' : Type,
-Galois A A' →
-Galois B B' →
-Galois (A*B)%type (A'*B')%type := gamma_pairs.
+Instance galois_pairs : ∀ A A' B B' : Type,
+  Galois A A' →
+  Galois B B' →
+  Galois (A*B)%type (A'*B')%type := gamma_pairs.
+Hint Unfold galois_pairs : soundness.
 
 Lemma fst_sound : ∀ (A A' : Type) {GA : Galois A A'} {B B' : Type} {GB : Galois B B'} 
   (p : A*B) (q : A'*B'),

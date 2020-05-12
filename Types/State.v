@@ -255,7 +255,7 @@ Section stateT_sound.
     return_sound (StateT S M) (StateT S' M').
   Proof.
     unfold return_sound, returnM; simpl.
-    unfold return_op_stateT, return_state. 
+    unfold return_op_stateT, return_stateT. 
     intros A A' GA a a' Ha s s' Hs; eauto with soundness.
   Qed.
 

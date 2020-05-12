@@ -54,7 +54,8 @@ Instance subtype_sound_r : ∀ {A B A' B' : Type}
   SubType_sound (subtype_r A B) (subtype_r A' B').
 Proof. split; intros.
   - apply H.
-  - destruct s, s'; eauto with soundness. 
+  - destruct s, s'; eauto with soundness; constructor. 
+    apply H.
 Qed.
 Hint Resolve subtype_sound_r : soundness.
 
