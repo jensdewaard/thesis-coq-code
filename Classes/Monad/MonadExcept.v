@@ -37,3 +37,4 @@ Class throw_op_sound (M M' : Type → Type)
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Prop :=
   throw_sound : ∀ {A A'} {GA : Galois A A'},
     γ throw throw.
+Hint Resolve throw_sound catch_sound : soundness.

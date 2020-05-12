@@ -18,3 +18,4 @@ Class put_state_sound (M M' : Type → Type)
   {S S' : Type} {GS : Galois S S'} 
   {MS : MonadState S M} {MS' : MonadState S' M'} : Prop := 
     put_sound : ∀ s s', γ s s' → γ (put s) (put s').
+Hint Resolve get_sound put_sound : soundness.

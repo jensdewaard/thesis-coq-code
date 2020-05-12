@@ -44,4 +44,4 @@ Proof.
   unfold store_update, t_update. intros. unfold γ, galois_store, gamma_store. 
   intros x'. destruct (beq_string x x'); eauto with soundness.
 Qed.
-
+Hint Resolve store_update_sound : soundness.

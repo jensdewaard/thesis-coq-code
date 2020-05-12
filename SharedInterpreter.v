@@ -145,42 +145,9 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) `{MM : Monad M}
   γ (shared_eval_expr (M:=M) (valType:=avalue+⊤) (natType:=natType) (boolType:=boolType) e) 
     (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).
 Proof.
-  induction e; cbn; eauto 6 with soundness.
-  - eauto 30 with soundness. 
-  - simpl. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply returnM_sound. apply mult_sound;
-    assumption.
-    intros ???. apply returnM_sound. apply inject_sound. assumption.
-  - simpl. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply returnM_sound. apply eq_sound;
-    assumption.
-    intros ???. apply returnM_sound. apply inject_sound. assumption.
-  - simpl. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply returnM_sound. apply leb_sound;
-    assumption.
-    intros ???. apply returnM_sound. apply inject_sound. assumption.
-  - simpl. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply returnM_sound. apply neg_sound;
-    assumption.
-    intros ???. apply returnM_sound. apply inject_sound. assumption.
-  - simpl. apply bindM_sound. assumption. 
-    intros ???. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply returnM_sound. apply and_sound;
-    assumption.
-    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  induction e; cbn; eauto 27 with soundness.
 Qed.
+Hint Resolve shared_eval_expr_sound : soundness.
 
 Open Scope com_scope.
 
@@ -262,15 +229,4 @@ Lemma shared_ceval_sound (M M' : Type → Type) `{MM : Monad M}
     (shared_ceval (M:=M) (valType:=(avalue+⊤)) (natType:=natType)
     (boolType:=boolType) c)
     (shared_ceval (M:=M') c).
-Proof. induction c.
-  - eauto with soundness. 
-  - apply bindM_sound. assumption. intros ???. assumption.
-  - apply bindM_sound. eapply shared_eval_expr_sound; assumption.
-    intros ???. apply bindM_sound. assumption. intros ???. apply put_sound.
-    eauto with soundness. apply store_update_sound; assumption.
-  - apply bindM_sound. eapply shared_eval_expr_sound; assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply if_sound; assumption. 
-  - simpl. apply catch_sound; assumption.
-  - simpl. apply throw_sound.
-Qed.
+Proof. induction c; cbn; eauto 12 with soundness. Qed.

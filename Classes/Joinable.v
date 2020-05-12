@@ -98,6 +98,7 @@ Instance unit_joinable_sound : JoinableSound unit_joinable.
 Proof.
   constructor.
 Qed.
+Hint Resolve unit_joinable_sound : soundness.
 
 Instance identity_joinable {A B} `{Joinable A B} : Joinable (Identity A) (Identity B) :=
   λ i, λ j,
