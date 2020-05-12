@@ -46,6 +46,7 @@ Proof.
   - apply fail_sound.
   - apply fail_sound.
 Qed.
+Hint Resolve ensure_type_sound : soundness.
 
 Fixpoint shared_eval_expr 
     {valType boolType natType : Type} {M : Type → Type} `{MM : Monad M}
@@ -144,15 +145,8 @@ Lemma shared_eval_expr_sound (M M' : Type → Type) `{MM : Monad M}
   γ (shared_eval_expr (M:=M) (valType:=avalue+⊤) (natType:=natType) (boolType:=boolType) e) 
     (shared_eval_expr (M:=M') (valType:=cvalue) (natType:=natType') (boolType:=boolType') e).
 Proof.
-  induction e; cbn; eauto with soundness.
-  - eauto 6 with soundness.
-  - simpl. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
-    intros ???. apply bindM_sound. apply returnM_sound. apply plus_sound;
-    assumption.
-    intros ???. apply returnM_sound. apply inject_sound. assumption.
+  induction e; cbn; eauto 6 with soundness.
+  - eauto 30 with soundness. 
   - simpl. apply bindM_sound. assumption.
     intros ???. apply bindM_sound. assumption.
     intros ???. apply bindM_sound. apply ensure_type_sound. assumption.
