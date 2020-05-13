@@ -185,15 +185,5 @@ Section list_monad.
     bind_id_right := @bind_list_id_right;
     bind_assoc := @bind_list_assoc;
   }.
-
-  Definition list_le {A} (l1 l2 : list A) : Prop :=
-    ∀ a, In a l1 → In a l2.
-
-  Global Instance list_preorder {A} : PreorderedSet (list A).
-  Proof.
-    split with list_le.
-    - intros l a H. apply H.
-    - intros x y z Hxy Hyz. unfold list_le in *. auto. 
-  Defined.
 End list_monad.
 

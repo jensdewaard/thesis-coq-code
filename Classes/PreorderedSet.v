@@ -1,16 +1,15 @@
 Require Export Base.
-Require Import Classes.Galois Psatz.
+Require Import Classes.Galois Psatz List.
 
 Create HintDb preorders.
 
 Class PreorderedSet (A : Type) : Type :=
 {
   preorder : A -> A -> Prop;
-  preorder_refl: ∀ x, preorder x x;
   preorder_trans: ∀ x y z, preorder x y -> preorder y z -> preorder x z;
 }.
 Infix "⊑" := preorder (at level 40).
-Hint Resolve preorder_refl preorder_trans : preorders.
+Hint Resolve preorder_trans : preorders.
 
 Definition monotone {A B : Type} {PA : PreorderedSet A} {PB : PreorderedSet B}
   (f : A -> B) : Prop := ∀ a a', a ⊑ a' -> (f a) ⊑ (f a').
@@ -33,9 +32,7 @@ Ltac pre_trans :=
 
 Ltac proof_preorder R := 
   split with (preorder:=R); autounfold with preorders;
-  [> intros x; (destruct x; eauto with preorders) + 
-               (constructor;intros; apply preorder_refl + assumption)| 
-     intros x y z Hxy Hyz; (destruct x, y, z + constructor;intros);
+  [> intros x y z Hxy Hyz; (destruct x, y, z + constructor;intros);
      eauto with preorders; inversion Hxy; inversion Hyz; eauto with preorders ].
 
 Inductive bot_le {A} `{PreorderedSet A} : (A+⊥) → (A+⊥) → Prop :=
@@ -117,10 +114,17 @@ Definition identity_le {A} {PA : PreorderedSet A} (i1 i2 : Identity A) : Prop
 Instance identity_preorder A {PA : PreorderedSet A} : PreorderedSet (Identity A).
 Proof.
   split with identity_le.
-  - destruct x. apply preorder_refl.
   - destruct x, y, z. apply preorder_trans.
 Defined.
 
 Global Instance preorder_nat : PreorderedSet nat.
 Proof. proof_preorder le; eauto with arith. Defined.
 
+Definition list_le {A} (l1 l2 : list A) : Prop :=
+  ∀ a, In a l1 → In a l2.
+
+Global Instance list_preorder {A} : PreorderedSet (list A).
+Proof.
+  split with list_le.
+  - intros x y z Hxy Hyz. unfold list_le in *. auto. 
+Defined.

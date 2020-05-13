@@ -289,12 +289,11 @@ Proof.
     assert (f a ⊑ f' a0) as Hf2.
     { eapply preorder_trans with (f a0); auto. }
     destruct (f' a0).
-    + apply preorder_trans with (SomeA b); auto. constructor.
-      apply preorder_refl.
-    + inversion Hf2. apply preorder_refl.
+    + inversion Hf2; subst; constructor; assumption.
+    + assumption.
     + assumption.
   - inversion Hm.
-  - apply preorder_refl.
+  - constructor.
   - destruct (f' a); constructor.
   - inversion Hm.
   - inversion Hm.
@@ -627,7 +626,6 @@ Section optionAT_stateT_monad.
     PreorderedSet (optionAT (StateT S M) A) :=
   {
     preorder := preorder;
-    preorder_refl := preorder_refl;
     preorder_trans := preorder_trans;
   }.
 

@@ -74,16 +74,9 @@ Section State_Monad.
   }. 
 End State_Monad.
 
-Definition state_le {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} 
+(*Definition state_le {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} 
   (m m' : State S A) : Prop :=
   ∀ s s', s ⊑ s' -> m s ⊑ m' s'.
-
-Lemma state_le_refl {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} :
-  ∀ m : State S A, state_le m m.
-Proof.
-  unfold state_le; intros m s s' Hs.
-  (* need monotone m *)
-Admitted.
 
 Lemma state_le_trans {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} :
   ∀ x y z : State S A,
@@ -93,9 +86,11 @@ Lemma state_le_trans {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} :
 Proof.
   unfold state_le; intros x y z Hxy Hyz s s' Hs.
   apply preorder_trans with (y s).
-  + apply Hxy; apply preorder_refl.
+  + apply Hxy. 
+    apply preorder_refl.
   + apply Hyz; apply Hs.
 Qed.
+*)
 
 (*
 Instance state_preordered {S} {PS : PreorderedSet S} :
