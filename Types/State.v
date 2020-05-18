@@ -5,6 +5,11 @@ Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois
 Definition State (S A : Type) := S -> (A * S).
 Definition StateT S M A : Type := S → M (A*S)%type.
 
+Class SType (S : Type) {PS : PreorderedSet S} {JS : Joinable S S} :=
+{
+  S_le_refl : ∀ s, s ⊑ s;
+}.
+
 Definition gamma_state {S S'} {GS : Galois S S'} {A A'} {GA : Galois A A'} : 
   State S A → State S' A' → Prop := λ s : State S A, λ s' : State S' A', 
     ∀ st st', γ st st' → γ (s st) (s' st').
@@ -23,7 +28,7 @@ Proof.
 Defined.
 
 Section state_joinable.
-  Context {S} {JS : Joinable S S}.
+  Context {S} `{SType S}.
   Context {A B} {JA : Joinable A B}.
 
   Global Instance state_joinable : Joinable (State S A) (State S B) :=
@@ -74,11 +79,11 @@ Section State_Monad.
   }. 
 End State_Monad.
 
-(*Definition state_le {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} 
+Definition state_le {S} `{SType S} {A} {PA : PreorderedSet A} 
   (m m' : State S A) : Prop :=
   ∀ s s', s ⊑ s' -> m s ⊑ m' s'.
 
-Lemma state_le_trans {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} :
+Lemma state_le_trans {S} `{SType S} {A} {PA : PreorderedSet A} :
   ∀ x y z : State S A,
   state_le x y →
   state_le y z →
@@ -86,22 +91,19 @@ Lemma state_le_trans {S} {PS : PreorderedSet S} {A} {PA : PreorderedSet A} :
 Proof.
   unfold state_le; intros x y z Hxy Hyz s s' Hs.
   apply preorder_trans with (y s).
-  + apply Hxy. 
-    apply preorder_refl.
+  + apply Hxy, S_le_refl.
   + apply Hyz; apply Hs.
 Qed.
-*)
 
-(*
-Instance state_preordered {S} {PS : PreorderedSet S} :
-  ∀ A, PreorderedSet A -> PreorderedSet (State S A) :=
+Instance state_preordered {S} `{SType S} : ∀ A, 
+  PreorderedSet A -> 
+  PreorderedSet (State S A) :=
 {
   preorder := state_le;
-  preorder_refl := state_le_refl;
   preorder_trans := state_le_trans;
 }.
 
-Instance state_ordered {S} {PS : PreorderedSet S} : OrderedMonad (State S).
+(*Instance state_ordered {S} {PS : PreorderedSet S} : OrderedMonad (State S).
 Proof. split.
   - intros A PA a1 a2 Ha. unfold returnM, return_op_state, return_state.
     intros s s' Hs; constructor; assumption.
@@ -115,24 +117,6 @@ Proof. split.
     apply H. apply Hs2.
 Qed.
 *)
-
-Instance state_ordered {S} {PS : PreorderedSet S} : OrderedMonad (State S).
-Proof. split.
-  - intros A B PA PB m m' f f' Hm Hf Hf'; constructor; intros s.
-    unfold bindM, bind_op_state, bind_state. 
-    assert (m s ⊑ m' s) as Hms.
-    { destruct Hm; auto. }
-    destruct (m s) as [a s2], (m' s) as [a' s2'].
-    inversion Hms; subst.
-    assert (f a ⊑ f' a').
-    { eapply preorder_trans. apply Hf. apply H2. apply Hf'. }
-    inversion H; subst.
-    assert (f a s2 ⊑ f' a' s2). 
-    { apply H0. }
-    eapply preorder_trans. apply H1.
-    assert (monotone (f' a')). admit.
-    apply H3. apply H4.
-Admitted.
 
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
@@ -206,29 +190,6 @@ Section Monad_StateT.
   }. 
 
 End Monad_StateT.
-
-Section stateT_ordered.
-  Context {S} {PS : PreorderedSet S}.
-  Context {M} {MM : ∀ A, PreorderedSet A → PreorderedSet (M A)}.
-  Context {RM : return_op M} {BM : bind_op M}.
-
-  Global Instance stateT_ordered_monad : 
-    OrderedMonad M →
-    OrderedMonad (StateT S M).
-  Proof. split. 
-    - intros A B PA PB m m' f f' Hm Hf Hf'.
-      unfold bindM, bind_op_stateT, bind_stateT.
-      constructor; intros s. 
-      apply bind_monotone.
-      + inversion Hm; subst. auto.
-      + intros p p' Hp. destruct p, p'.
-        inversion Hp as [???? Ha Hs0]; subst; clear Hp.
-        admit.
-      + intros [a s0]. 
-        assert (f a ⊑ f' a). apply Hf'.
-        inversion H0; subst. apply H1.
-  Admitted.
-End stateT_ordered.
 
 Section stateT_sound.
   Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.
