@@ -204,6 +204,7 @@ End option_monad.
 Instance option_ordered : OrderedMonad option.
 Proof.
   split. 
+  - intros A PA a a' Ha; constructor; apply Ha.
   - intros A B PA PB m m' f f' Hm Hf Hf' Hff'.
     destruct m, m'; unfold bindM, bind_op_option, bind_option;
       try constructor; inversion Hm; subst. 
@@ -279,6 +280,7 @@ End optionA_monad.
 Instance optionA_ordered : OrderedMonad optionA.
 Proof.
   split.
+  { intros A PA a a' Ha; constructor; assumption. }
   intros A B PA PB m m' f f' Hm Hf Hf' Hff'.
   destruct m, m'; unfold bindM, bind_op_optionA, bind_optionA.
   - inversion Hm; subst.
@@ -438,7 +440,7 @@ Section optionAT_state_monad.
   Proof. 
     intros; unfold bind_optionAT_state, return_optionAT; extensionality s.
     destruct (m s) as [o s'].
-    unfold returnM, return_op_state, return_state.
+    unfold returnM, return_op_state.
     destruct o; try reflexivity.
     rewrite JI; reflexivity.
   Qed.
@@ -464,7 +466,7 @@ Section optionAT_state_sound.
     unfold bindM; simpl. 
     unfold bind_op_optionAT_state, bind_optionAT_state.
     unfold bind_op_optionT, bind_optionT.
-    unfold bindM; simpl; unfold bind_op_state, bind_state.
+    unfold bindM; simpl; unfold bind_op_state.
     intros s s' Hs. 
     apply Hm in Hs; destruct (m s) as [o s2], (m' s') as [o' s2'].
     inversion Hs as [? ? Ho Hs2 H1 H2]; simpl in *; subst; clear Hs.
@@ -473,7 +475,7 @@ Section optionAT_state_sound.
       apply Hf in Ha; apply Ha in Hs2; assumption.
     - inversion Ho.
     - inversion Ho.
-    - unfold returnM; simpl; unfold return_state. 
+    - unfold returnM; simpl; unfold return_op_state. 
       constructor; simpl.
       * constructor.
       * assumption.
@@ -495,7 +497,7 @@ Section optionAT_state_sound.
       + constructor; simpl.
         * assumption.
         * apply join_sound; right; assumption.
-    - (* SomeOrNoneA, None *) unfold returnM; simpl; unfold return_state.
+    - (* SomeOrNoneA, None *) unfold returnM, return_op_state.
       destruct (f a s2) eqn:?.
       destruct o; simpl. 
       + constructor; simpl. 

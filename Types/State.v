@@ -27,57 +27,49 @@ Proof.
   apply GM. apply galois_pairs; assumption.
 Defined.
 
-Section state_joinable.
-  Context {S} `{SType S}.
-  Context {A B} {JA : Joinable A B}.
-
-  Global Instance state_joinable : Joinable (State S A) (State S B) :=
-    λ st, λ st',  
+Instance state_joinable {S A B} :
+    Joinable S S →
+    Joinable A B ->
+    Joinable (State S A) (State S B). 
+Proof.
+  intros; exact (λ st, λ st',  
     λ x, (((fst (st x)) ⊔ (fst (st' x)), 
-              ((snd (st x)) ⊔ (snd (st' x))))).
-End state_joinable.
+              ((snd (st x)) ⊔ (snd (st' x)))))).
+Defined.
 
-Section State_Monad.
-  Context {S : Type}.
+Instance return_op_state {S} : return_op (State S) := 
+  λ A : Type, λ a : A, λ st : S, (a, st). 
 
-  Definition return_state {A} (a :A) : State S A := 
-    λ st : S, (a, st).
-  Global Instance return_op_state : return_op (State S) := @return_state.
-
-  Definition bind_state {A B} 
-    (m : State S A) (f : A -> State S B) : State S B :=
+Instance bind_op_state {S} : bind_op (State S) := λ A B : Type,
+  λ (m : State S A) (f : A → State S B),
     λ st, let (x, st') := (m st) in f x st'.
-  Arguments bind_state [A B] m f.
-  Hint Unfold bind_state : monads.
-  Global Instance bind_op_state : bind_op (State S) := @bind_state.
 
-  Lemma bind_state_id_left : ∀ (A B : Type) (f : A → State S B) (a : A),
-    bind_state (return_state a) f = f a.
-  Proof. easy. Qed.
+Lemma bind_state_id_left {S} : ∀ (A B : Type) (f : A → State S B) (a : A),
+  (returnM a) >>= f = f a.
+Proof. easy. Qed.
 
-  Lemma bind_state_id_right : ∀ (A : Type) (m : State S A),
-    bind_state m return_state = m.
-  Proof. 
-    intros; unfold bind_state, return_state; extensionality s.
-    destruct (m s); reflexivity.
-  Qed.
+Lemma bind_state_id_right {S} : ∀ (A : Type) (m : State S A),
+  m >>= returnM = m.
+Proof. 
+  intros; unfold bindM, bind_op_state; extensionality s.
+  destruct (m s); reflexivity.
+Qed.
 
-  Lemma bind_state_assoc : ∀ (A B C : Type) (m : State S A) 
-    (f : A → State S B) (g : B → State S C),
-    bind_state (bind_state m f) g =
-    bind_state m (λ a : A, bind_state (f a) g).
-  Proof. 
-    intros; unfold bind_state, return_state; extensionality s.
-    destruct (m s) as [a s'], (f a s'); reflexivity.
-  Qed.
+Lemma bind_state_assoc {S} : ∀ (A B C : Type) (m : State S A) 
+  (f : A → State S B) (g : B → State S C),
+  (m >>= f) >>= g =
+  m >>= (λ a : A, (f a) >>= g).
+Proof. 
+  intros; unfold bindM, bind_op_state; extensionality s.
+  destruct (m s) as [a s'], (f a s'); reflexivity.
+Qed.
 
-  Global Instance monad_state : Monad (State S) :=
-  {
-    bind_id_left := bind_state_id_left;
-    bind_id_right := bind_state_id_right;
-    bind_assoc := bind_state_assoc;
-  }. 
-End State_Monad.
+Instance monad_state {S} : Monad (State S) :=
+{
+  bind_id_left := bind_state_id_left;
+  bind_id_right := bind_state_id_right;
+  bind_assoc := bind_state_assoc;
+}. 
 
 Definition state_le {S} `{SType S} {A} {PA : PreorderedSet A} 
   (m m' : State S A) : Prop :=
@@ -90,7 +82,7 @@ Lemma state_le_trans {S} `{SType S} {A} {PA : PreorderedSet A} :
   state_le x z.
 Proof.
   unfold state_le; intros x y z Hxy Hyz s s' Hs.
-  apply preorder_trans with (y s).
+  apply preorder_trans with (y s). 
   + apply Hxy, S_le_refl.
   + apply Hyz; apply Hs.
 Qed.
@@ -105,8 +97,9 @@ Instance state_preordered {S} `{SType S} : ∀ A,
 
 Instance state_ordered {S} `{SType S} : OrderedMonad (State S).
 Proof. split.
+  - intros A PA a a' Ha; constructor; assumption.
   - intros A B PA PB m m' f f' Hm Hf Hf' Hff' s s' Hs.
-    unfold bindM, bind_op_state, bind_state. 
+    unfold bindM, bind_op_state. 
     apply Hm in Hs.
     destruct (m s) as [a s2], (m' s') as [a' s2'].
     inversion Hs as [????  Ha Hs2]; subst; clear Hs.
@@ -118,7 +111,7 @@ Qed.
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
 Proof.
-  unfold return_sound; unfold returnM; simpl; intros; unfold return_state.
+  unfold return_sound; unfold returnM; simpl; intros; unfold return_op_state.
   constructor; simpl; eauto with soundness. 
 Qed.
 Hint Resolve return_state_sound : soundness.
@@ -127,7 +120,7 @@ Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
   bind_sound (State S) (State S').
 Proof.
   unfold bind_sound, bindM; simpl; intros A A' B b' GA GB m m' f f' Hm Hf. 
-  unfold bind_op_state, bind_state; intros s s' Hs. 
+  unfold bind_op_state; intros s s' Hs. 
   apply Hm in Hs.
   destruct (m s), (m' s'). 
   inversion Hs; subst; clear Hs; simpl in *.
