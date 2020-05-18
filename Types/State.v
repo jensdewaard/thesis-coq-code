@@ -103,20 +103,17 @@ Instance state_preordered {S} `{SType S} : ∀ A,
   preorder_trans := state_le_trans;
 }.
 
-(*Instance state_ordered {S} {PS : PreorderedSet S} : OrderedMonad (State S).
+Instance state_ordered {S} `{SType S} : OrderedMonad (State S).
 Proof. split.
-  - intros A PA a1 a2 Ha. unfold returnM, return_op_state, return_state.
-    intros s s' Hs; constructor; assumption.
-  - intros A B PA PB m m' f f' Hm Hf Hff' s s' Hs.
+  - intros A B PA PB m m' f f' Hm Hf Hf' Hff' s s' Hs.
     unfold bindM, bind_op_state, bind_state. 
     apply Hm in Hs.
     destruct (m s) as [a s2], (m' s') as [a' s2'].
     inversion Hs as [????  Ha Hs2]; subst; clear Hs.
-    assert (state_le (f a) (f' a')).
+    assert (state_le (f a) (f' a')) as Hfa.
     { eapply state_le_trans. apply Hf. apply Ha. apply Hff'. }
-    apply H. apply Hs2.
+    apply Hfa. apply Hs2.
 Qed.
-*)
 
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
   return_sound (State S) (State S').
