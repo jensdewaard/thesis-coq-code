@@ -391,20 +391,6 @@ Proof.
   intros M PM A PA. unfold optionT. apply PM. apply option_preorder.
 Defined.
 
-Instance monad_optionT_ordered {S} {PS : PreorderedSet S} :
-  OrderedMonad (optionT (State S)).
-Proof.
-  split. 
-  - intros A B PA PB m m' f f' Hm Hf Hff'.
-    unfold bindM, bind_op_optionT, bind_optionT.
-    unfold bindM, bind_op_state, bind_state.
-    unfold preorder; simpl; constructor; intro s.
-    inversion Hm as [f2' g Hm' H0 H1]; subst.
-    assert (m s ⊑ m' s) as Hms. apply Hm'.
-    destruct (m s), (m' s). 
-    destruct o, o0. 
-Admitted.
-
 Instance optionAT_preorder : ∀ {M}
   {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)},
   (∀ A, PreorderedSet A → PreorderedSet (optionAT M A)).
@@ -456,33 +442,6 @@ Section optionAT_state_monad.
     destruct o; try reflexivity.
     rewrite JI; reflexivity.
   Qed.
-
-  Lemma bind_optionAT_state_assoc : ∀ {A B C} (m : optionAT (State S) A) 
-    (f : A → optionAT (State S) B) (g : B → optionAT (State S) C),
-    bind_optionAT_state (bind_optionAT_state m f) g =
-    bind_optionAT_state m (λ a : A, bind_optionAT_state (f a) g).
-  Proof. 
-    intros; unfold bind_optionAT_state. 
-    extensionality s.
-    destruct (m s) as [o s'] eqn:Hms.
-    destruct o as [x |  | x].
-    - destruct (f x s') as [o' s''] eqn:Hfxs.
-      destruct o'; reflexivity.
-    - reflexivity.
-    - (* m f = (SomeOrNoneA, ) *) 
-      destruct (f x s') as [o s''] eqn:Hfxs.
-      destruct o.
-      + destruct (g b (s' ⊔ s'')) eqn:Hqbs''.
-        destruct (g b s'') eqn:Hqbs'.
-  Admitted.
-  Arguments bind_optionAT_state_assoc [A B C] m f g.
-
-Global Instance monad_optionAT : Monad (optionAT (State S)) :=
-  {
-    bind_id_left := bind_optionAT_state_id_left;
-    bind_id_right := bind_optionAT_state_id_right;
-    bind_assoc := bind_optionAT_state_assoc;
-  }.
 
 End optionAT_state_monad.
 Hint Unfold bind_optionAT_state : monads.
@@ -597,27 +556,6 @@ Section optionAT_stateT_monad.
     rewrite bind_id_left, JI; reflexivity.
   Qed.
 
-  Lemma bind_optionAT_stateT_assoc : ∀ {A B C} 
-    (m : optionAT (StateT S M) A) 
-    (f : A → optionAT (StateT S M) B) 
-    (g : B → optionAT (StateT S M) C),
-    bind_optionAT_stateT (bind_optionAT_stateT m f) g =
-    bind_optionAT_stateT m (λ a : A, bind_optionAT_stateT (f a) g).
-  Proof. 
-    intros; unfold bind_optionAT_stateT. 
-    extensionality s.
-    rewrite bind_assoc; f_equal; extensionality p. 
-    destruct p, o.
-  Admitted.
-  Arguments bind_optionAT_stateT_assoc [A B C] m f g.
-
-  Global Instance monad_optionAT_stateT : Monad (optionAT (StateT S M)) :=
-  {
-    bind_id_left := bind_optionAT_stateT_id_left;
-    bind_id_right := bind_optionAT_stateT_id_right;
-    bind_assoc := bind_optionAT_stateT_assoc;
-  }.
-
   Context {PS : PreorderedSet S}.
   Context {PM : forall A, PreorderedSet A -> PreorderedSet (M A)}.
 
@@ -628,16 +566,6 @@ Section optionAT_stateT_monad.
     preorder := preorder;
     preorder_trans := preorder_trans;
   }.
-
-  Instance ordered_optionAT_stateT : 
-    OrderedMonad M →
-    OrderedMonad (optionAT (StateT S M)).
-  Proof.
-    intros OM; split. 
-    - intros A PA a1 a2 Ha; constructor; intros s. 
-      unfold returnM, return_op_optionAT_state, return_optionAT.
-      unfold returnM, return_op_stateT, return_stateT.
-  Admitted.
 End optionAT_stateT_monad.
 
 Section optionAT_stateT_sound.

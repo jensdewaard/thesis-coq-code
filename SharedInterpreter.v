@@ -15,7 +15,8 @@ Require Import Types.Subtype.
 Require Export Program.Basics.
 
 Definition ensure_type (subType : Type)
-  {M : Type → Type} `{MM : Monad M} {MF : MonadFail M} 
+  {M : Type → Type}
+  {BM : bind_op M} {RM : return_op M} {MF : MonadFail M} 
   {valType : Type}
   {ST : SubType subType valType}
   (n : valType) : M subType :=
@@ -24,7 +25,9 @@ Definition ensure_type (subType : Type)
   | None => fail
   end.
 
-Lemma ensure_type_sound {M M'} `{MM : Monad M} `{MM' : Monad M'}
+Lemma ensure_type_sound {M M'} 
+  {BM : bind_op M} {BM' : bind_op M'}
+  {RM : return_op M} {RM' : return_op M'}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'}
   {MS : MonadFail_sound M M'}
@@ -49,7 +52,8 @@ Qed.
 Hint Resolve ensure_type_sound : soundness.
 
 Fixpoint shared_eval_expr 
-    {valType boolType natType : Type} {M : Type → Type} `{MM : Monad M}
+    {valType boolType natType : Type} {M : Type → Type} 
+    {BM : bind_op M} {RM : return_op M}
     {MF : MonadFail M} {MS : MonadState (store valType) M}
     {EC : extract_op cvalue valType}
     {SB : SubType boolType valType}
@@ -71,45 +75,47 @@ Fixpoint shared_eval_expr
       v2 <- shared_eval_expr e2 ;
       n1 <- ensure_type natType v1 ;
       n2 <- ensure_type natType v2 ;
-      n <- returnM (M:=M) (n1 + n2) ;
-      returnM (M:=M) (inject n)
+      n <- returnM (n1 + n2) ;
+      returnM (inject n)
   | EMult e1 e2 => 
       v1 <- shared_eval_expr e1 ;
       v2 <- shared_eval_expr e2 ;
       n1 <- ensure_type natType v1 ;
       n2 <- ensure_type natType v2 ;
-      n <- returnM (M:=M) (n1 * n2) ;
+      n <- returnM (n1 * n2) ;
       returnM (inject n)
   | EEq e1 e2 =>
       v1 <- shared_eval_expr e1 ;
       v2 <- shared_eval_expr e2 ;
       n1 <- ensure_type natType v1 ;
       n2 <- ensure_type natType v2 ;
-      b <- returnM (M:=M) (n1 = n2) ;
-      returnM (M:=M) (inject b)
+      b <- returnM (n1 = n2) ;
+      returnM (inject b)
   | ELe e1 e2 =>
       v1 <- shared_eval_expr e1 ;
       v2 <- shared_eval_expr e2 ;
       n1 <- ensure_type natType v1 ;
       n2 <- ensure_type natType v2 ;
-      b <- returnM (M:=M) (leb n1 n2);
-      returnM (M:=M) (inject b)
+      b <- returnM (leb n1 n2);
+      returnM (inject b)
   | ENot e1 =>
       v1 <- shared_eval_expr e1 ;
       b1 <- ensure_type boolType v1 ;
-      b <- returnM (M:=M) (neg b1);
-      returnM (M:=M) (inject b)
+      b <- returnM (neg b1);
+      returnM (inject b)
   | EAnd e1 e2 =>
       v1 <- shared_eval_expr e1 ;
       v2 <- shared_eval_expr e2 ;
       b1 <- ensure_type boolType v1 ;
       b2 <- ensure_type boolType v2 ;
-      b <- returnM (M:=M) (b1 && b2) ;
-      returnM (M:=M) (inject b)
+      b <- returnM (b1 && b2) ;
+      returnM (inject b)
   end.
 
-Lemma shared_eval_expr_sound (M M' : Type → Type) `{MM : Monad M}
-  `{MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+Lemma shared_eval_expr_sound (M M' : Type → Type) 
+  {BM : bind_op M} {RM : return_op M}
+  {BM' : bind_op M'} {RM' : return_op M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MFS : MonadFail_sound M M'}
   {avalue} {GV : Galois avalue cvalue}
@@ -153,8 +159,7 @@ Open Scope com_scope.
 
 Fixpoint shared_ceval 
     {valType boolType natType : Type} 
-    {M : Type → Type} 
-    `{MM : Monad M}
+    {M : Type → Type} {BM : bind_op M} {RM : return_op M}
     {MF : MonadFail M} 
     {MS : MonadState (store valType) M}
     {ME : MonadExcept M} (c : com) 
@@ -186,8 +191,10 @@ Fixpoint shared_ceval
   | CFail => throw
   end.
 
-Lemma shared_ceval_sound (M M' : Type → Type) `{MM : Monad M}
-  `{MM' : Monad M'} {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
+Lemma shared_ceval_sound (M M' : Type → Type) 
+  {BM : bind_op M} {RM : return_op M}
+  {BM' : bind_op M'} {RM' : return_op M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {MF : MonadFail M} {MF' : MonadFail M'} 
   {MFS : MonadFail_sound M M'}
   {avalue : Type} {GV : Galois avalue cvalue}
