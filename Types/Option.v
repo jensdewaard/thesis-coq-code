@@ -204,7 +204,7 @@ End option_monad.
 Instance option_ordered : OrderedMonad option.
 Proof.
   split. 
-  - intros A B PA PB m m' f f' Hm Hf Hff'.
+  - intros A B PA PB m m' f f' Hm Hf Hf' Hff'.
     destruct m, m'; unfold bindM, bind_op_option, bind_option;
       try constructor; inversion Hm; subst. 
     apply preorder_trans with (y:=f a0); auto. 
@@ -279,7 +279,7 @@ End optionA_monad.
 Instance optionA_ordered : OrderedMonad optionA.
 Proof.
   split.
-  intros A B PA PB m m' f f' Hm Hf Hff'.
+  intros A B PA PB m m' f f' Hm Hf Hf' Hff'.
   destruct m, m'; unfold bindM, bind_op_optionA, bind_optionA.
   - inversion Hm; subst.
     eapply preorder_trans with (f a0); auto. 

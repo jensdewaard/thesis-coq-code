@@ -28,14 +28,14 @@ Class Monad M {RO : return_op M} {BO : bind_op M} : Type :=
     (m >>= f) >>= g = m >>= (λ a, (f a) >>= g);
 }.
 
-
 Class OrderedMonad M {RO : return_op M} {BO : bind_op M} 
   {MO : ∀ {A}, PreorderedSet A -> PreorderedSet (M A)} : Type :=
 {
   bind_monotone : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B} 
    (m m' : M A) (f f' : A → M B),
    m ⊑ m' → 
-   (∀ a a' : A, a ⊑ a' → (f a) ⊑ (f a')) → 
+   monotone f → 
+   monotone f' →
    (∀ a : A, (f a) ⊑ (f' a)) →
    (m >>= f) ⊑ (m' >>= f');
 }.
@@ -129,7 +129,7 @@ Section Identity_Monad.
   Global Instance ordered_identity : OrderedMonad Identity.
   Proof.
     split.
-    - intros A B PA PB m m' f f' Hm Hf Hf'.
+    - intros A B PA PB m m' f f' Hm Hf Hf' Hff'.
       unfold bindM, bind_op_id.
       destruct m as [a], m' as [a']; simpl in Hm. 
       eapply preorder_trans with (f a'); auto.
