@@ -105,7 +105,7 @@ Proof. split.
     inversion Hs as [????  Ha Hs2]; subst; clear Hs.
     assert (state_le (f a) (f' a')) as Hfa.
     { eapply state_le_trans. apply Hf. apply Ha. apply Hff'. }
-    apply Hfa. apply Hs2.
+    apply Hfa, Hs2.
 Qed.
 
 Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
@@ -249,3 +249,54 @@ Instance stateT_joinable {S} {JS : Joinable S S} {M} `{MM : Monad M}
   {A B} {JA : Joinable A B} : Joinable (StateT S M A) (StateT S M B) :=
     λ m1, λ m2, λ st, (m1 st) ⊔ (m2 st).
 Hint Resolve stateT_joinable : soundness.
+
+Definition stateT_le {S} `{SType S} 
+  {M} {BM : bind_op M} {RM : return_op M} 
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)}
+  {A} {PA : PreorderedSet A}
+  (m m' : StateT S M A) : Prop := 
+  ∀ s s' : S, s ⊑ s' → m s ⊑ m' s'.
+
+Lemma stateT_le_trans {S} `{SType S} 
+  {M} {BM : bind_op M} {RM : return_op M}
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)}
+  {A} {PA : PreorderedSet A} :
+  ∀ x y z : StateT S M A,
+  stateT_le x y →
+  stateT_le y z →
+  stateT_le x z.
+Proof.
+  unfold stateT_le; intros x y z Hxy Hyz s s' Hs.
+  apply preorder_trans with (y s). 
+  + apply Hxy, S_le_refl.
+  + apply Hyz; apply Hs.
+Qed.
+
+Instance stateT_preordered {S} `{SType S}
+  {M} {BM : bind_op M} {RM : return_op M}
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)} : ∀ A,
+    PreorderedSet A →
+    PreorderedSet (StateT S M A) :=
+{
+  preorder := stateT_le;
+  preorder_trans := stateT_le_trans;
+}.
+
+Instance stateT_ordered 
+  {S} `{SType S}
+  {M} {BM : bind_op M} {RM : return_op M} 
+  {PM : ∀ A, PreorderedSet A → PreorderedSet (M A)} 
+  {OM : OrderedMonad M} : 
+    OrderedMonad (StateT S M).
+Proof. split.
+  - intros A PA a a' Ha s s' Hs.
+    apply return_monotone; constructor; assumption.
+  - intros A B PA PB m m' f f' Hm Hf Hf' Hff' s s' Hs.
+    apply bind_monotone. 
+    + apply Hm, Hs.
+    + intros p p' Hp; destruct p, p'; inversion Hp.
+      apply Hf; auto.
+    + intros p p' Hp; destruct p, p'; inversion Hp.
+      apply Hf'; auto.
+    + intros [a s2]. apply Hff'. apply S_le_refl.
+Qed.
