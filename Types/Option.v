@@ -658,3 +658,38 @@ Proof.
       apply H2.
     + inversion H. 
 Qed.
+
+Class BoundedMonad (M : Type → Type) `{OM : OrderedMonad M} :=
+{
+  f_bounded : ∀ {A B} {PA : PreorderedSet A} {PB : PreorderedSet B}, 
+    ∀ (f : A → optionT M B) (a : A),
+    ∃ b, f a ⊑ returnM b;
+}.
+
+Instance optionT_ordered {M} `{BM : BoundedMonad M} : OrderedMonad (optionT M).
+Proof.
+  destruct OM; split.
+  - intros A PA a a' Ha; unfold returnM, return_op_optionT, return_optionT.
+    apply return_monotone; constructor; assumption.
+  - intros A B PA PB m m' f f' Hm Hf Hf' Hff'.
+    eapply bind_monotone.
+    + assumption.
+    + intros v v' Hv; destruct v, v'.
+      * apply Hf; inversion Hv; assumption.
+      * assert (∃ x, f a ⊑ returnM x) as [x Hup]. 
+        { destruct BM as [f_bounded]; auto. }
+        eapply preorder_trans; apply Hup + apply return_monotone; constructor.
+      * inversion Hv.
+      * apply return_monotone; constructor.
+    + intros v v' Hv; destruct v, v'.
+      * apply Hf'; inversion Hv; assumption.
+      * assert (∃ x, f' a ⊑ returnM x) as [x Hup]. 
+        { destruct BM as [f_bounded]; auto. }
+        eapply preorder_trans; apply Hup + apply return_monotone; constructor.
+      * inversion Hv.
+      * apply return_monotone; constructor.
+    + destruct a. 
+      * apply Hff'.
+      * apply return_monotone; constructor.
+Qed.
+
