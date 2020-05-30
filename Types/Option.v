@@ -676,8 +676,8 @@ Proof.
     + assumption.
     + intros v v' Hv; destruct v, v'.
       * apply Hf; inversion Hv; assumption.
-      * assert (∃ x, f a ⊑ returnM x) as [x Hup]. 
-        { destruct BM as [f_bounded]; auto. }
+      * destruct BM as [f_bounded]. 
+        assert (∃ x, f a ⊑ returnM x) as [x Hup] by auto.
         eapply preorder_trans; apply Hup + apply return_monotone; constructor.
       * inversion Hv.
       * apply return_monotone; constructor.
