@@ -54,20 +54,20 @@ Qed.
 Definition imult (i1 i2 : interval) : interval :=
   Interval ((min i1) * (min i2)) ((max i1) * (max i2)) (mult_min_max i1 i2).
 
-Definition ieqb (i1 i2 : interval) : (abstr_bool+⊤) :=
+Definition ieqb (i1 i2 : interval) : abstr_bool :=
   if (Nat.ltb (max i1) (min i2)) then
-    NotTop ab_false
+    NotTop false
   else if (andb (andb (Nat.eqb (min i1) (max i1)) 
                       (Nat.eqb (max i1) (min i2))) 
                 (Nat.eqb (min i2) (max i2))) then
-           NotTop ab_true
+           NotTop true
   else Top.
 
-Definition ileqb (i1 i2 : interval) : (abstr_bool+⊤) :=
+Definition ileqb (i1 i2 : interval) : abstr_bool :=
   if (Nat.ltb (max i1) (min i2)) then
-    NotTop ab_true
+    NotTop true
   else if (Nat.ltb (max i2) (min i1)) then
-    NotTop ab_false
+    NotTop false
   else
     Top.
 

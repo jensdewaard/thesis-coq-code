@@ -1,6 +1,9 @@
 Require Export Base.
 Require Export Instances.Galois.
 Require Import Classes.Galois.
+Require Import Classes.IsBool.
+Require Import Classes.IsBool.
+Require Import Classes.IsNat.
 Require Import Classes.Joinable.
 Require Import Classes.Monad.
 Require Import Classes.Monad.MonadFail.
@@ -8,9 +11,9 @@ Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.Even.
 Require Import Coq.Arith.PeanoNat.
+Require Import Instances.Joinable.
 Require Import Instances.MonadExcept.
 Require Import Instances.MonadFail.
-Require Import Instances.Joinable.
 Require Import Instances.Preorder.
 Require Import Instances.Store.
 Require Import Language.Statements.
@@ -19,13 +22,12 @@ Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Maps.
+Require Import Types.Option.
 Require Import Types.Parity.
 Require Import Types.State.
 Require Import Types.Stores.
-Require Import Classes.IsBool.
 Require Import Types.Subtype.
-Require Import Classes.IsNat.
-Require Import Types.Option.
+Require Import Types.Subtype.
 
 (* Soundness of unit *)
 Lemma gamma_unit_sound :
@@ -44,7 +46,7 @@ Hint Extern 3 (γ (?f ?x) (?g ?y)) => apply gamma_fun_apply : soundness.
 
 (* Soundness of interpreters *)
 
-Definition avalue := ((parity+⊤)+(abstr_bool+⊤))%type.
+Definition avalue := ((parity+⊤)+abstr_bool)%type.
 
 Definition ConcreteState := optionT (StateT (store cvalue) option).
 
@@ -53,17 +55,16 @@ Definition AbstractState := optionAT (StateT (store (avalue+⊤)) option).
 (*** Refactor these lemmas ***)
 Lemma joinable_values_idem : @JoinableIdem (avalue +⊤)
   (@top_joinable_l avalue avalue
-     (@sum_joinable (parity +⊤) (abstr_bool +⊤) (parity +⊤) 
-        (abstr_bool +⊤) (@top_joinable_l parity parity parity_joinable)
-        (@top_joinable_l abstr_bool abstr_bool abstr_bool_joinable))).
+     (@sum_joinable (parity +⊤) abstr_bool (parity +⊤) 
+        abstr_bool (@top_joinable_l parity parity parity_joinable)
+        abstr_bool_joinable)).
 Proof.
   intros a. destruct a. constructor. destruct a.
   - destruct t. constructor. destruct p; constructor.
-  - destruct t. constructor. destruct a; constructor.
+  - destruct a. constructor. destruct b; constructor.
 Qed.
 Hint Resolve joinable_values_idem : soundness.
 
-Require Import Types.Subtype.
 Lemma subtype_trans_r_sound' : 
   SubType_sound 
     (subtype_trans_r (parity +⊤) (subtype_top_r abstr_bool))
@@ -82,7 +83,7 @@ Hint Resolve subtype_trans_r_sound' : soundness.
 
 Lemma subtype_trans_l_sound' : 
   SubType_sound
-    (subtype_trans_l parity (parity +⊤) (abstr_bool +⊤) (subtype_top_r parity))
+    (subtype_trans_l parity (parity +⊤) abstr_bool (subtype_top_r parity))
     (subtype_l nat bool).
 Proof. 
   split.
@@ -103,7 +104,6 @@ Proof.
 Qed.
 Hint Resolve eval_expr_sound : soundness.
 
-Require Import Classes.IsBool.
 Theorem sound_interpreter: ∀ c, 
   γ (shared_ceval (M:=AbstractState) (valType:=avalue+⊤)
     (boolType:=(abstr_bool+⊤)) (natType:=(parity+⊤)) c) 

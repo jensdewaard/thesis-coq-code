@@ -84,19 +84,21 @@ Qed.
 Hint Resolve parity_mult_sound : soundness.
 
 (** Equality *)
-Definition parity_eq (p1 p2 : parity) : (abstr_bool+⊤) :=
+Definition parity_eq (p1 p2 : parity) : abstr_bool :=
   match p1, p2 with
-  | par_even, par_odd => NotTop ab_false
-  | par_odd, par_even => NotTop ab_false
+  | par_even, par_odd => NotTop false
+  | par_odd, par_even => NotTop false
   | _, _ => Top
   end.
-Instance parity_eq_op : eq_op parity (abstr_bool+⊤) := parity_eq.
+Instance parity_eq_op : eq_op parity abstr_bool := parity_eq.
 
-Instance parity_eq_sound : eq_op_sound (B:=abstr_bool+⊤) parity_eq_op nat_eq_op.
+Instance parity_eq_sound : eq_op_sound (B:=abstr_bool) parity_eq_op nat_eq_op.
 Proof.
-  intros p q n m Hpn Hqm. destruct p, q; constructor; gamma_destruct; unfold
-  eq, nat_eq_op; rewrite Nat.eqb_neq; unfold not; intro Hnot; subst;
-  apply (Nat.Even_Odd_False m); assumption.
+  intros p q n m Hpn Hqm. 
+  destruct p, q; try constructor; gamma_destruct;
+    unfold γ; simpl; symmetry;
+    unfold eq, nat_eq_op; rewrite Nat.eqb_neq; intro Hnot; subst;
+    apply (Nat.Even_Odd_False m); assumption.
 Qed.
 Hint Resolve parity_eq_sound : soundness.
 
