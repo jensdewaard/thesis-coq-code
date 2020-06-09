@@ -6,18 +6,6 @@ Require Import Classes.Monad Classes.Monad.MonadState
 Implicit Type S : Type.
 Implicit Type M : Type → Type.
 
-Instance store_state {S} : MonadState S (State S) := {
-  get := λ st, (st, st);
-  put := λ st, λ _, (tt, st);
-}.
-
-Instance get_store_state_sound {S S' : Type} {GS : Galois S S'} : 
-  get_state_sound (State S) (State S').
-Proof.
-  unfold get_state_sound. constructor; assumption.
-Qed.
-Hint Resolve get_store_state_sound : soundness.
-
 Instance store_stateT {S} {M} `{MM : Monad M} : MonadState S (StateT S M) := {
   get := λ st, returnM (st, st);
   put := λ st, λ _, returnM (tt, st);

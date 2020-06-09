@@ -2,21 +2,13 @@ Require Export Base.
 Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois
   Classes.Monad.MonadJoin Classes.PreorderedSet.
 
-Definition State (S A : Type) := S -> (A * S).
 Definition StateT S M A : Type := S → M (A*S)%type.
+Definition State (S A : Type) := StateT S Identity A.
 
 Class SType (S : Type) {PS : PreorderedSet S} {JS : Joinable S S} :=
 {
   S_le_refl : ∀ s, s ⊑ s;
 }.
-
-Definition gamma_state {S S'} {GS : Galois S S'} {A A'} {GA : Galois A A'} : 
-  State S A → State S' A' → Prop := λ s : State S A, λ s' : State S' A', 
-    ∀ st st', γ st st' → γ (s st) (s' st').
-Arguments gamma_state {S S' GS} A A' GA.
-
-Instance galois_state {S S'} {GS : Galois S S'} : 
-  ∀ A A', Galois A A' → Galois (State S A) (State S' A') := gamma_state.
 
 Instance galois_stateT {M M' : Type → Type} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
@@ -26,107 +18,6 @@ Proof.
   intros A A' GA. unfold StateT. apply galois_fun. apply GS.
   apply GM. apply galois_pairs; assumption.
 Defined.
-
-Instance state_joinable {S A B} :
-    Joinable S S →
-    Joinable A B ->
-    Joinable (State S A) (State S B). 
-Proof.
-  intros; exact (λ st, λ st',  
-    λ x, (((fst (st x)) ⊔ (fst (st' x)), 
-              ((snd (st x)) ⊔ (snd (st' x)))))).
-Defined.
-
-Instance return_op_state {S} : return_op (State S) := 
-  λ A : Type, λ a : A, λ st : S, (a, st). 
-
-Instance bind_op_state {S} : bind_op (State S) := λ A B : Type,
-  λ (m : State S A) (f : A → State S B),
-    λ st, let (x, st') := (m st) in f x st'.
-
-Lemma bind_state_id_left {S} : ∀ (A B : Type) (f : A → State S B) (a : A),
-  (returnM a) >>= f = f a.
-Proof. easy. Qed.
-
-Lemma bind_state_id_right {S} : ∀ (A : Type) (m : State S A),
-  m >>= returnM = m.
-Proof. 
-  intros; unfold bindM, bind_op_state; extensionality s.
-  destruct (m s); reflexivity.
-Qed.
-
-Lemma bind_state_assoc {S} : ∀ (A B C : Type) (m : State S A) 
-  (f : A → State S B) (g : B → State S C),
-  (m >>= f) >>= g =
-  m >>= (λ a : A, (f a) >>= g).
-Proof. 
-  intros; unfold bindM, bind_op_state; extensionality s.
-  destruct (m s) as [a s'], (f a s'); reflexivity.
-Qed.
-
-Instance monad_state {S} : Monad (State S) :=
-{
-  bind_id_left := bind_state_id_left;
-  bind_id_right := bind_state_id_right;
-  bind_assoc := bind_state_assoc;
-}. 
-
-Definition state_le {S} `{SType S} {A} {PA : PreorderedSet A} 
-  (m m' : State S A) : Prop :=
-  ∀ s s', s ⊑ s' -> m s ⊑ m' s'.
-
-Lemma state_le_trans {S} `{SType S} {A} {PA : PreorderedSet A} :
-  ∀ x y z : State S A,
-  state_le x y →
-  state_le y z →
-  state_le x z.
-Proof.
-  unfold state_le; intros x y z Hxy Hyz s s' Hs.
-  apply preorder_trans with (y s). 
-  + apply Hxy, S_le_refl.
-  + apply Hyz; apply Hs.
-Qed.
-
-Instance state_preordered {S} `{SType S} : ∀ A, 
-  PreorderedSet A -> 
-  PreorderedSet (State S A) :=
-{
-  preorder := state_le;
-  preorder_trans := state_le_trans;
-}.
-
-Instance state_ordered {S} `{SType S} : OrderedMonad (State S).
-Proof. split.
-  - intros A PA a a' Ha; constructor; assumption.
-  - intros A B PA PB m m' f f' Hm Hf Hf' Hff' s s' Hs.
-    unfold bindM, bind_op_state. 
-    apply Hm in Hs.
-    destruct (m s) as [a s2], (m' s') as [a' s2'].
-    inversion Hs as [????  Ha Hs2]; subst; clear Hs.
-    assert (state_le (f a) (f' a')) as Hfa.
-    { eapply state_le_trans. apply Hf. apply Ha. apply Hff'. }
-    apply Hfa, Hs2.
-Qed.
-
-Instance return_state_sound {S S' : Type} {GS : Galois S S'} : 
-  return_sound (State S) (State S').
-Proof.
-  unfold return_sound; unfold returnM; simpl; intros; unfold return_op_state.
-  constructor; simpl; eauto with soundness. 
-Qed.
-Hint Resolve return_state_sound : soundness.
-
-Instance bind_state_sound {S S' : Type} {GS : Galois S S'} :
-  bind_sound (State S) (State S').
-Proof.
-  unfold bind_sound, bindM; simpl; intros A A' B b' GA GB m m' f f' Hm Hf. 
-  unfold bind_op_state; intros s s' Hs. 
-  apply Hm in Hs.
-  destruct (m s), (m' s'). 
-  inversion Hs; subst; clear Hs; simpl in *.
-  apply Hf; assumption.
-Qed.
-Hint Resolve bind_state_sound : soundness.
 
 Section Monad_StateT.
   Context {M} `{MM : Monad M}.

@@ -402,115 +402,15 @@ Defined.
 
 Definition return_optionAT {M} {RM : return_op M} A (a : A) : optionAT M A :=
   returnM (SomeA a).
-Instance return_op_optionAT_state {M} {RM : return_op M} : 
+Instance return_op_optionAT {M} {RM : return_op M} : 
   return_op (optionAT M) := return_optionAT.
 Arguments return_optionAT {M RM A} a.
-
-Section optionAT_state_monad.
-  Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
-
-  Definition bind_optionAT_state {A B} 
-    (m : optionAT (State S) A)
-    (f : A -> optionAT (State S) B) : optionAT (State S) B :=
-  λ s : S, let (o, s') := m s in 
-    match o with
-    | NoneA => (NoneA, s')
-    | SomeA x => f x s'
-    | SomeOrNoneA x => let (o', s'') := (f x s') in
-                             match o' with 
-                             | NoneA => (NoneA, s' ⊔ s'')
-                             | SomeA x' => (SomeOrNoneA x', s' ⊔ s'')
-                             | SomeOrNoneA x' => (SomeOrNoneA x', s' ⊔ s'')
-                             end
-    end.
-  Hint Unfold bind_optionAT_state : monads.
-  Global Instance bind_op_optionAT_state : bind_op (optionAT (State S)) :=
-    @bind_optionAT_state.
-
-  Lemma bind_optionAT_state_id_left : ∀ {A B} (f : A → optionAT (State S) B) (a : A), 
-    bind_optionAT_state (return_optionAT a) f = f a.
-  Proof. 
-    intros; unfold bind_optionAT_state, return_optionAT.
-    reflexivity.
-  Qed.
-  Arguments bind_optionAT_state_id_left [A B] f a.
-
-  Lemma bind_optionAT_state_id_right : ∀ (A : Type) (m : optionAT (State S) A), 
-    bind_optionAT_state m (λ a, return_optionAT  a) = m.
-  Proof. 
-    intros; unfold bind_optionAT_state, return_optionAT; extensionality s.
-    destruct (m s) as [o s'].
-    unfold returnM, return_op_state.
-    destruct o; try reflexivity.
-    rewrite JI; reflexivity.
-  Qed.
-
-End optionAT_state_monad.
-Hint Unfold bind_optionAT_state : monads.
 
 Instance return_optionAT_sound {M M'} `{RS : return_sound M M'} :
   return_sound (optionAT M) (optionT M').
 Proof.
   unfold return_sound, returnM; simpl. eauto with soundness.
 Qed.
-
-Section optionAT_state_sound.
-  Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
-  Context {S' : Type} {GS : Galois S S'}.
-  Context {JSS : JoinableSound JS}.
-
-  Global Instance bind_optionAT_state_sound :
-    bind_sound (optionAT (State S)) (optionT (State S')).
-  Proof.
-    intros A A' B B' GA GB m m' f f' Hm Hf. 
-    unfold bindM; simpl. 
-    unfold bind_op_optionAT_state, bind_optionAT_state.
-    unfold bind_op_optionT, bind_optionT.
-    unfold bindM; simpl; unfold bind_op_state.
-    intros s s' Hs. 
-    apply Hm in Hs; destruct (m s) as [o s2], (m' s') as [o' s2'].
-    inversion Hs as [? ? Ho Hs2 H1 H2]; simpl in *; subst; clear Hs.
-    destruct o as [a| |a], o' as [a'|].
-    - inversion Ho as [| | ? ? Ha |]; subst; clear Ho.
-      apply Hf in Ha; apply Ha in Hs2; assumption.
-    - inversion Ho.
-    - inversion Ho.
-    - unfold returnM; simpl; unfold return_op_state. 
-      constructor; simpl.
-      * constructor.
-      * assumption.
-    - (* SomeOrNoneA, Some *) inversion Ho as [| | | ?? Ha H0 H1]; subst; clear Ho.
-      apply Hf in Ha; apply Ha in Hs2.
-      destruct (f a s2) as [o s3], (f' a' s2') as [o' s3'].  
-      inversion Hs2 as [?? Ho Hs3 H1 H2]; subst; simpl in *; clear Hs2.
-      destruct o, o'; simpl.
-      + constructor; simpl. constructor. inversion Ho; subst. assumption.
-        apply join_sound; right; assumption.
-      + inversion Ho; subst. 
-      + inversion Ho.
-      + constructor; simpl. 
-        * constructor.
-        * apply join_sound; right; assumption.
-      + constructor; simpl. 
-        * assumption.
-        * apply join_sound; right; assumption.
-      + constructor; simpl.
-        * assumption.
-        * apply join_sound; right; assumption.
-    - (* SomeOrNoneA, None *) unfold returnM, return_op_state.
-      destruct (f a s2) eqn:?.
-      destruct o; simpl. 
-      + constructor; simpl. 
-        * constructor.
-        * apply join_sound; left; assumption.
-      + constructor; simpl.
-        * constructor.
-        * apply join_sound; left; assumption.
-      + constructor; simpl.
-        * constructor.
-        * apply join_sound; left; assumption.
-  Qed.
-End optionAT_state_sound.
 
 Section optionAT_stateT_monad.
   Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
