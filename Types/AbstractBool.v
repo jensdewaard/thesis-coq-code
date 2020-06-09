@@ -6,11 +6,6 @@ Require Import Utf8 Coq.Bool.Bool Classes.IsBool Classes.PreorderedSet
 
 Definition abstr_bool : Type := bool+⊤.
 
-(*Inductive abstr_bool : Type :=
-  | ab_true   : abstr_bool
-  | ab_false  : abstr_bool.
-  *)
-
 (** * Correspondence with bool *)
 Instance galois_boolean : Galois abstr_bool bool := 
   λ ab,
@@ -60,7 +55,7 @@ Qed.
 Hint Resolve or_ab_sound : soundness.
 
 (** ** Negation *)
-Instance neg_ab_op : neg_op abstr_bool abstr_bool := 
+Instance neg_ab_op : neg_op abstr_bool := 
   λ ab,
     match ab with
     | Top => Top

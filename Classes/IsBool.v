@@ -57,20 +57,20 @@ Instance or_bot {A : Type} {OO : or_op A } : or_op (A+⊥) :=
               | _, _ => Bot
               end.
 
-Class neg_op (A B : Type) : Type := neg : A → B.
-Class neg_op_sound {A A' B B' : Type} {GA : Galois A A'} {GB : Galois B B'}
-  (NO : neg_op A B) (NO' : neg_op A' B') : Prop :=
+Class neg_op (A : Type) : Type := neg : A → A.
+Class neg_op_sound {A A' : Type} {GA : Galois A A'} 
+  (NO : neg_op A) (NO' : neg_op A') : Prop :=
   neg_sound : ∀ (a : A) (a' : A'),
   γ a a' →
   γ (neg a) (neg a').
 
-Instance neg_op_bool : neg_op bool bool := negb.
+Instance neg_op_bool : neg_op bool := negb.
 
-Instance neg_top {A B : Type} (NO : neg_op A B) : neg_op (A+⊤) (B+⊤) :=
+Instance neg_top {A : Type} (NO : neg_op A) : neg_op (A+⊤)  :=
   λ a, match a with | NotTop x => NotTop (neg x) | Top => Top end.
 
 Instance neg_top_sound {A A' B B'} {GA : Galois A A'} {GB : Galois B B'}
-  (NO : neg_op A B) (NO' : neg_op A' B') :
+  (NO : neg_op A) (NO' : neg_op A') :
   neg_op_sound NO NO' → neg_op_sound (neg_top NO) NO'.
 Proof.
   intro NS. intros a a' Ha. destruct a.
@@ -79,7 +79,7 @@ Proof.
 Qed.
 Hint Resolve neg_top_sound : soundness.
 
-Instance neg_bot {A B : Type} `{neg_op A B} : neg_op (A+⊥) (B+⊥) :=
+Instance neg_bot {A : Type} `{neg_op A} : neg_op (A+⊥) :=
   λ a, match a with | NotBot x => NotBot (neg x) | Bot => Bot end.
 
 Class if_op  (A B : Type) : Type := when : A → B → B → B.

@@ -62,7 +62,7 @@ Fixpoint shared_eval_expr
     {MO : mult_op natType natType}
     {EO : eq_op natType boolType}
     {LO : leb_op natType boolType}
-    {NO : neg_op boolType boolType}
+    {NO : neg_op boolType}
     {AO : and_op boolType}
     (e : expr) : M valType :=
   match e with
@@ -136,7 +136,7 @@ Lemma shared_eval_expr_sound (M M' : Type → Type)
   {MO : mult_op natType natType} {MO' : mult_op natType' natType'}
   {EO : eq_op natType boolType}  {EO' : eq_op natType' boolType'}
   {LO : leb_op natType boolType} {LO' : leb_op natType' boolType'}
-  {NO : neg_op boolType boolType} {NO' : neg_op boolType' boolType'}
+  {NO : neg_op boolType} {NO' : neg_op boolType'}
   {AO : and_op boolType} {AO' : and_op boolType'}
   {GS : get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M'}
   {BS : bind_sound M M'}
@@ -170,7 +170,7 @@ Fixpoint shared_ceval
     {MO : mult_op natType natType}
     {EO : eq_op natType boolType}
     {LO : leb_op natType boolType}
-    {NO : neg_op boolType boolType}
+    {NO : neg_op boolType}
     {AO : and_op boolType}
     {IO : if_op boolType (M unit)}
     : M unit :=
@@ -217,7 +217,7 @@ Lemma shared_ceval_sound (M M' : Type → Type)
   {MO : mult_op natType natType} {MO' : mult_op natType' natType'}
   {EO : eq_op natType boolType}  {EO' : eq_op natType' boolType'}
   {LO : leb_op natType boolType} {LO' : leb_op natType' boolType'}
-  {NO : neg_op boolType boolType} {NO' : neg_op boolType' boolType'}
+  {NO : neg_op boolType} {NO' : neg_op boolType'}
   {AO : and_op boolType} {AO' : and_op boolType'}
   {IO : if_op boolType (M unit)} {IO' : if_op boolType' (M' unit)}
   {GS : get_state_sound (S:=store (avalue+⊤)) (S':=store cvalue) M M'}
