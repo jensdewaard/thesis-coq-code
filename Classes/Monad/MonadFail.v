@@ -3,7 +3,7 @@ Require Import Classes.Monad Classes.Galois.
 
 Class MonadFail M {BM : bind_op M} : Type := {
   fail : ∀ {A : Type}, M A;
-  fail_left: ∀ {A B} (m : A → M B), (@fail A) >>= m = fail;
+  fail_left: ∀ {A B} (m : A → M B), fail >>= m = fail;
 }.
 Arguments fail : simpl never.
 Hint Rewrite @fail_left : monads.
