@@ -45,7 +45,7 @@ Qed.
 Hint Resolve and_ab_sound : soundness.
 
 (** ** Or *)
-Instance or_ab_op : or_op abstr_bool abstr_bool := 
+Instance or_ab_op : or_op abstr_bool := 
   λ ab1 ab2,
     match ab1, ab2 with
     | Top, _ | _, Top => Top

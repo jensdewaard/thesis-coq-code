@@ -34,24 +34,24 @@ Instance and_bot {A : Type} {AO : and_op A} : and_op (A+⊥) :=
               | _, _ => Bot
               end.
 
-Class or_op  (A B : Type) : Type := or : A → A → B.
+Class or_op  (A : Type) : Type := or : A → A → A.
 Infix "||" := or.
-Class or_op_sound (A A' : Type) {B B' : Type} `{Galois A A', Galois B B'}
-  `{or_op A B} `{or_op A' B'} : Prop :=
+Class or_op_sound (A A' : Type) {GA : Galois A A'}
+  `{or_op A} `{or_op A'} : Prop :=
   or_sound : ∀ (a1 a2 : A) (a1' a2' : A'),
   γ a1 a1' →
   γ a2 a2' →
   γ (a1 || a2) (a1' || a2').
 
-Instance or_op_bool : or_op bool bool := orb.
+Instance or_op_bool : or_op bool := orb.
 
-Instance or_top {A B : Type} `{or_op A B} : or_op (A+⊤) (B+⊤) :=
+Instance or_top {A : Type} {OO : or_op A} : or_op (A+⊤) :=
   λ a1, λ a2, match a1, a2 with
               | NotTop x, NotTop y => NotTop (x || y)
               | _, _ => Top
               end.
 
-Instance or_bot {A B : Type} `{or_op A B} : or_op (A+⊥) (B+⊥) :=
+Instance or_bot {A : Type} {OO : or_op A } : or_op (A+⊥) :=
   λ a1, λ a2, match a1, a2 with
               | NotBot x, NotBot y => NotBot (x || y)
               | _, _ => Bot
