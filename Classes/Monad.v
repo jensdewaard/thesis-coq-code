@@ -91,10 +91,10 @@ Ltac solve_monad := repeat (simplify; simple_solve;
   end).
 
 Section Identity_Monad.
-  Instance return_op_id : return_op Identity := 
+  Global Instance return_op_id : return_op Identity := 
     λ (A : Type) (a : A), identity a.
 
-  Instance bind_op_id : bind_op Identity := λ A B 
+  Global Instance bind_op_id : bind_op Identity := λ A B 
     (m : Identity A) (f : A → Identity B),
       match m with
       | identity a => f a
@@ -136,6 +136,24 @@ Section Identity_Monad.
       unfold bindM, bind_op_id.
       destruct m as [a], m' as [a']; simpl in Hm. 
       eapply preorder_trans with (f a'); auto.
+  Qed.
+
+  Global Instance return_id_sound :
+    return_sound Identity Identity.
+  Proof.
+    intros A A' GA a a' Ha. 
+    apply Ha.
+  Qed.
+
+  Global Instance bind_id_sound :
+    bind_sound Identity Identity.
+  Proof.
+    intros A A' B B' GA GB m m' f f' Hm Hf.
+    destruct m as [a], m' as [a']; cbv.
+    unfold γ, galois_identity, gamma_identity in Hm.
+    apply Hf in Hm.
+    destruct (f a) as [b], (f' a') as [b']. 
+    apply Hm.
   Qed.
 End Identity_Monad.
 
