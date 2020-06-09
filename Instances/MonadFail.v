@@ -54,7 +54,7 @@ Section fail_stateT.
     λ st, fail >>= λ a, returnM (a, st). 
 
   Lemma fail_stateT_left : ∀ (A B : Type) (f : A → StateT S M B),
-    fail_stateT (A:=A) >>= f = fail_stateT.
+    fail_stateT >>= f = fail_stateT.
   Proof.
     intros; unfold fail_stateT; extensionality s.
     rewrite fail_left. 
@@ -62,9 +62,10 @@ Section fail_stateT.
     repeat rewrite fail_left; reflexivity.
   Qed.
 
+  Arguments fail_stateT [A].
   Global Instance monad_fail_stateT : MonadFail (StateT S M) :=
   {
-    fail := @fail_stateT;
+    fail := fail_stateT;
     fail_left := fail_stateT_left;
   }.
 End fail_stateT.
