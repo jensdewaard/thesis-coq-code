@@ -466,6 +466,7 @@ Section optionAT_stateT_monad.
     PreorderedSet (optionAT (StateT S M) A) :=
   {
     preorder := preorder;
+    preorder_refl := preorder_refl;
     preorder_trans := preorder_trans;
   }.
 End optionAT_stateT_monad.

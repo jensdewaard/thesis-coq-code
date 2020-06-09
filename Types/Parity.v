@@ -39,7 +39,6 @@ Inductive parity : Type :=
   | par_even : parity
   | par_odd : parity
   | par_top : parity.
-Print top_op.
 Instance parity_top : top_op parity := par_top.
 
 Inductive gamma_par : parity → ℘ nat :=
@@ -144,7 +143,8 @@ Hint Resolve parity_leb_sound : soundness.
 
 Inductive parity_le : parity → parity → Prop :=
   | par_le_even : parity_le par_even par_even
-  | par_le_odd  : parity_le par_odd par_odd. 
+  | par_le_odd  : parity_le par_odd par_odd 
+  | par_le_top : ∀ p, parity_le p par_top.
 Hint Constructors parity_le : preorders.
 
 Global Instance proset_parity : PreorderedSet parity.
@@ -172,8 +172,8 @@ Qed.
 
 Instance preorder_parity_sound : PreorderSound parity nat.
 Proof.
-  intros x y Hpre n Hgamma. destruct x, y; eauto with soundness; inversion
-  Hpre.
+  intros x y Hpre n Hgamma. 
+  destruct x, y; inversion Hpre; eauto with soundness; constructor.
 Qed.
 
 
