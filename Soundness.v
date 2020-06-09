@@ -46,54 +46,11 @@ Hint Extern 3 (γ (?f ?x) (?g ?y)) => apply gamma_fun_apply : soundness.
 
 (* Soundness of interpreters *)
 
-Definition avalue := ((parity+⊤)+abstr_bool)%type.
+Definition avalue := (parity+abstr_bool)%type.
 
 Definition ConcreteState := optionT (StateT (store cvalue) option).
 
 Definition AbstractState := optionAT (StateT (store (avalue+⊤)) option).
-
-(*** Refactor these lemmas ***)
-Lemma joinable_values_idem : @JoinableIdem (avalue +⊤)
-  (@top_joinable_l avalue avalue
-     (@sum_joinable (parity +⊤) abstr_bool (parity +⊤) 
-        abstr_bool (@top_joinable_l parity parity parity_joinable)
-        abstr_bool_joinable)).
-Proof.
-  intros a. destruct a. constructor. destruct a.
-  - destruct t. constructor. destruct p; constructor.
-  - destruct a. constructor. destruct b; constructor.
-Qed.
-Hint Resolve joinable_values_idem : soundness.
-
-Lemma subtype_trans_r_sound' : 
-  SubType_sound 
-    (subtype_trans_r (parity +⊤) (subtype_top_r abstr_bool))
-    (subtype_r nat bool).
-Proof. 
-  split.
-  - intros b b' Hb. 
-    destruct b, b'; simpl; eauto with soundness.
-  - intros s s' Hs. 
-    destruct s, s'; simpl; eauto with soundness.
-    destruct t.
-    + constructor.
-    + eauto with soundness.
-Qed.
-Hint Resolve subtype_trans_r_sound' : soundness.
-
-Lemma subtype_trans_l_sound' : 
-  SubType_sound
-    (subtype_trans_l parity (parity +⊤) abstr_bool (subtype_top_r parity))
-    (subtype_l nat bool).
-Proof. 
-  split.
-  - intros p n Hp.
-    destruct p; simpl; constructor; inversion Hp; assumption.
-  - intros s s' Hs.
-    destruct s, s'; simpl; try constructor; destruct t; try constructor;
-    inversion Hs; constructor; try assumption.
-Qed.
-Hint Resolve subtype_trans_l_sound' : soundness.
 
 Theorem eval_expr_sound : ∀ (e : expr), 
   γ 
