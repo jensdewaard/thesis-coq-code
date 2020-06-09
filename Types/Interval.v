@@ -105,7 +105,7 @@ Instance interval_joinable : Joinable interval interval :=
 
 Inductive gamma_interval : interval → nat → Prop :=
   | gamma_interval_cons : ∀ i n, 
-      preorder (min i) n → preorder n (max i) → gamma_interval i n.
+      (min i) ⊑ n → n ⊑ (max i) → gamma_interval i n.
 
 Instance galois_interval : Galois interval nat := gamma_interval.
 
