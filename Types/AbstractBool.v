@@ -28,8 +28,9 @@ Proof.
   intro b. destruct b; constructor; reflexivity.
 Qed.
 Hint Resolve extract_ab_sound : soundness.
+  
 (** ** And *)
-Instance and_ab_op : and_op abstr_bool abstr_bool := 
+Instance and_ab_op : and_op abstr_bool := 
   λ ab1 ab2,
     match ab1, ab2 with
     | Top, _ | _, Top => Top

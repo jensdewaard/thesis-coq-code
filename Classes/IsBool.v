@@ -1,26 +1,26 @@
 Require Export Base.
 Require Import Classes.Joinable Classes.Galois.
 
-Class and_op (A B : Type) : Type := and : A → A → B.
+Class and_op (A : Type) : Type := and : A → A → A.
 Infix "&&" := and.
 
-Class and_op_sound {A A' B B' : Type} {GA : Galois A A'} {GB :Galois B B'}
-  (AO : and_op A B) (AO' : and_op A' B') : Prop :=
+Class and_op_sound {A A' : Type} {GA : Galois A A'} 
+  (AO : and_op A) (AO' : and_op A') : Prop :=
   and_sound : ∀ (a1 a2 : A) (a1' a2' : A'),
   γ a1 a1' →
   γ a2 a2' →
   γ (a1 && a2) (a1' && a2').
 
-Instance and_op_bool : and_op bool bool := andb.
+Instance and_op_bool : and_op bool := andb.
 
-Instance and_top {A B : Type} (AO : and_op A B) : and_op (A+⊤) (B+⊤) :=
+Instance and_top {A : Type} (AO : and_op A) : and_op (A+⊤) :=
   λ a1, λ a2, match a1, a2 with
               | NotTop x, NotTop y => NotTop (x && y)
               | _,_ => Top
               end.
 
-Instance and_top_sound {A A' B B'} {GA : Galois A A'} {GB : Galois B B'}
-  (AO : and_op A B) (AO' : and_op A' B') :
+Instance and_top_sound {A A'} {GA : Galois A A'}
+  (AO : and_op A) (AO' : and_op A') :
   and_op_sound AO AO' → and_op_sound (and_top AO) AO'.
 Proof.
   intro AS. intros a1 a2 a1' a2' Ha Ha'. destruct a1, a2; eauto with soundness.
@@ -28,7 +28,7 @@ Proof.
 Qed.
 Hint Resolve and_top_sound : soundness.
 
-Instance and_bot {A B : Type} `{and_op A B} : and_op (A+⊥) (B+⊥) :=
+Instance and_bot {A : Type} {AO : and_op A} : and_op (A+⊥) :=
   λ a1, λ a2, match a1, a2 with
               | NotBot x, NotBot y => NotBot (x && y)
               | _, _ => Bot
@@ -129,12 +129,3 @@ Proof.
   - apply IOS; assumption.
 Qed.
 
-(*Class IsBool (M : Type -> Type) (valType boolType : Type) : Type :=
-{
-  ensure_bool  : valType -> M boolType;
-  build_bool   : boolType -> M valType;
-  extract_bool : bool -> M boolType;
-  and_op       : boolType -> boolType -> M boolType;
-  neg_op       : boolType -> M boolType;
-  if_op        : boolType -> M unit -> M unit -> M unit;
-}.*)
