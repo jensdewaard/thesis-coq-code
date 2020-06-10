@@ -21,7 +21,7 @@ Defined.
 
 Section Monad_StateT.
   Context {M} `{MM : Monad M}.
-  Context {S : Type}.
+  Context {S : Type} `{SType S}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
@@ -69,8 +69,15 @@ Section Monad_StateT.
     bind_id_right := bind_stateT_id_right;
     bind_assoc := bind_stateT_assoc;
   }. 
+  
+  Definition bind2_stateT {A B} (m : StateT S M A)
+      (f : A → StateT S M B) : StateT S M B :=
+      λ st : S, 
+        m st >>= λ p, let (a, st') := p : (A*S)%type  in f a (st ⊔ st').
 
+  Instance bind2_stateT_op : bind2_op (StateT S M) := @bind2_stateT.
 End Monad_StateT.
+
 
 Section stateT_sound.
   Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.
