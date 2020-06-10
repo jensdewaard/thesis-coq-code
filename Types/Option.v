@@ -526,9 +526,10 @@ Section optionAT_sound.
   Global Instance bind_optionAT_sound :
     return_sound M M' →
     bind_sound M M' →
+    bind2_op_sound M M' → 
     bind_sound (optionAT M) (optionT M').
   Proof.
-    intros RS BS A A' B B' GA GB m m' f f' Hm Hf.
+    intros RS BS BS2 A A' B B' GA GB m m' f f' Hm Hf.
     unfold bindM; simpl.
     unfold bind_op_optionAT, bind_op_optionT.
     unfold bind_optionAT, bind_optionT.
@@ -539,8 +540,12 @@ Section optionAT_sound.
     - apply Hf; inversion Ho; auto.
     - inversion Ho.
     - inversion Ho.
-    - apply returnM_sound. constructor.
-    - admit.
+    - apply returnM_sound; constructor.
+    - rewrite <- bind_id_right. apply bindM2_sound_l. 
+      + apply Hf; inversion Ho; auto.
+      + intros o2 o2' Ho2.
+        destruct o2, o2'; apply returnM_sound; 
+        inversion Ho2; constructor; auto.
     - admit.
   Admitted.
 End optionAT_sound.

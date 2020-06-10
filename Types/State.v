@@ -82,8 +82,29 @@ Section bind2_stateT.
       unfold bind2_stateT, returnM, return_op_stateT, return_stateT.
       extensionality s. 
       rewrite bind_id_left, JI; reflexivity.
-  Qed.
+  Defined.
 End bind2_stateT.
+
+Section bind2_stateT_sound.
+  Context {M M'} `{MM : Monad M, MM' : Monad M'} {GM : ∀ A A', Galois A A' →
+    Galois (M A) (M' A')}.
+  Context {S S' : Type} {JS : Joinable S S} {JI : JoinableIdem JS}
+    {GS : Galois S S'} {JSS : JoinableSound JS}.
+
+  Global Instance bind2_stateT_sound : 
+    bind_sound M M' →
+    bind2_op_sound (StateT S M) (StateT S' M').
+  Proof.
+    split. intros A A' GA m f f' m' Hm Hf.
+    unfold bindM2; simpl; unfold bind2_stateT_op, bind2_stateT.
+    intros s s' Hs.
+    apply bindM_sound. 
+    - auto.
+    - intros p p' Hp. destruct p, p'. apply Hf.
+      + inversion Hp; auto.
+      + apply join_sound. right. inversion Hp; auto.
+  Qed.
+End bind2_stateT_sound.
 
 Section stateT_sound.
   Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.

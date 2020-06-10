@@ -35,6 +35,15 @@ Class bind2_op (M : Type → Type) {BO : bind_op M} {RO : return_op M} : Type :=
     bindM2 (returnM a) f = f a;
 }.
 
+Class bind2_op_sound (M M' : Type → Type) `{BO2 : bind2_op M} 
+  {BO' : bind_op M'}
+  {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : Type :=
+{
+  bindM2_sound_l : ∀ {A A' : Type} {GA : Galois A A'}
+    (m : M A) (f : A → M A) (f' : A' → M' A') (m' : M' A'),
+    γ m m' → γ f f' → γ (bindM2 m f) (bindM m' f');
+}.
+
 Class OrderedMonad M {RO : return_op M} {BO : bind_op M} 
   {MO : ∀ {A}, PreorderedSet A -> PreorderedSet (M A)} : Type :=
 {
