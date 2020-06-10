@@ -495,19 +495,6 @@ Section optionAT_stateT_monad.
     - reflexivity.
     - rewrite bindM2_return; reflexivity.
   Qed.
-
-  Lemma bind_optionAT_assoc : ∀ A B C (m : optionAT M A) 
-    (f : A → optionAT M B) (g : B → optionAT M C),
-    (m >>= f) >>= g = m >>= (λ a, (f a) >>= g).
-  Proof.
-    unfold bindM, bind_op_optionAT, bind_optionAT; simpl; intros.
-    rewrite bind_assoc; f_equal; extensionality a.
-    destruct a.
-    - f_equal.
-    - rewrite bind_id_left; reflexivity.
-    - admit.
-  Admitted.
-
 End optionAT_stateT_monad.
 
 (*Lemma bind_equiv {M} `{Monad M} {S} {JS : Joinable S S} : 
