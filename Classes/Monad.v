@@ -12,9 +12,6 @@ Class return_op (M : Type → Type) : Type := returnM : ∀ {A}, A → M A.
 Class bind_op (M : Type → Type) : Type := bindM : ∀ {A B},
   M A → (A → M B) → M B.
 
-Class bind2_op (M : Type → Type) {RO : return_op M} {BO : bind_op M} : Type 
-  := bindM2 : ∀ {A B}, M A → (A → M B) → M B.
-
 Notation "x >>= y" := (bindM x y) (at level 40, left associativity).
 Notation "x '<-' y ; z" := (bindM y (λ x, z))
   (at level 20, y at level 100, z at level 200, only parsing).
@@ -29,6 +26,13 @@ Class Monad M {RO : return_op M} {BO : bind_op M} : Type :=
     m >>= returnM = m;
   bind_assoc : ∀ {A B C} (m : M A) (f : A → M B) (g : B → M C),
     (m >>= f) >>= g = m >>= (λ a, (f a) >>= g);
+}.
+
+Class bind2_op (M : Type → Type) {BO : bind_op M} {RO : return_op M} : Type :=
+{
+  bindM2 : ∀ {A B}, M A → (A → M B) → M B;
+  bindM2_return : ∀ {A B} (f : A → M B) (a : A),
+    bindM2 (returnM a) f = f a;
 }.
 
 Class OrderedMonad M {RO : return_op M} {BO : bind_op M} 

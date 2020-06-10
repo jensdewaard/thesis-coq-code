@@ -493,8 +493,8 @@ Section optionAT_stateT_monad.
     extensionality o; destruct o.
     - reflexivity.
     - reflexivity.
-    - admit.
-  Admitted.
+    - rewrite bindM2_return; reflexivity.
+  Qed.
 
   Lemma bind_optionAT_assoc : ∀ A B C (m : optionAT M A) 
     (f : A → optionAT M B) (g : B → optionAT M C),

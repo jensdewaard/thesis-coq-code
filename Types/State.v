@@ -67,15 +67,22 @@ Section Monad_StateT.
 End Monad_StateT.
 
 Section bind2_stateT.
-  Context {M} {RO : return_op M} {BO : bind_op M}.
-  Context {S} {JS : Joinable S S}.
+  Context {M} `{MM : Monad M}.
+  Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
 
   Definition bind2_stateT {A B} (m : StateT S M A)
       (f : A → StateT S M B) : StateT S M B :=
       λ st : S, 
         m st >>= λ p, let (a, st') := p : (A*S)%type  in f a (st ⊔ st').
 
-  Global Instance bind2_stateT_op : bind2_op (StateT S M) := @bind2_stateT.
+  Global Instance bind2_stateT_op : bind2_op (StateT S M).
+  Proof.
+    split with @bind2_stateT.
+    - intros A B f a. 
+      unfold bind2_stateT, returnM, return_op_stateT, return_stateT.
+      extensionality s. 
+      rewrite bind_id_left, JI; reflexivity.
+  Qed.
 End bind2_stateT.
 
 Section stateT_sound.
