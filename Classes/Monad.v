@@ -12,6 +12,9 @@ Class return_op (M : Type → Type) : Type := returnM : ∀ {A}, A → M A.
 Class bind_op (M : Type → Type) : Type := bindM : ∀ {A B},
   M A → (A → M B) → M B.
 
+Class bind2_op (M : Type → Type) {RO : return_op M} {BO : bind_op M} : Type 
+  := bindM2 : ∀ {A B}, M A → (A → M B) → M B.
+
 Notation "x >>= y" := (bindM x y) (at level 40, left associativity).
 Notation "x '<-' y ; z" := (bindM y (λ x, z))
   (at level 20, y at level 100, z at level 200, only parsing).
