@@ -300,7 +300,7 @@ Section except_optionAT.
 End except_optionAT.
 
 Instance throw_optionAT_sound {S S' : Type} {GS : Galois S S'} 
-  {JS : Joinable S S} {JI : JoinableIdem JS} 
+  {JS : Joinable S S} {JI : JoinableIdem JS}
   {M M' : Type → Type} `{MM : Monad M} `{MM' : Monad M'} {MJ : MonadJoin M} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} : 
   return_sound M M' →
@@ -314,7 +314,7 @@ Proof.
 Qed.
 
 Instance catch_optionAT_sound {S S' : Type} {GS : Galois S S'} 
-  {JS : Joinable S S} {JSS : JoinableSound JS} {JI : JoinableIdem JS} 
+  {JS : Joinable S S} {JI : JoinableIdem JS} {JSS : JoinableSound JS} 
   {M M' : Type → Type} `{MM : Monad M} `{MM' : Monad M'} {MJ : MonadJoin M}
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')} 
   {MJS : MonadJoinSound M M'} :

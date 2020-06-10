@@ -86,7 +86,7 @@ Qed.
 Hint Resolve monadfail_stateT_sound : soundness.
 
 Section fail_optionAT.
-  Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
+  Context {S : Type} {JS : Joinable S S}.
 
   Definition fail_optionAT {A} : optionAT (StateT S option) A := 
     fail >>= λ a, returnM (SomeA a).
@@ -105,8 +105,7 @@ Section fail_optionAT.
   }.
 End fail_optionAT.
 
-Instance monadfail_optionAT_sound {S S'} {JS : Joinable S S} 
-  {JI : JoinableIdem JS} {GS : Galois S S'} :
+Instance monadfail_optionAT_sound {S S'} {JS : Joinable S S} {GS : Galois S S'} :
     MonadFail_sound (optionAT (StateT S option)) (optionT (StateT S' option)).
 Proof.
   intros A A' GA m'. 

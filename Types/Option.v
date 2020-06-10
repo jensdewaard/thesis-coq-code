@@ -413,10 +413,24 @@ Proof.
 Qed.
 
 Section optionAT_stateT_monad.
-  Context {S} {JS : Joinable S S} {JI : JoinableIdem JS}.
-  Context {M} {RO : return_op M} {BO : bind_op M} {MM : Monad M}.
+  Context {M} {RO : return_op M} {BO : bind_op M} {MM : Monad M} {BO2 :
+    bind2_op M}.
 
-  Definition bind_optionAT_stateT {A B} 
+  Definition bind_optionAT {A B}
+    (m : optionAT M A)
+    (f : A → optionAT M B) : optionAT M B :=
+   bindM (M:=M) m (λ o, 
+    match o with
+    | NoneA => returnM NoneA
+    | SomeA x => f x
+    | SomeOrNoneA x => bindM2 (M:=M) (f x) (λ o',
+        match o' with
+        | NoneA => returnM NoneA
+        | SomeA x | SomeOrNoneA x => returnM (SomeOrNoneA x)
+        end)
+    end).
+
+  Definition bind_optionAT_stateT {S} {JS : Joinable S S} {A B} 
     (m : optionAT (StateT S M) A)
     (f : A -> optionAT (StateT S M) B) : optionAT (StateT S M) B :=
   λ s : S, m s >>= λ '(o, s'),
@@ -431,10 +445,10 @@ Section optionAT_stateT_monad.
                              end
     end.
   Hint Unfold bind_optionAT_stateT : monads.
-  Global Instance bind_op_optionAT_stateT :
-    bind_op (optionAT (StateT S M)) := @bind_optionAT_stateT.
+  Global Instance bind_op_optionAT_stateT {S} {JS : Joinable S S} :
+    bind_op (optionAT (StateT S M)) := @bind_optionAT_stateT S JS.
 
-  Lemma bind_optionAT_stateT_id_left : ∀ {A B} 
+  Lemma bind_optionAT_stateT_id_left {S} {JS : Joinable S S} : ∀ {A B} 
     (f : A → optionAT (StateT S M) B) (a : A), 
     bind_optionAT_stateT (return_optionAT a) f = f a.
   Proof. 
@@ -443,9 +457,10 @@ Section optionAT_stateT_monad.
     extensionality s. 
     rewrite bind_id_left; reflexivity.
   Qed.
-  Arguments bind_optionAT_stateT_id_left [A B] f a.
+  Arguments bind_optionAT_stateT_id_left {S JS} [A B] f a.
 
-  Lemma bind_optionAT_stateT_id_right : ∀ (A : Type) 
+  Lemma bind_optionAT_stateT_id_right {S} {JS : Joinable S S} {JI :
+    JoinableIdem JS} : ∀ (A : Type) 
     (m : optionAT (StateT S M) A), 
     bind_optionAT_stateT m (λ a, return_optionAT a) = m.
   Proof. 
@@ -457,8 +472,9 @@ Section optionAT_stateT_monad.
     1, 2: reflexivity. 
     rewrite bind_id_left, JI; reflexivity.
   Qed.
+End optionAT_stateT_monad.
 
-  Context {PS : PreorderedSet S}.
+  (*Context {PS : PreorderedSet S}.
   Context {PM : forall A, PreorderedSet A -> PreorderedSet (M A)}.
 
   Instance preordered_optionAT : 
@@ -469,10 +485,32 @@ Section optionAT_stateT_monad.
     preorder_refl := preorder_refl;
     preorder_trans := preorder_trans;
   }.
-End optionAT_stateT_monad.
+  *)
+
+    Lemma bind_equiv {M} `{Monad M} {S} {JS : Joinable S S} : 
+      @bind_optionAT (StateT S M) _ _ _ = 
+      @bind_optionAT_stateT M RO BO S  _.
+    Proof.
+      extensionality A; extensionality B; unfold bind_optionAT,
+      bind_optionAT_stateT;
+      extensionality m; extensionality f.
+      unfold bindM at 1, bind_op_stateT, bind_stateT.
+      extensionality s.
+      f_equal; extensionality p.
+      destruct p as [a s'].
+      destruct a.
+      - reflexivity.
+      - reflexivity.
+      - unfold bindM2, bind2_stateT_op, bind2_stateT; f_equal.
+        extensionality p; destruct p as [a' s''].
+        destruct a'.
+        + reflexivity.
+        + reflexivity.
+        + reflexivity.
+    Qed.
 
 Section optionAT_stateT_sound.
-  Context {S : Type} {JS : Joinable S S} {JI : JoinableIdem JS}.
+  Context {S : Type} {JS : Joinable S S}.
   Context {S' : Type} {GS : Galois S S'}.
   Context {JSS : JoinableSound JS}.
 

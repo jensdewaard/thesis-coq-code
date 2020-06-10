@@ -5,11 +5,6 @@ Require Import Utf8 Classes.Joinable Classes.Monad Classes.Galois
 Definition StateT S M A : Type := S → M (A*S)%type.
 Definition State (S A : Type) := StateT S Identity A.
 
-Class SType (S : Type) {PS : PreorderedSet S} {JS : Joinable S S} :=
-{
-  S_le_refl : ∀ s, s ⊑ s;
-}.
-
 Instance galois_stateT {M M' : Type → Type} 
   {GM : ∀ A A', Galois A A' → Galois (M A) (M' A')}
   {S S'} {GS : Galois S S'} : 
@@ -21,7 +16,7 @@ Defined.
 
 Section Monad_StateT.
   Context {M} `{MM : Monad M}.
-  Context {S : Type} `{SType S}.
+  Context {S : Type}.
 
   Definition return_stateT {A} (a : A) :=
     λ st : S, returnM (a, st).
@@ -69,15 +64,19 @@ Section Monad_StateT.
     bind_id_right := bind_stateT_id_right;
     bind_assoc := bind_stateT_assoc;
   }. 
-  
+End Monad_StateT.
+
+Section bind2_stateT.
+  Context {M} {RO : return_op M} {BO : bind_op M}.
+  Context {S} {JS : Joinable S S}.
+
   Definition bind2_stateT {A B} (m : StateT S M A)
       (f : A → StateT S M B) : StateT S M B :=
       λ st : S, 
         m st >>= λ p, let (a, st') := p : (A*S)%type  in f a (st ⊔ st').
 
-  Instance bind2_stateT_op : bind2_op (StateT S M) := @bind2_stateT.
-End Monad_StateT.
-
+  Global Instance bind2_stateT_op : bind2_op (StateT S M) := @bind2_stateT.
+End bind2_stateT.
 
 Section stateT_sound.
   Context (M M' : Type → Type) `{MM : Monad M} `{MM' : Monad M'}.

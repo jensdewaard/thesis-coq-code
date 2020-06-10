@@ -1,6 +1,8 @@
 Require Export Base.
 Require Import Types.Maps Language.Statements Classes.Joinable Classes.Galois.
+Require Import Types.State.
 Require Import Language.Statements.
+Require Import Classes.PreorderedSet.
 
 Definition store (A : Type) := total_map A.
 
