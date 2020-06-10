@@ -241,10 +241,10 @@ Section except_optionAT.
 
   Lemma throw_optionAT_left : ∀ (A B : Type) 
     (m : A → optionAT (StateT S M) B), 
-    bind_optionAT_stateT (A:=A) (B:=B) throw_optionAT m = throw_optionAT (A:=B).
+    throw_optionAT >>= m = throw_optionAT (A:=B).
   Proof. 
-    intros; unfold bind_optionAT_stateT, throw_optionAT; extensionality s. 
-    unfold returnM; unfold return_op_stateT, return_stateT.
+    intros; unfold bindM, bind_op_optionAT, bind_optionAT, throw_optionAT; 
+    extensionality s. 
     rewrite bind_id_left; reflexivity.
   Qed.
 
