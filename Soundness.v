@@ -27,7 +27,6 @@ Require Import Types.Parity.
 Require Import Types.State.
 Require Import Types.Stores.
 Require Import Types.Subtype.
-Require Import Types.Subtype.
 
 (* Soundness of unit *)
 Lemma gamma_unit_sound :
