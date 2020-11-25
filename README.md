@@ -1,44 +1,26 @@
 # Jens de Waard MSc Thesis Project 
 
-So far, the project has the following files:
+## Building the project
 
-##AbstractBool.v
-This file defines the abstract values for booleans as well as the abstract
-versions of the negation, and and or functions.
+Requirements 
+- A recent version of Coq (probably 8.9 or higher)
+- GNU Make
 
-##Parity.v
-This file defines the abstract interpretation of natural numbers as their
-parity (even or odd) and provides abstract versions of addition and
-multiplication.
+Run make in the root directory of the project, which is the directory 
+containing this README and the _CoqProject file. This will compile all 
+the source files. It is then possible to step through the proofs
+using an IDE such as CoQIDE or ProofAssistant.
 
-##Language.v 
-This file describes the possible statements and expressions in the language
-we're writing proofs about.
+## Source Files
 
-##Preorder.v
-This file defines the PreorderedSet typeclass and provides several instances
-for it. It also includes the definition of what it means for a function to be
-monotone.
+This is a list of the various files in the project, and where they are
+in the thesis document.
 
-##Abstract and ConcreteInterpreter
-These contain the evalutation functions for the language specified in
-Language.v.
-
-##Maps.v
-An implementation for maps, taken from the SoftwareFoundations book.
-
-##AbstractStore.v
-Contains the definitions for both the concrete and the abstract stores, which
-are based on maps.
-
-##Galois.v
-This file gives the definition of the Galois typeclass and provides the
-necessary instances of the typeclass for the soundness theorems.
-
-##Monad.v
-Defines what a Monad is as a typeclass and provides an imlementation of the 
-typeclass in the form of a State monad. 
-
-##Soundness
-Contains the various soundness lemma's and the proofs of the soundness of the
-abstract interpreter wrt the concrete interpreter.
+| Source Files          | Thesis Chapter | Description                                         |
+| --------------------- | -------------- | --------------------------------------------------- |
+| Language/*            | Chapter 3      | Syntax of the interpreted language.                 |
+| Types/*               | Chapter 3      | Abstract versions of the concrete types.            |
+| Classes/*             | Chapter 4      | The typeclasses used to decompose the interpreters. |
+| Instances/*           | Chapter 4      | Instances of those typeclasses.                     |
+| GenericInterpreter.v  | Chapter 4      | The layout of the generic interpreter.              |
+| Soundness.v           | Chapter 4      | Proof that the generic interpreter is sound.        |
