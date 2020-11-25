@@ -25,5 +25,5 @@ Instances/Store.v
 Instances/MonadExcept.v
 Instances/MonadFail.v
 Instances/Galois.v
-SharedInterpreter.v
+GenericInterpreter.v
 Soundness.v

@@ -11,6 +11,7 @@ Require Import Classes.PreorderedSet.
 Require Import Coq.Arith.Arith.
 Require Import Coq.Arith.Even.
 Require Import Coq.Arith.PeanoNat.
+Require Import GenericInterpreter.
 Require Import Instances.Joinable.
 Require Import Instances.MonadExcept.
 Require Import Instances.MonadFail.
@@ -18,7 +19,6 @@ Require Import Instances.Preorder.
 Require Import Instances.Store.
 Require Import Language.Statements.
 Require Import Psatz.
-Require Import SharedInterpreter.
 Require Import Types.AbstractBool.
 Require Import Types.Interval.
 Require Import Types.Maps.
